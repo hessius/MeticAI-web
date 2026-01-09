@@ -1,6 +1,16 @@
 import '@testing-library/jest-dom'
-import { expect, afterEach, vi } from 'vitest'
+import { expect, afterEach, vi, beforeAll } from 'vitest'
 import { cleanup } from '@testing-library/react'
+
+// Setup before all tests
+beforeAll(() => {
+  // Mock import.meta.env.DEV to false for all tests
+  Object.defineProperty(import.meta, 'env', {
+    value: { DEV: false },
+    writable: true,
+    configurable: true
+  })
+})
 
 // Cleanup after each test
 afterEach(() => {

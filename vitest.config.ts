@@ -29,4 +29,7 @@ export default defineConfig({
       '@': resolve(projectRoot, 'src')
     }
   },
+  define: {
+    'import.meta.env.DEV': 'false',
+  },
 })
