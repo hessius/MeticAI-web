@@ -94,7 +94,7 @@ The project includes ESLint in its dependencies for code quality and consistency
 npm run lint
 ```
 
-**Note:** ESLint configuration file (`eslint.config.js`) may need to be set up. If linting is not configured, ensure your code follows TypeScript and React best practices.
+**Note:** If you encounter an error about missing ESLint configuration, you may need to create an `eslint.config.js` file. Follow the [ESLint v9 migration guide](https://eslint.org/docs/latest/use/configure/migration-guide) for setup instructions. In the meantime, ensure your code follows TypeScript and React best practices.
 
 ### TypeScript
 
@@ -111,7 +111,7 @@ The project uses:
 - **Radix UI** primitives for accessible components
 - **Tailwind CSS** for styling with CSS variables
 - **Framer Motion** for animations
-- **Phosphor Icons** for iconography
+- **Phosphor Icons React** (`@phosphor-icons/react`) for iconography
 
 ### Code Organization
 
