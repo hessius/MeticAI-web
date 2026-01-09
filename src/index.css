@@ -1,0 +1,134 @@
+@import 'tailwindcss';
+@import "tw-animate-css";
+
+@layer base {
+  * {
+    @apply border-border
+  }
+  
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  
+  h1, h2, h3 {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+:root {
+  --background: oklch(0.16 0.01 240);
+  --foreground: oklch(1 0 0);
+  
+  --card: oklch(0.22 0.01 240);
+  --card-foreground: oklch(1 0 0);
+  
+  --popover: oklch(0.22 0.01 240);
+  --popover-foreground: oklch(1 0 0);
+  
+  --primary: oklch(0.75 0.15 195);
+  --primary-foreground: oklch(0.22 0.01 240);
+  
+  --secondary: oklch(0.28 0.01 240);
+  --secondary-foreground: oklch(1 0 0);
+  
+  --muted: oklch(0.28 0.01 240);
+  --muted-foreground: oklch(0.65 0.01 240);
+  
+  --accent: oklch(0.75 0.15 195);
+  --accent-foreground: oklch(0.22 0.01 240);
+  
+  --destructive: oklch(0.65 0.25 25);
+  --destructive-foreground: oklch(1 0 0);
+  
+  --border: oklch(0.35 0.01 240);
+  --input: oklch(0.35 0.01 240);
+  --ring: oklch(0.75 0.15 195);
+  
+  --neon-pink: oklch(0.72 0.22 340);
+  --neon-green: oklch(0.78 0.18 130);
+  
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: oklch(0.16 0.01 240);
+  --foreground: oklch(1 0 0);
+  
+  --card: oklch(0.22 0.01 240);
+  --card-foreground: oklch(1 0 0);
+  
+  --popover: oklch(0.22 0.01 240);
+  --popover-foreground: oklch(1 0 0);
+  
+  --primary: oklch(0.75 0.15 195);
+  --primary-foreground: oklch(0.22 0.01 240);
+  
+  --secondary: oklch(0.28 0.01 240);
+  --secondary-foreground: oklch(1 0 0);
+  
+  --muted: oklch(0.28 0.01 240);
+  --muted-foreground: oklch(0.65 0.01 240);
+  
+  --accent: oklch(0.75 0.15 195);
+  --accent-foreground: oklch(0.22 0.01 240);
+  
+  --destructive: oklch(0.65 0.25 25);
+  --destructive-foreground: oklch(1 0 0);
+  
+  --border: oklch(0.35 0.01 240);
+  --input: oklch(0.35 0.01 240);
+  --ring: oklch(0.75 0.15 195);
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  --color-neon-pink: var(--neon-pink);
+  --color-neon-green: var(--neon-green);
+
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) * 1.5);
+  --radius-xl: calc(var(--radius) * 2);
+  --radius-2xl: calc(var(--radius) * 3);
+  --radius-full: 9999px;
+}
+
+.neon-glow {
+  box-shadow: 0 0 20px var(--primary), 0 0 40px var(--primary);
+}
+
+.neon-text {
+  text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary), 0 0 30px var(--primary);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--primary), 0 0 40px var(--primary), 0 0 60px var(--primary);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
