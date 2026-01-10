@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Camera, Coffee, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X } from '@phosphor-icons/react'
+import { getServerUrl } from '@/lib/config'
 
 const LOADING_MESSAGES = [
   "Analyzing coffee beans...",
@@ -116,7 +117,8 @@ function App() {
         formData.append('user_prefs', combinedPrefs)
       }
 
-      const response = await fetch('/analyze_and_profile', {
+      const serverUrl = await getServerUrl()
+      const response = await fetch(`${serverUrl}/analyze_and_profile`, {
         method: 'POST',
         body: formData,
       })
