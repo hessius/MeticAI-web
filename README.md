@@ -231,9 +231,6 @@ MeticAI-web/
 ├── theme.json            # Design system theme
 ├── TESTING.md            # Testing documentation
 └── README.md             # This file
-├── tailwind.config.js    # Tailwind CSS configuration
-├── components.json       # shadcn/ui configuration
-└── theme.json            # Design system theme
 ```
 
 ## Available Commands
@@ -278,17 +275,10 @@ We welcome contributions to MeticAI! Here's how you can help:
    ```
 7. Commit your changes with clear, descriptive commit messages
 8. Push to your fork:
-4. Test your changes thoroughly
-5. Run linting to ensure code quality:
-   ```bash
-   npm run lint
-   ```
-6. Commit your changes with clear, descriptive commit messages
-7. Push to your fork:
    ```bash
    git push origin feature/your-feature-name
    ```
-8. Open a Pull Request with a clear description of your changes
+9. Open a Pull Request with a clear description of your changes
 
 ### Pull Request Guidelines
 
