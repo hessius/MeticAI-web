@@ -7,7 +7,9 @@ MeticAI is a web application that helps you generate customized espresso profile
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Running the Application](#running-the-application)
+- [Docker Deployment](#docker-deployment)
 - [Building for Production](#building-for-production)
+- [Configuration](#configuration)
 - [Testing](#testing)
 - [Development Guidelines](#development-guidelines)
 - [Project Structure](#project-structure)
@@ -72,6 +74,42 @@ To preview the production build locally:
 npm run preview
 ```
 
+## Docker Deployment
+
+MeticAI can be deployed as a Docker container for easy deployment and scalability. The containerized application supports configuring external backend servers without rebuilding the image.
+
+### Quick Start with Docker
+
+```bash
+# 1. Configure your backend server URL in public/runtime.config.json
+# 2. Build and run with Docker Compose
+docker-compose up -d
+
+# 3. Access the application at http://localhost:8080
+```
+
+### Manual Docker Build and Run
+
+```bash
+# Build the Docker image
+docker build -t meticai-web .
+
+# Run the container
+docker run -d \
+  --name meticai-web \
+  -p 8080:80 \
+  -v $(pwd)/public/runtime.config.json:/usr/share/nginx/html/runtime.config.json:ro \
+  meticai-web
+```
+
+For comprehensive Docker deployment instructions, including:
+- External server configuration
+- Networking considerations
+- Production deployment best practices
+- Troubleshooting
+
+See the complete [Docker Deployment Guide](./DOCKER.md).
+
 ## Building for Production
 
 To create an optimized production build:
@@ -84,6 +122,50 @@ This command will:
 1. Run TypeScript compiler checks
 2. Bundle and optimize the application using Vite
 3. Output the production-ready files to the `dist` directory
+
+## Configuration
+
+### Server Configuration
+
+The application uses `public/runtime.config.json` to configure the backend server URL. This allows you to change the server endpoint without rebuilding the application.
+
+**Default Configuration (`public/runtime.config.json`):**
+
+```json
+{
+  "app": "d714b953697bb20df0a3",
+  "serverUrl": "http://localhost:5000"
+}
+```
+
+**Configuration Options:**
+
+- `app`: Application identifier (do not modify)
+- `serverUrl`: The URL of your backend server
+
+**Examples:**
+
+```json
+// For local development
+{
+  "app": "d714b953697bb20df0a3",
+  "serverUrl": "http://localhost:5000"
+}
+
+// For production deployment
+{
+  "app": "d714b953697bb20df0a3",
+  "serverUrl": "https://api.meticai.example.com"
+}
+
+// For Docker deployment (accessing host machine)
+{
+  "app": "d714b953697bb20df0a3",
+  "serverUrl": "http://host.docker.internal:5000"
+}
+```
+
+The configuration file is loaded at runtime, so you can modify it and refresh the page to apply changes (in development) or restart the container (in Docker deployment).
 
 ## Testing
 

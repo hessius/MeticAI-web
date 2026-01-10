@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Camera, Coffee, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X } from '@phosphor-icons/react'
+import { loadRuntimeConfig, getApiUrl } from '@/lib/config'
 
 const LOADING_MESSAGES = [
   "Analyzing coffee beans...",
@@ -54,6 +55,13 @@ function App() {
   const [apiResponse, setApiResponse] = useState<APIResponse | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Load runtime configuration on mount
+  useEffect(() => {
+    loadRuntimeConfig().catch(error => {
+      console.error('Failed to load runtime configuration:', error)
+    })
+  }, [])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -116,7 +124,7 @@ function App() {
         formData.append('user_prefs', combinedPrefs)
       }
 
-      const response = await fetch('/analyze_and_profile', {
+      const response = await fetch(getApiUrl('/analyze_and_profile'), {
         method: 'POST',
         body: formData,
       })
