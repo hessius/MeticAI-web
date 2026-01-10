@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom'
-import { expect, afterEach, vi, beforeAll } from 'vitest'
+import { afterEach, vi, beforeAll } from 'vitest'
 import { cleanup } from '@testing-library/react'
 
 // Setup before all tests
@@ -37,11 +37,12 @@ global.FileReader = class FileReader {
   result: string | ArrayBuffer | null = null
   error: DOMException | null = null
   readyState: number = 0
-  onload: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null = null
-  onerror: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null = null
-  onloadend: ((this: FileReader, ev: ProgressEvent<FileReader>) => any) | null = null
+  onload: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null
+  onerror: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null
+  onloadend: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null
 
-  readAsDataURL(blob: Blob): void {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  readAsDataURL(_blob: Blob): void {
     this.readyState = 2
     setTimeout(() => {
       this.result = 'data:image/png;base64,mockBase64Data'
@@ -51,7 +52,8 @@ global.FileReader = class FileReader {
     }, 0)
   }
 
-  readAsText(blob: Blob): void {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  readAsText(_blob: Blob): void {
     this.readyState = 2
     setTimeout(() => {
       this.result = 'mock text data'
