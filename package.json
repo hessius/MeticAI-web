@@ -96,7 +96,6 @@
         "eslint-plugin-react-refresh": "^0.4.19",
         "globals": "^16.0.0",
         "happy-dom": "^20.1.0",
-        "jsdom": "^27.4.0",
         "tailwindcss": "^4.1.11",
         "typescript": "~5.7.2",
         "typescript-eslint": "^8.38.0",
@@ -106,8 +105,5 @@
         "packages": [
             "packages/*"
         ]
-    },
-    "overrides": {
-        "@exodus/bytes": "1.6.0"
     }
 }
