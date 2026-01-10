@@ -4,8 +4,8 @@ test.describe('MeticAI Web Application E2E Tests', () => {
   test('should load the homepage successfully', async ({ page }) => {
     await page.goto('/')
     
-    // Check that the page loaded
-    await expect(page).toHaveTitle(/Vite \+ React \+ TS/)
+    // Check that the page loaded with correct title
+    await expect(page).toHaveTitle('MeticAI - Espresso Profile Generator')
     
     // Check for the application title
     await expect(page.getByText(/MeticAI/)).toBeVisible()
