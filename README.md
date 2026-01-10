@@ -8,6 +8,7 @@ MeticAI is a web application that helps you generate customized espresso profile
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Running the Application](#running-the-application)
+- [Docker Deployment](#docker-deployment)
 - [Building for Production](#building-for-production)
 - [Testing](#testing)
 - [Development Guidelines](#development-guidelines)
@@ -107,6 +108,52 @@ To preview the production build locally:
 ```bash
 npm run preview
 ```
+
+## Docker Deployment
+
+The application can be deployed using Docker for easy containerization and deployment. This is the **recommended approach for production deployments**.
+
+### Quick Start with Docker
+
+```bash
+# Build the application first
+npm run build
+
+# Using Docker Compose (recommended)
+docker compose up -d
+
+# Or build and run manually
+docker build -f Dockerfile.simple -t meticai-web .
+docker run -p 8080:80 meticai-web
+```
+
+The application will be available at `http://localhost:8080`.
+
+### Configuring Backend Server
+
+To point the containerized app to your backend server, create a `config.json` file:
+
+```json
+{
+  "serverUrl": "http://your-backend-server:5000"
+}
+```
+
+Then run with the config mounted:
+
+```bash
+docker run -d -p 8080:80 \
+  -v $(pwd)/config.json:/usr/share/nginx/html/config.json:ro \
+  meticai-web
+```
+
+**For complete Docker documentation**, including:
+- Detailed build and run instructions
+- Network configuration for external server communication
+- Production deployment best practices
+- Troubleshooting guide
+
+See [DOCKER.md](./DOCKER.md) for the comprehensive Docker deployment guide.
 
 ## Building for Production
 
