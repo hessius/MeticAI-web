@@ -17,6 +17,19 @@ This guide provides detailed instructions for deploying the MeticAI web applicat
 
 The fastest way to get started with Docker:
 
+**Option 1: Using the helper script (easiest)**
+
+```bash
+./docker-build.sh
+```
+
+This automated script handles everything:
+1. Installs npm dependencies if needed
+2. Builds the application
+3. Builds and starts Docker containers
+
+**Option 2: Manual steps**
+
 ```bash
 # Build the application first
 npm run build
@@ -31,7 +44,7 @@ docker run -p 8080:80 meticai-web
 
 The application will be available at `http://localhost:8080`.
 
-**Note:** The current Docker setup uses `Dockerfile.simple` which requires building the application first with `npm run build`. An alternative multi-stage `Dockerfile` is provided for building inside Docker, though it may require additional configuration depending on your environment.
+**Important:** The current Docker setup uses `Dockerfile.simple` which requires building the application first with `npm run build`. This approach is more reliable as it avoids potential npm issues during Docker build. An alternative multi-stage `Dockerfile` is provided for building inside Docker, but it may encounter npm installation issues in some environments.
 
 ## Building the Docker Image
 
@@ -420,6 +433,25 @@ docker logs meticai-prod
 ```
 
 ## Troubleshooting
+
+### "dist" Directory Not Found Error
+
+If you encounter an error like `failed to compute cache key: "/dist": not found` when running `docker compose up`:
+
+**Cause:** The application hasn't been built yet, so the `dist` directory doesn't exist.
+
+**Solution:**
+
+```bash
+# Option 1: Use the helper script
+./docker-build.sh
+
+# Option 2: Build manually then run docker compose
+npm run build
+docker compose up -d
+```
+
+The `Dockerfile.simple` used by docker-compose requires a pre-built `dist` folder. Always run `npm run build` before `docker compose up`.
 
 ### Container Won't Start
 

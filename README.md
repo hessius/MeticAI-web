@@ -115,6 +115,19 @@ The application can be deployed using Docker for easy containerization and deplo
 
 ### Quick Start with Docker
 
+**Option 1: Using the build script (easiest)**
+
+```bash
+./docker-build.sh
+```
+
+This script will:
+1. Install dependencies if needed
+2. Build the application
+3. Build and start the Docker containers
+
+**Option 2: Manual steps**
+
 ```bash
 # Build the application first
 npm run build
@@ -128,6 +141,8 @@ docker run -p 8080:80 meticai-web
 ```
 
 The application will be available at `http://localhost:8080`.
+
+**Note**: The application must be built locally with `npm run build` before running Docker compose, as the current Docker setup uses the pre-built `dist` folder for reliability.
 
 ### Configuring Backend Server
 
