@@ -8,6 +8,7 @@ MeticAI is a web application that helps you generate customized espresso profile
 - [Installation](#installation)
 - [Running the Application](#running-the-application)
 - [Building for Production](#building-for-production)
+- [Testing](#testing)
 - [Development Guidelines](#development-guidelines)
 - [Project Structure](#project-structure)
 - [Available Commands](#available-commands)
@@ -84,6 +85,44 @@ This command will:
 2. Bundle and optimize the application using Vite
 3. Output the production-ready files to the `dist` directory
 
+## Testing
+
+This project has comprehensive test coverage including unit, integration, and end-to-end (E2E) tests.
+
+### Running Tests
+
+```bash
+# Run all unit tests in watch mode
+npm test
+
+# Run tests once (CI mode)
+npm run test:run
+
+# Run tests with coverage report
+npm run test:coverage
+
+# Open Vitest UI for interactive testing
+npm run test:ui
+
+# Run E2E tests (requires dev server to be running)
+npm run e2e
+
+# Run E2E tests in UI mode
+npm run e2e:ui
+
+# Run E2E tests in headed mode (see the browser)
+npm run e2e:headed
+```
+
+### Test Coverage
+
+The project includes:
+- **Unit Tests** - Testing utility functions and individual components
+- **Integration Tests** - Testing component interactions and user flows
+- **E2E Tests** - Testing complete user journeys with Playwright
+
+For detailed testing documentation, best practices, and examples, see [TESTING.md](./TESTING.md).
+
 ## Development Guidelines
 
 ### Code Style and Linting
@@ -138,14 +177,24 @@ MeticAI-web/
 │   ├── hooks/            # Custom React hooks
 │   ├── lib/              # Utility functions and libraries
 │   ├── styles/           # Additional styles
+│   ├── test/             # Test setup files
 │   ├── App.tsx           # Main application component
 │   ├── main.tsx          # Application entry point
 │   ├── main.css          # Global styles and Tailwind imports
 │   └── vite-env.d.ts     # Vite type definitions
+├── e2e/                  # End-to-end tests
 ├── index.html            # HTML template
 ├── package.json          # Project dependencies and scripts
 ├── tsconfig.json         # TypeScript configuration
 ├── vite.config.ts        # Vite configuration
+├── vitest.config.ts      # Vitest test configuration
+├── playwright.config.ts  # Playwright E2E configuration
+├── eslint.config.js      # ESLint configuration
+├── tailwind.config.js    # Tailwind CSS configuration
+├── components.json       # shadcn/ui configuration
+├── theme.json            # Design system theme
+├── TESTING.md            # Testing documentation
+└── README.md             # This file
 ├── tailwind.config.js    # Tailwind CSS configuration
 ├── components.json       # shadcn/ui configuration
 └── theme.json            # Design system theme
@@ -161,6 +210,13 @@ MeticAI-web/
 | `npm run lint` | Run ESLint to check code quality |
 | `npm run optimize` | Run Vite optimizer |
 | `npm run kill` | Kill process running on port 5000 (Unix-like systems) |
+| `npm test` | Run unit tests in watch mode |
+| `npm run test:run` | Run unit tests once (CI mode) |
+| `npm run test:coverage` | Generate coverage report |
+| `npm run test:ui` | Open Vitest UI |
+| `npm run e2e` | Run E2E tests |
+| `npm run e2e:ui` | Run E2E tests in UI mode |
+| `npm run e2e:headed` | Run E2E tests in headed mode |
 
 ## Contributing
 
@@ -174,6 +230,18 @@ We welcome contributions to MeticAI! Here's how you can help:
    git checkout -b feature/your-feature-name
    ```
 3. Make your changes following the development guidelines above
+4. Write tests for your changes
+5. Test your changes thoroughly:
+   ```bash
+   npm run test:run  # Run unit tests
+   npm run e2e       # Run E2E tests (if applicable)
+   ```
+6. Run linting to ensure code quality:
+   ```bash
+   npm run lint
+   ```
+7. Commit your changes with clear, descriptive commit messages
+8. Push to your fork:
 4. Test your changes thoroughly
 5. Run linting to ensure code quality:
    ```bash

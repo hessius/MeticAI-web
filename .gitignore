@@ -30,3 +30,10 @@ packages
 pids
 .file-manifest
 .devcontainer/
+
+# Test artifacts
+coverage
+.nyc_output
+playwright-report
+test-results
+*.lcov
