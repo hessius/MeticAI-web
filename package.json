@@ -106,5 +106,8 @@
         "packages": [
             "packages/*"
         ]
+    },
+    "overrides": {
+        "@exodus/bytes": "1.6.0"
     }
 }
