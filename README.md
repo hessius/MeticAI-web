@@ -6,6 +6,7 @@ MeticAI is a web application that helps you generate customized espresso profile
 
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
+- [Configuration](#configuration)
 - [Running the Application](#running-the-application)
 - [Building for Production](#building-for-production)
 - [Testing](#testing)
@@ -51,6 +52,41 @@ npm --version
    - Tailwind CSS
    - Radix UI components
    - And other project dependencies
+
+## Configuration
+
+### Server URL Configuration
+
+The application needs to connect to a backend server for espresso profile generation. By default, it connects to `http://localhost:5000`, but you can configure this for different deployments.
+
+#### Setting Up Configuration
+
+1. **Create a configuration file** (optional):
+
+   Copy the example configuration to the `public` directory:
+   
+   ```bash
+   cp config.example.json public/config.json
+   ```
+
+2. **Edit `public/config.json`** to set your server URL:
+
+   ```json
+   {
+     "serverUrl": "http://your-server-ip:port"
+   }
+   ```
+
+   Examples:
+   - Local development: `"serverUrl": "http://localhost:5000"`
+   - Remote server: `"serverUrl": "http://192.168.1.100:8080"`
+   - Production server: `"serverUrl": "https://api.example.com"`
+
+3. **For production deployments:**
+   - After building with `npm run build`, copy your `config.json` to the `dist` directory alongside `index.html`
+   - Or configure your web server to serve `config.json` from the root path
+
+**Note:** The `config.json` file is excluded from version control (via `.gitignore`) to allow environment-specific configurations. If no `config.json` is found, the application defaults to `http://localhost:5000`.
 
 ## Running the Application
 
