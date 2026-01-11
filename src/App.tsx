@@ -336,7 +336,7 @@ function App() {
                       </motion.p>
                     </AnimatePresence>
                     <p className="text-sm text-muted-foreground">
-                      This may take up to 30 seconds
+                      This may take 60-90 seconds
                     </p>
                   </div>
 
@@ -345,7 +345,7 @@ function App() {
                       className="h-full bg-gradient-to-r from-primary via-neon-pink to-neon-green"
                       initial={{ width: "0%" }}
                       animate={{ width: "100%" }}
-                      transition={{ duration: 30, ease: "linear" }}
+                      transition={{ duration: 75, ease: "linear" }}
                     />
                   </div>
                 </div>
