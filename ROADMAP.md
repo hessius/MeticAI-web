@@ -206,8 +206,8 @@ This roadmap outlines the planned features, improvements, and initiatives for th
 **Description**: Direct integration with smart espresso machines for automated brewing.
 
 **Potential Partners**:
-- Decent Espresso
-- La Marzocco (Linea Mini with app)
+- [Decent Espresso](https://decentespresso.com/) - Advanced espresso machines with detailed shot control
+- [La Marzocco Linea Mini](https://lamarzocco.com/) - Home espresso machine with app connectivity
 - Other smart machine manufacturers
 
 **Benefits**:
@@ -312,7 +312,7 @@ This roadmap outlines the planned features, improvements, and initiatives for th
 #### 1. Component Refactoring
 **Status**: Planned  
 **Current Issues**:
-- App.tsx is 700 lines (too large)
+- App.tsx is 700 lines (too large - makes testing, maintenance, and code navigation difficult)
 - Mixed concerns in single component
 - Limited component reusability
 
@@ -390,7 +390,7 @@ This roadmap outlines the planned features, improvements, and initiatives for th
 **Targets**:
 - First Contentful Paint < 1.5s
 - Time to Interactive < 3s
-- Bundle size < 300KB (gzipped)
+- Bundle size < 300KB (gzipped, excluding large vendor chunks like React)
 
 ---
 
