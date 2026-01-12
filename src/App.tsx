@@ -47,7 +47,7 @@ const PRESET_TAGS = [
   { label: 'Syrupy', category: 'mouthfeel' },
   { label: 'Italian', category: 'style' },
   { label: 'Modern', category: 'style' },
-  { label: 'Bloom', category: 'extraction' },
+  { label: 'Lever', category: 'style' },
   { label: 'Long', category: 'extraction' },
   { label: 'Short', category: 'extraction' },
   { label: 'Turbo', category: 'extraction' },
@@ -56,6 +56,9 @@ const PRESET_TAGS = [
   { label: 'Dark Roast', category: 'roast' },
   { label: 'Sweet', category: 'characteristic' },
   { label: 'Balanced', category: 'characteristic' },
+  { label: 'Bloom', category: 'process' },
+  { label: 'Pre-infusion', category: 'process' },
+  { label: 'Pulse', category: 'process' }
 ]
 
 interface APIResponse {
@@ -197,6 +200,7 @@ function App() {
       extraction: 'bg-green-500/10 border-green-500/30 hover:bg-green-500/20',
       roast: 'bg-orange-500/10 border-orange-500/30 hover:bg-orange-500/20',
       characteristic: 'bg-cyan-500/10 border-cyan-500/30 hover:bg-cyan-500/20',
+      process: 'bg-indigo-500/10 border-indigo-500/30 hover:bg-indigo-500/20',
     }
     return colors[category as keyof typeof colors] || ''
   }
