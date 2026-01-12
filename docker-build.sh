@@ -57,7 +57,7 @@ npm run build
 
 # Function to run docker compose with sudo fallback
 run_docker_compose() {
-    if $DOCKER_COMPOSE_CMD "$@" 2>/dev/null; then
+    if eval "$DOCKER_COMPOSE_CMD \"\$@\"" 2>/dev/null; then
         return 0
     else
         echo "Docker compose failed without sudo, trying with sudo..."
@@ -81,13 +81,14 @@ echo ""
 echo "IMPORTANT: API Configuration"
 echo "----------------------------"
 echo "To connect to your backend API, you need to create a config.json file."
+echo "Replace 5000 with your actual API port if different."
 echo ""
 echo "If your API is running on the host machine:"
 echo "  Linux:   echo '{\"serverUrl\":\"http://172.17.0.1:5000\"}' > config.json"
 echo "  Mac/Win: echo '{\"serverUrl\":\"http://host.docker.internal:5000\"}' > config.json"
 echo ""
 echo "If your API is at a different location:"
-echo "  echo '{\"serverUrl\":\"http://your-api-server:5000\"}' > config.json"
+echo "  echo '{\"serverUrl\":\"http://your-api-server:PORT\"}' > config.json"
 echo ""
 echo "After creating config.json, restart the container:"
 echo "  $DOCKER_COMPOSE_CMD restart"
