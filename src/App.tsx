@@ -12,11 +12,17 @@ import { getServerUrl } from '@/lib/config'
 const LOADING_MESSAGES = [
   "Analyzing coffee beans...",
   "Detecting roast profile...",
+  "Watching a Lance video...",
   "Identifying flavor notes...",
+  "Feeling some Aramse ASMR...",
   "Calculating extraction parameters...",
+  "Perusing a Daddy Hoff book...",
   "Optimizing grind settings...",
+  "Checking James Hoffmann's notes...",
   "Fine-tuning temperature curve...",
+  "Consulting the Sprometheus archives...",
   "Generating espresso profile...",
+  "Channeling my inner Morgan Drinks Coffee...",
   "Almost there..."
 ]
 
@@ -382,23 +388,88 @@ function App() {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold tracking-wide text-primary">
-                      Coffee Analysis
-                    </Label>
-                    <div className="p-4 bg-secondary rounded-lg border border-primary/30">
-                      <p className="text-base leading-relaxed">{apiResponse.analysis}</p>
+                  {/* Only show Coffee Analysis if it has content */}
+                  {apiResponse.analysis && apiResponse.analysis.trim() && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold tracking-wide text-primary">
+                        Coffee Analysis
+                      </Label>
+                      <div className="p-4 bg-secondary rounded-lg border border-primary/30">
+                        <p className="text-base leading-relaxed">{apiResponse.analysis}</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold tracking-wide text-neon-pink">
-                      Status
-                    </Label>
-                    <div className="p-4 bg-secondary rounded-lg border border-neon-pink/30">
-                      <p className="text-base">{apiResponse.reply}</p>
-                    </div>
-                  </div>
+                  {/* Parse and display structured profile sections */}
+                  {(() => {
+                    const parseProfileSections = (text: string) => {
+                      const sections: { title: string; content: string }[] = []
+                      const sectionHeaders = [
+                        'Profile Created',
+                        'Description',
+                        'Preparation',
+                        'Why This Works',
+                        'Special Notes'
+                      ]
+                      
+                      // Split by section headers
+                      let remainingText = text
+                      
+                      sectionHeaders.forEach((header, index) => {
+                        const headerPattern = new RegExp(`${header}:\\s*`, 'i')
+                        const match = remainingText.match(headerPattern)
+                        
+                        if (match && match.index !== undefined) {
+                          const startIndex = match.index + match[0].length
+                          
+                          // Find the next section header or end of text
+                          let endIndex = remainingText.length
+                          for (let i = index + 1; i < sectionHeaders.length; i++) {
+                            const nextHeaderPattern = new RegExp(`${sectionHeaders[i]}:`, 'i')
+                            const nextMatch = remainingText.match(nextHeaderPattern)
+                            if (nextMatch && nextMatch.index !== undefined) {
+                              endIndex = nextMatch.index
+                              break
+                            }
+                          }
+                          
+                          const content = remainingText.substring(startIndex, endIndex).trim()
+                          if (content) {
+                            sections.push({ title: header, content })
+                          }
+                        }
+                      })
+                      
+                      return sections
+                    }
+                    
+                    const sections = parseProfileSections(apiResponse.reply)
+                    
+                    return sections.length > 0 ? (
+                      <div className="space-y-3">
+                        {sections.map((section, index) => (
+                          <div key={index} className="space-y-2">
+                            <Label className="text-sm font-semibold tracking-wide text-neon-pink">
+                              {section.title}
+                            </Label>
+                            <div className="p-4 bg-secondary rounded-lg border border-neon-pink/30">
+                              <p className="text-base leading-relaxed whitespace-pre-wrap">{section.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      // Fallback to original display if parsing fails
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold tracking-wide text-neon-pink">
+                          Profile
+                        </Label>
+                        <div className="p-4 bg-secondary rounded-lg border border-neon-pink/30">
+                          <p className="text-base leading-relaxed whitespace-pre-wrap">{apiResponse.reply}</p>
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 <Button
