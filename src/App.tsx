@@ -6,9 +6,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Camera, Coffee, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X } from '@phosphor-icons/react'
+import { Camera, Coffee, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, DownloadSimple, Info } from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
 import { MarkdownText } from '@/components/MarkdownText'
+import { domToPng } from 'modern-screenshot'
 
 const LOADING_MESSAGES = [
   "Analyzing coffee beans...",
@@ -79,7 +80,9 @@ function App() {
   const [currentMessage, setCurrentMessage] = useState(0)
   const [apiResponse, setApiResponse] = useState<APIResponse | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
+  const [isCapturing, setIsCapturing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const resultsCardRef = useRef<HTMLDivElement>(null)
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -190,6 +193,57 @@ function App() {
     setCurrentMessage(0)
   }
 
+  const handleSaveResults = async () => {
+    if (!resultsCardRef.current || !apiResponse) return
+    
+    try {
+      // Extract profile name from the reply
+      const profileNameMatch = apiResponse.reply.match(/Profile Created:\s*(.+?)(?:\n|$)/i)
+      const profileName = profileNameMatch ? profileNameMatch[1].trim() : 'espresso-profile'
+      const safeFilename = profileName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+      
+      // Enable capturing mode to show header and hide buttons
+      setIsCapturing(true)
+      
+      // Wait for DOM to update
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      const dataUrl = await domToPng(resultsCardRef.current, {
+        scale: 2,
+        backgroundColor: '#09090b'
+      })
+      
+      // Disable capturing mode
+      setIsCapturing(false)
+      
+      const link = document.createElement('a')
+      link.download = `${safeFilename}.png`
+      link.href = dataUrl
+      link.click()
+    } catch (error) {
+      console.error('Error saving results:', error)
+      setIsCapturing(false)
+      setErrorMessage('Failed to save results. Please try again.')
+    }
+  }
+
+  const loadMockResults = () => {
+    setApiResponse({
+      status: 'success',
+      analysis: 'This appears to be a **medium roast** Ethiopian coffee from the Guji region. The bag indicates **natural processing**, which typically brings fruity and wine-like characteristics. The roaster is known for their light to medium roast profiles that highlight origin characteristics.',
+      reply: `Profile Created: Fruity Ethiopian Natural
+
+Description: This profile is designed to highlight the natural processing and fruity characteristics typical of Guji coffees. We're using a gentle approach with controlled flow to extract the sweet berry notes while managing acidity.
+
+Preparation: 18g dose, 1:2.2 ratio (40g output), 93°C water temperature. Use a medium-fine grind, slightly coarser than typical espresso.
+
+Why This Works: The bloom phase allows CO2 to escape from these naturally processed beans, preventing channeling. The lower temperature preserves delicate fruit notes while the extended ratio brings out sweetness and reduces any harsh acidity.
+
+Special Notes: If extraction runs faster than 28 seconds, grind finer. This coffee will taste best 7-21 days off roast. Great as straight espresso or in milk - the berry notes shine through even in cappuccinos.`
+    })
+    setViewState('results')
+  }
+
   const canSubmit = imageFile || userPrefs.trim().length > 0 || selectedTags.length > 0
 
   const getCategoryColor = (category: string) => {
@@ -217,7 +271,11 @@ function App() {
         >
           <div className="flex items-center justify-center gap-3 mb-2">
             <Coffee size={40} className="text-primary" weight="fill" />
-            <h1 className="text-4xl font-bold tracking-tight">
+            <h1 
+              className="text-4xl font-bold tracking-tight"
+              onDoubleClick={loadMockResults}
+              title="Double-click to load test results"
+            >
               Metic<span className="text-primary neon-text">AI</span>
             </h1>
           </div>
@@ -379,7 +437,7 @@ function App() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.4 }}
-                        className="text-lg font-medium text-primary neon-text"
+                        className="text-lg font-medium text-primary neon-text min-h-[3.5rem]"
                       >
                         {LOADING_MESSAGES[currentMessage]}
                       </motion.p>
@@ -414,11 +472,38 @@ function App() {
                 damping: 20
               }}
             >
+              <div ref={resultsCardRef}>
+                {isCapturing && (
+                  <div className="text-center mb-6">
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                      <Coffee size={40} className="text-primary" weight="fill" />
+                      <h1 className="text-4xl font-bold tracking-tight">
+                        Metic<span className="text-primary neon-text">AI</span>
+                      </h1>
+                    </div>
+                    <p className="text-muted-foreground text-sm">Meticulous Espresso Profile Generator</p>
+                  </div>
+                )}
               <Card className="p-6 space-y-6">
-                <div className="flex items-center gap-3 text-neon-green">
-                  <CheckCircle size={32} weight="fill" />
-                  <h2 className="text-2xl font-bold">Profile Generated!</h2>
-                </div>
+                {(() => {
+                  const profileNameMatch = apiResponse.reply.match(/Profile Created:\s*(.+?)(?:\n|$)/i)
+                  const profileName = profileNameMatch?.[1]?.trim()
+                  
+                  if (isCapturing && profileName) {
+                    return (
+                      <div className="flex items-center gap-3 text-neon-green">
+                        <h2 className="text-2xl font-bold">{profileName}</h2>
+                      </div>
+                    )
+                  }
+                  
+                  return (
+                    <div className="flex items-center gap-3 text-neon-green">
+                      <CheckCircle size={32} weight="fill" />
+                      <h2 className="text-2xl font-bold">Profile Generated!</h2>
+                    </div>
+                  )
+                })()}
 
                 <div className="space-y-4">
                   {/* Only show Coffee Analysis if it has content */}
@@ -511,13 +596,35 @@ function App() {
                   })()}
                 </div>
 
-                <Button
-                  onClick={handleReset}
-                  className="w-full h-12 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95"
-                >
-                  Create Another Profile
-                </Button>
+                {!isCapturing && (
+                  <>
+                    <Alert className="bg-primary/10 border-primary/30">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription className="text-sm">
+                        Profile has been saved to your Meticulous device
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button
+                        onClick={handleSaveResults}
+                        variant="outline"
+                        className="h-12 text-base font-semibold border-primary/30 hover:bg-primary/10 transition-all active:scale-95"
+                      >
+                        <DownloadSimple size={20} className="mr-2" weight="bold" />
+                        Save Info
+                      </Button>
+                      <Button
+                        onClick={handleReset}
+                        className="h-12 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95"
+                      >
+                        New Profile
+                      </Button>
+                    </div>
+                  </>
+                )}
               </Card>
+              </div>
             </motion.div>
           )}
 
