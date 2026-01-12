@@ -14,6 +14,7 @@ MeticAI is a web application that helps you generate customized espresso profile
 - [Development Guidelines](#development-guidelines)
 - [Project Structure](#project-structure)
 - [Available Commands](#available-commands)
+- [Roadmap](#roadmap)
 - [Contributing](#contributing)
 
 ## Prerequisites
@@ -335,6 +336,17 @@ MeticAI-web/
 | `bun run e2e` | Run E2E tests |
 | `bun run e2e:ui` | Run E2E tests in UI mode |
 | `bun run e2e:headed` | Run E2E tests in headed mode |
+
+## Roadmap
+
+Want to see where MeticAI is heading? Check out our comprehensive [Development Roadmap](./ROADMAP.md) which includes:
+
+- **Planned Features**: Profile history, enhanced image analysis, multi-language support, community features, and more
+- **Interface Improvements**: Dark mode, mobile optimization, accessibility enhancements
+- **Code Quality Initiatives**: Component refactoring, test coverage expansion, performance optimization
+- **Timeline**: Quarterly roadmap with priorities and milestones
+
+We welcome feedback and suggestions! Feel free to contribute to the roadmap by opening an issue or discussion.
 
 ## Contributing
 
