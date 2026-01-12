@@ -81,8 +81,10 @@ function App() {
   const [apiResponse, setApiResponse] = useState<APIResponse | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [isCapturing, setIsCapturing] = useState(false)
+  const [clickCount, setClickCount] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const resultsCardRef = useRef<HTMLDivElement>(null)
+  const clickTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -230,18 +232,40 @@ function App() {
   const loadMockResults = () => {
     setApiResponse({
       status: 'success',
-      analysis: 'This appears to be a **medium roast** Ethiopian coffee from the Guji region. The bag indicates **natural processing**, which typically brings fruity and wine-like characteristics. The roaster is known for their light to medium roast profiles that highlight origin characteristics.',
-      reply: `Profile Created: Fruity Ethiopian Natural
+      analysis: "Standout Coffee's Washed Pink Bourbon, grown in the Huila region of Colombia at 1800 masl on the Zarza farm, offers floral notes of rose and lily with flavors of cantaloupe, sweet mango, pink lemonade, and sparkling Austrian riesling.",
+      reply: `Profile Created: Riesling to the Occasion
 
-Description: This profile is designed to highlight the natural processing and fruity characteristics typical of Guji coffees. We're using a gentle approach with controlled flow to extract the sweet berry notes while managing acidity.
+Description: A modern, multi-stage profile designed to highlight the delicate florals and funky fruit-forward nature of the Washed Pink Bourbon. It uses an extended blooming phase to deepen complexity and a declining pressure ramp to deliver a clean, sparkling finish reminiscent of a fine white wine.
 
-Preparation: 18g dose, 1:2.2 ratio (40g output), 93°C water temperature. Use a medium-fine grind, slightly coarser than typical espresso.
+Preparation: • Dose: 18g
+• Grind: Fine; slightly finer than a standard espresso grind to accommodate the long, gentle pre-infusion.
+• Water Temp: 94°C
+• Yield: 45g (approx. 1:2.5 ratio)
+• Total Time: ~45-55 seconds
 
-Why This Works: The bloom phase allows CO2 to escape from these naturally processed beans, preventing channeling. The lower temperature preserves delicate fruit notes while the extended ratio brings out sweetness and reduces any harsh acidity.
+Why This Works: We're giving this exceptional coffee the spa treatment. The initial low-flow soak gently saturates the puck, preventing any harshness. The long, low-energy "Funk Tank Bloom" is where the magic happens, allowing unique, soluble compounds to develop, pushing those mango and cantaloupe notes forward. The pressure ramp extracts the core sweetness and body, while the final, declining pressure phase mimics a lever machine, which prevents over-extraction of bitter compounds and lets that bright, acidic "Riesling" and pink lemonade sparkle.
 
-Special Notes: If extraction runs faster than 28 seconds, grind finer. This coffee will taste best 7-21 days off roast. Great as straight espresso or in milk - the berry notes shine through even in cappuccinos.`
+Special Notes: For maximum clarity and to really make those delicate floral notes pop, consider using a paper filter at the bottom of your basket.`
     })
     setViewState('results')
+  }
+
+  const handleTitleClick = () => {
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current)
+    }
+    
+    const newCount = clickCount + 1
+    setClickCount(newCount)
+    
+    if (newCount === 5) {
+      loadMockResults()
+      setClickCount(0)
+    } else {
+      clickTimerRef.current = setTimeout(() => {
+        setClickCount(0)
+      }, 1000)
+    }
   }
 
   const canSubmit = imageFile || userPrefs.trim().length > 0 || selectedTags.length > 0
@@ -273,8 +297,8 @@ Special Notes: If extraction runs faster than 28 seconds, grind finer. This coff
             <Coffee size={40} className="text-primary" weight="fill" />
             <h1 
               className="text-4xl font-bold tracking-tight"
-              onDoubleClick={loadMockResults}
-              title="Double-click to load test results"
+              onClick={handleTitleClick}
+              title="Click 5 times to load test results"
             >
               Metic<span className="text-primary neon-text">AI</span>
             </h1>
