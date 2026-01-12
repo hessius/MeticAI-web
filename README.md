@@ -18,7 +18,9 @@ MeticAI is a web application that helps you generate customized espresso profile
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed on your system:
+### For Local Development
+
+Before you begin local development, ensure you have the following installed on your system:
 
 - **Node.js**: Version 20.x or higher (tested with v20.19.6)
 - **npm**: Version 10.x or higher (tested with v10.8.2)
@@ -30,6 +32,15 @@ You can verify your installations by running:
 node --version
 npm --version
 ```
+
+### For Docker Deployment
+
+If you plan to use Docker for deployment, you only need:
+
+- **Docker**: Version 20.x or higher
+- **Docker Compose**: Version 2.x or higher
+
+**Node.js is not required on the host machine** when using Docker, as the application is built inside the container.
 
 ## Installation
 
@@ -115,6 +126,8 @@ The application can be deployed using Docker for easy containerization and deplo
 
 ### Quick Start with Docker
 
+**No Node.js installation required!** The application is built entirely inside the Docker container.
+
 **Option 1: Using the build script (easiest)**
 
 ```bash
@@ -122,27 +135,24 @@ The application can be deployed using Docker for easy containerization and deplo
 ```
 
 This script will:
-1. Install dependencies if needed
-2. Build the application
-3. Build and start the Docker containers
+1. Check for Docker and Docker Compose
+2. Build the Docker image (including npm install and build inside the container)
+3. Start the Docker containers
 
-**Option 2: Manual steps**
+**Option 2: Using Docker Compose directly**
 
 ```bash
-# Build the application first
-npm run build
-
-# Using Docker Compose (recommended)
 docker compose up -d
+```
 
-# Or build and run manually
-docker build -f Dockerfile.simple -t meticai-web .
+**Option 3: Manual Docker build**
+
+```bash
+docker build -t meticai-web .
 docker run -p 3550:80 meticai-web
 ```
 
 The application will be available at `http://localhost:3550`.
-
-**Note**: The application must be built locally with `npm run build` before running Docker compose, as the current Docker setup uses the pre-built `dist` folder for reliability.
 
 ### Configuring Backend Server
 

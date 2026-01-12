@@ -15,7 +15,7 @@ This guide provides detailed instructions for deploying the MeticAI web applicat
 
 ## Quick Start
 
-The fastest way to get started with Docker:
+The fastest way to get started with Docker. **No Node.js installation required** - the application is built entirely inside the Docker container.
 
 **Option 1: Using the helper script (easiest)**
 
@@ -24,27 +24,24 @@ The fastest way to get started with Docker:
 ```
 
 This automated script handles everything:
-1. Installs npm dependencies if needed
-2. Builds the application
-3. Builds and starts Docker containers
+1. Checks for Docker and Docker Compose
+2. Builds the Docker image (including npm install and build inside the container)
+3. Starts the Docker containers
 
-**Option 2: Manual steps**
+**Option 2: Using Docker Compose directly**
 
 ```bash
-# Build the application first
-npm run build
-
-# Using Docker Compose (recommended)
 docker compose up -d
+```
 
-# Or build and run manually with the simple Dockerfile
-docker build -f Dockerfile.simple -t meticai-web .
+**Option 3: Manual Docker build**
+
+```bash
+docker build -t meticai-web .
 docker run -p 3550:80 meticai-web
 ```
 
 The application will be available at `http://localhost:3550`.
-
-**Important:** The current Docker setup uses `Dockerfile.simple` which requires building the application first with `npm run build`. This approach is more reliable as it avoids potential npm issues during Docker build. An alternative multi-stage `Dockerfile` is provided for building inside Docker, but it may encounter npm installation issues in some environments.
 
 **⚠️ API Connection:** After starting the container, you must configure the backend API connection by creating a `config.json` file. See [Server Configuration](#server-configuration) for details. Without this, the web application will try to connect to `http://localhost:5000` which won't work from inside the Docker container.
 
@@ -52,46 +49,43 @@ The application will be available at `http://localhost:3550`.
 
 ### Prerequisites
 
-Before building the Docker image, you need to build the application:
-
-```bash
-npm install
-npm run build
-```
-
-This creates the `dist` directory with the production-ready files.
+You only need Docker installed on your system. **Node.js is not required** - the application is built inside the container.
 
 ### Basic Build
 
 ```bash
-docker build -f Dockerfile.simple -t meticai-web .
+docker build -t meticai-web .
 ```
 
 ### Build with Custom Tag
 
 ```bash
-docker build -f Dockerfile.simple -t meticai-web:v1.0.0 .
+docker build -t meticai-web:v1.0.0 .
 ```
 
 ### Build Process
 
-The Docker setup includes two Dockerfiles:
+The Docker setup uses a multi-stage build process:
 
-1. **Dockerfile.simple** (recommended): Uses a pre-built `dist` folder
-   - Build the app first with `npm run build`
-   - Then build the Docker image
-   - Faster and more reliable
+1. **Stage 1 (Builder)**: 
+   - Uses `node:20-slim` image
+   - Installs npm dependencies with `npm ci`
+   - Builds the application with `npm run build`
+   - Creates the production-ready `dist` folder
 
-2. **Dockerfile** (multi-stage build): Builds the application inside Docker
-   - No need to build locally
-   - May require additional configuration in some environments
-   - Useful for CI/CD pipelines
+2. **Stage 2 (Production)**: 
+   - Uses `nginx:alpine` for a lightweight production image
+   - Copies only the built `dist` folder from Stage 1
+   - Includes nginx configuration for SPA routing
+   - Exposes port 80
+   - Includes health checks
 
-The production image:
-- Uses `nginx:alpine` to serve the static files
-- Includes nginx configuration for SPA routing
-- Exposes port 80
-- Includes health checks
+The final production image:
+- Contains only the built static files and nginx
+- Does not include Node.js or build dependencies
+- Is optimized for production deployment (~50MB vs ~500MB with Node.js)
+
+**Note:** A legacy `Dockerfile.simple` is also available which requires a pre-built `dist` folder. This is no longer the recommended approach.
 
 ## Running the Container
 
@@ -213,13 +207,10 @@ Docker Compose provides an easier way to manage the container with all its confi
 
 ### Using Docker Compose
 
-The included `docker-compose.yml` file provides a complete setup. Make sure you've built the application first:
+The included `docker-compose.yml` file provides a complete setup. **No pre-build required** - the image is built automatically:
 
 ```bash
-# Build the application
-npm run build
-
-# Start the application
+# Start the application (builds automatically if needed)
 docker compose up -d
 
 # View logs
@@ -256,7 +247,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: Dockerfile.simple  # or Dockerfile for multi-stage build
+      dockerfile: Dockerfile
     ports:
       - "3550:80"  # Change the host port here
     volumes:
@@ -408,11 +399,8 @@ docker inspect meticai | grep IPAddress
 ### Example Production Setup
 
 ```bash
-# Build the application
-npm run build
-
 # Build with version tag
-docker build -f Dockerfile.simple -t meticai-web:1.0.0 .
+docker build -t meticai-web:1.0.0 .
 
 # Create production config
 cat > config.production.json << EOF
@@ -436,24 +424,29 @@ docker logs meticai-prod
 
 ## Troubleshooting
 
-### "dist" Directory Not Found Error
+### Build Fails During npm install
 
-If you encounter an error like `failed to compute cache key: "/dist": not found` when running `docker compose up`:
+If you encounter errors during the Docker build process when npm is installing dependencies:
 
-**Cause:** The application hasn't been built yet, so the `dist` directory doesn't exist.
+**Common causes:**
+- Network connectivity issues
+- Docker build cache issues
+- Insufficient memory allocated to Docker
 
-**Solution:**
+**Solutions:**
 
 ```bash
-# Option 1: Use the helper script
-./docker-build.sh
+# Try building without cache
+docker build --no-cache -t meticai-web .
 
-# Option 2: Build manually then run docker compose
-npm run build
-docker compose up -d
+# Or with docker compose
+docker compose build --no-cache
 ```
 
-The `Dockerfile.simple` used by docker-compose requires a pre-built `dist` folder. Always run `npm run build` before `docker compose up`.
+If the issue persists, check Docker logs:
+```bash
+docker compose logs
+```
 
 ### Container Won't Start
 
@@ -522,12 +515,9 @@ docker run -p 3550:80 meticai-web
 
 ### Rebuild After Changes
 
-If you make changes to the application:
+If you make changes to the application source code:
 
 ```bash
-# Rebuild the application
-npm run build
-
 # Stop and remove the old container
 docker compose down
 

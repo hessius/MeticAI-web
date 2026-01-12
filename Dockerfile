@@ -9,8 +9,9 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --prefer-offline --no-audit
+# Install dependencies (including devDependencies for build)  
+# Use npm install instead of npm ci due to npm ci bug in Docker
+RUN npm install
 
 # Copy source code
 COPY . .

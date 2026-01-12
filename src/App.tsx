@@ -441,7 +441,7 @@ function App() {
                       ]
                       
                       // Split by section headers
-                      let remainingText = text
+                      const remainingText = text
                       
                       sectionHeaders.forEach((header, index) => {
                         const headerPattern = new RegExp(`${header}:\\s*`, 'i')
