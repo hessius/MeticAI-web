@@ -39,12 +39,14 @@ docker compose up -d
 
 # Or build and run manually with the simple Dockerfile
 docker build -f Dockerfile.simple -t meticai-web .
-docker run -p 8080:80 meticai-web
+docker run -p 3550:80 meticai-web
 ```
 
-The application will be available at `http://localhost:8080`.
+The application will be available at `http://localhost:3550`.
 
 **Important:** The current Docker setup uses `Dockerfile.simple` which requires building the application first with `npm run build`. This approach is more reliable as it avoids potential npm issues during Docker build. An alternative multi-stage `Dockerfile` is provided for building inside Docker, but it may encounter npm installation issues in some environments.
+
+**⚠️ API Connection:** After starting the container, you must configure the backend API connection by creating a `config.json` file. See [Server Configuration](#server-configuration) for details. Without this, the web application will try to connect to `http://localhost:5000` which won't work from inside the Docker container.
 
 ## Building the Docker Image
 
@@ -96,12 +98,12 @@ The production image:
 ### Basic Run
 
 ```bash
-docker run -d -p 8080:80 --name meticai meticai-web
+docker run -d -p 3550:80 --name meticai meticai-web
 ```
 
 This will:
 - Run the container in detached mode (`-d`)
-- Map port 8080 on your host to port 80 in the container
+- Map port 3550 on your host to port 80 in the container
 - Name the container "meticai"
 
 ### Run with Custom Port
@@ -149,7 +151,7 @@ Create a `config.json` file on your host system:
 Then mount it when running the container:
 
 ```bash
-docker run -d -p 8080:80 \
+docker run -d -p 3550:80 \
   -v $(pwd)/config.json:/usr/share/nginx/html/config.json:ro \
   --name meticai \
   meticai-web
@@ -256,7 +258,7 @@ services:
       context: .
       dockerfile: Dockerfile.simple  # or Dockerfile for multi-stage build
     ports:
-      - "8080:80"  # Change the host port here
+      - "3550:80"  # Change the host port here
     volumes:
       - ./config.json:/usr/share/nginx/html/config.json:ro
     restart: unless-stopped
@@ -276,7 +278,7 @@ The containerized web application can communicate with backend servers outside t
 To allow the container to access services on the host machine, use:
 
 ```bash
-docker run -d -p 8080:80 --network host --name meticai meticai-web
+docker run -d -p 3550:80 --network host --name meticai meticai-web
 ```
 
 **Note:** `--network host` is only available on Linux. On macOS/Windows, use `host.docker.internal`.
@@ -290,7 +292,7 @@ Create a custom bridge network for better isolation:
 docker network create meticai-network
 
 # Run container on the network
-docker run -d -p 8080:80 --network meticai-network --name meticai meticai-web
+docker run -d -p 3550:80 --network meticai-network --name meticai meticai-web
 ```
 
 #### Connecting to Other Containers
@@ -304,7 +306,7 @@ services:
       context: .
       dockerfile: Dockerfile.simple
     ports:
-      - "8080:80"
+      - "3550:80"
     depends_on:
       - backend
     networks:
@@ -422,7 +424,7 @@ EOF
 # Run with production config
 docker run -d \
   --name meticai-prod \
-  -p 8080:80 \
+  -p 3550:80 \
   -v $(pwd)/config.production.json:/usr/share/nginx/html/config.json:ro \
   --restart unless-stopped \
   meticai-web:1.0.0
@@ -460,10 +462,10 @@ The `Dockerfile.simple` used by docker-compose requires a pre-built `dist` folde
 docker logs meticai
 
 # Check if port is already in use
-netstat -tulpn | grep 8080
+netstat -tulpn | grep 3550
 
 # Try running in foreground to see errors
-docker run -p 8080:80 meticai-web
+docker run -p 3550:80 meticai-web
 ```
 
 ### Can't Access the Application

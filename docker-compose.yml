@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile.simple
     ports:
-      - "8080:80"
+      - "3550:80"
     volumes:
       # Mount a custom config.json if it exists
       # Create this file to override the default server URL
