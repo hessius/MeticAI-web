@@ -22,16 +22,29 @@ MeticAI is a web application that helps you generate customized espresso profile
 
 Before you begin local development, ensure you have the following installed on your system:
 
-- **Node.js**: Version 20.x or higher (tested with v20.19.6)
-- **npm**: Version 10.x or higher (tested with v10.8.2)
-  - Alternatively, you can use **yarn** or **pnpm**
+- **Bun**: Version 1.0 or higher (tested with latest)
 
-You can verify your installations by running:
+You can verify your installation by running:
 
 ```bash
-node --version
-npm --version
+bun --version
 ```
+
+### Installing Bun
+
+If you don't have Bun installed, you can install it with:
+
+**macOS, Linux, and WSL:**
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
+**Windows:**
+```powershell
+powershell -c "irm bun.sh/install.ps1|iex"
+```
+
+For more installation options, visit [Bun's official documentation](https://bun.sh/docs/installation).
 
 ### For Docker Deployment
 
@@ -40,7 +53,7 @@ If you plan to use Docker for deployment, you only need:
 - **Docker**: Version 20.x or higher
 - **Docker Compose**: Version 2.x or higher
 
-**Node.js is not required on the host machine** when using Docker, as the application is built inside the container.
+**Bun is not required on the host machine** when using Docker, as the application is built inside the container.
 
 ## Installation
 
@@ -54,7 +67,7 @@ If you plan to use Docker for deployment, you only need:
 2. **Install dependencies**
 
    ```bash
-   npm install
+   bun install
    ```
 
    This will install all required dependencies listed in `package.json`, including:
@@ -95,7 +108,7 @@ The application needs to connect to a backend server for espresso profile genera
    - Production server: `"serverUrl": "https://api.example.com"`
 
 3. **For production deployments:**
-   - After building with `npm run build`, copy your `config.json` to the `dist` directory alongside `index.html`
+   - After building with `bun run build`, copy your `config.json` to the `dist` directory alongside `index.html`
    - Or configure your web server to serve `config.json` from the root path
 
 **Note:** The `config.json` file is excluded from version control (via `.gitignore`) to allow environment-specific configurations. If no `config.json` is found, the application defaults to `http://localhost:5000`.
@@ -107,7 +120,7 @@ The application needs to connect to a backend server for espresso profile genera
 To start the development server with hot module replacement (HMR):
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 The application will be available at `http://localhost:5173` (or another port if 5173 is in use).
@@ -117,7 +130,7 @@ The application will be available at `http://localhost:5173` (or another port if
 To preview the production build locally:
 
 ```bash
-npm run preview
+bun run preview
 ```
 
 ## Docker Deployment
@@ -126,7 +139,7 @@ The application can be deployed using Docker for easy containerization and deplo
 
 ### Quick Start with Docker
 
-**No Node.js installation required!** The application is built entirely inside the Docker container.
+**No Bun installation required!** The application is built entirely inside the Docker container.
 
 **Option 1: Using the build script (easiest)**
 
@@ -136,7 +149,7 @@ The application can be deployed using Docker for easy containerization and deplo
 
 This script will:
 1. Check for Docker and Docker Compose
-2. Build the Docker image (including npm install and build inside the container)
+2. Build the Docker image (including bun install and build inside the container)
 3. Start the Docker containers
 
 **Option 2: Using Docker Compose directly**
@@ -185,7 +198,7 @@ See [DOCKER.md](./DOCKER.md) for the comprehensive Docker deployment guide.
 To create an optimized production build:
 
 ```bash
-npm run build
+bun run build
 ```
 
 This command will:
@@ -201,25 +214,25 @@ This project has comprehensive test coverage including unit, integration, and en
 
 ```bash
 # Run all unit tests in watch mode
-npm test
+bun test
 
 # Run tests once (CI mode)
-npm run test:run
+bun run test:run
 
 # Run tests with coverage report
-npm run test:coverage
+bun run test:coverage
 
 # Open Vitest UI for interactive testing
-npm run test:ui
+bun run test:ui
 
 # Run E2E tests (requires dev server to be running)
-npm run e2e
+bun run e2e
 
 # Run E2E tests in UI mode
-npm run e2e:ui
+bun run e2e:ui
 
 # Run E2E tests in headed mode (see the browser)
-npm run e2e:headed
+bun run e2e:headed
 ```
 
 ### Test Coverage
@@ -238,7 +251,7 @@ For detailed testing documentation, best practices, and examples, see [TESTING.m
 The project includes ESLint in its dependencies for code quality and consistency. To lint your code:
 
 ```bash
-npm run lint
+bun run lint
 ```
 
 **Note:** If you encounter an error about missing ESLint configuration, you may need to create an `eslint.config.js` file. Follow the [ESLint v9 migration guide](https://eslint.org/docs/latest/use/configure/migration-guide) for setup instructions. In the meantime, ensure your code follows TypeScript and React best practices.
@@ -309,19 +322,19 @@ MeticAI-web/
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start development server with HMR |
-| `npm run build` | Build for production |
-| `npm run preview` | Preview production build locally |
-| `npm run lint` | Run ESLint to check code quality |
-| `npm run optimize` | Run Vite optimizer |
-| `npm run kill` | Kill process running on port 5000 (Unix-like systems) |
-| `npm test` | Run unit tests in watch mode |
-| `npm run test:run` | Run unit tests once (CI mode) |
-| `npm run test:coverage` | Generate coverage report |
-| `npm run test:ui` | Open Vitest UI |
-| `npm run e2e` | Run E2E tests |
-| `npm run e2e:ui` | Run E2E tests in UI mode |
-| `npm run e2e:headed` | Run E2E tests in headed mode |
+| `bun run dev` | Start development server with HMR |
+| `bun run build` | Build for production |
+| `bun run preview` | Preview production build locally |
+| `bun run lint` | Run ESLint to check code quality |
+| `bun run optimize` | Run Vite optimizer |
+| `bun run kill` | Kill process running on port 5000 (Unix-like systems) |
+| `bun test` | Run unit tests in watch mode |
+| `bun run test:run` | Run unit tests once (CI mode) |
+| `bun run test:coverage` | Generate coverage report |
+| `bun run test:ui` | Open Vitest UI |
+| `bun run e2e` | Run E2E tests |
+| `bun run e2e:ui` | Run E2E tests in UI mode |
+| `bun run e2e:headed` | Run E2E tests in headed mode |
 
 ## Contributing
 
@@ -338,12 +351,12 @@ We welcome contributions to MeticAI! Here's how you can help:
 4. Write tests for your changes
 5. Test your changes thoroughly:
    ```bash
-   npm run test:run  # Run unit tests
-   npm run e2e       # Run E2E tests (if applicable)
+   bun run test:run  # Run unit tests
+   bun run e2e       # Run E2E tests (if applicable)
    ```
 6. Run linting to ensure code quality:
    ```bash
-   npm run lint
+   bun run lint
    ```
 7. Commit your changes with clear, descriptive commit messages
 8. Push to your fork:
@@ -370,7 +383,7 @@ If you find a bug or have a feature request:
    - Steps to reproduce (for bugs)
    - Expected vs actual behavior
    - Screenshots if applicable
-   - Your environment details (OS, Node.js version, etc.)
+   - Your environment details (OS, Bun version, etc.)
 
 ### Code Review Process
 

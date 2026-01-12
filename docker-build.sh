@@ -32,8 +32,8 @@ echo "✓ All dependencies found"
 echo "  Docker: $(docker --version)"
 echo "  Docker Compose: $("${DOCKER_COMPOSE_CMD[@]}" version --short 2>/dev/null || echo 'installed')"
 echo ""
-echo "Note: Node.js is not required on the host machine."
-echo "The application will be built inside the Docker container."
+echo "Note: Bun is not required on the host machine."
+echo "The application will be built inside the Docker container using Bun."
 
 # Function to run docker compose with sudo fallback
 run_docker_compose() {
