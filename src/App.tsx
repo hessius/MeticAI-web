@@ -118,6 +118,8 @@ function App() {
       }
 
       const serverUrl = await getServerUrl()
+      console.log('Sending request to:', `${serverUrl}/analyze_and_profile`)
+      
       const response = await fetch(`${serverUrl}/analyze_and_profile`, {
         method: 'POST',
         body: formData,
@@ -125,11 +127,19 @@ function App() {
 
       clearInterval(messageInterval)
 
+      console.log('Response status:', response.status)
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorText = await response.text()
+        console.error('Error response:', errorText)
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`)
       }
 
-      const data: APIResponse = await response.json()
+      const responseText = await response.text()
+      console.log('Response text:', responseText)
+      
+      const data: APIResponse = JSON.parse(responseText)
       setApiResponse(data)
       setViewState('results')
     } catch (error) {
