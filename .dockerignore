@@ -5,8 +5,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Build output (commented out for Dockerfile.simple, uncomment for Dockerfile)
-# dist
+# Build output
+dist
 dist-ssr
 *-dist
 

@@ -6,20 +6,6 @@ echo "Building MeticAI web application for Docker..."
 # Check for required dependencies
 echo "Checking dependencies..."
 
-# Check for Node.js
-if ! command -v node &> /dev/null; then
-    echo "Error: Node.js is not installed."
-    echo "Please install Node.js from https://nodejs.org/"
-    exit 1
-fi
-
-# Check for npm
-if ! command -v npm &> /dev/null; then
-    echo "Error: npm is not installed."
-    echo "Please install npm (usually comes with Node.js)"
-    exit 1
-fi
-
 # Check for Docker
 if ! command -v docker &> /dev/null; then
     echo "Error: Docker is not installed."
@@ -43,20 +29,11 @@ else
 fi
 
 echo "✓ All dependencies found"
-echo "  Node.js: $(node --version)"
-echo "  npm: $(npm --version)"
 echo "  Docker: $(docker --version)"
 echo "  Docker Compose: $("${DOCKER_COMPOSE_CMD[@]}" version --short 2>/dev/null || echo 'installed')"
-
-# Check if node_modules exists
-if [ ! -d "node_modules" ]; then
-    echo "Installing dependencies..."
-    npm install
-fi
-
-# Build the application
-echo "Building the application..."
-npm run build
+echo ""
+echo "Note: Node.js is not required on the host machine."
+echo "The application will be built inside the Docker container."
 
 # Function to run docker compose with sudo fallback
 run_docker_compose() {
