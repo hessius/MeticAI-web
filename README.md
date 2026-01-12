@@ -137,10 +137,10 @@ docker compose up -d
 
 # Or build and run manually
 docker build -f Dockerfile.simple -t meticai-web .
-docker run -p 8080:80 meticai-web
+docker run -p 3550:80 meticai-web
 ```
 
-The application will be available at `http://localhost:8080`.
+The application will be available at `http://localhost:3550`.
 
 **Note**: The application must be built locally with `npm run build` before running Docker compose, as the current Docker setup uses the pre-built `dist` folder for reliability.
 
@@ -157,7 +157,7 @@ To point the containerized app to your backend server, create a `config.json` fi
 Then run with the config mounted:
 
 ```bash
-docker run -d -p 8080:80 \
+docker run -d -p 3550:80 \
   -v $(pwd)/config.json:/usr/share/nginx/html/config.json:ro \
   meticai-web
 ```
