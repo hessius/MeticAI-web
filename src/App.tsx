@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Camera, Coffee, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X } from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
+import { MarkdownText } from '@/components/MarkdownText'
 
 const LOADING_MESSAGES = [
   "Analyzing coffee beans...",
@@ -427,7 +428,9 @@ function App() {
                         Coffee Analysis
                       </Label>
                       <div className="p-4 bg-secondary rounded-lg border border-primary/30">
-                        <p className="text-base leading-relaxed">{apiResponse.analysis}</p>
+                        <p className="text-base leading-relaxed">
+                          <MarkdownText>{apiResponse.analysis}</MarkdownText>
+                        </p>
                       </div>
                     </div>
                   )}
@@ -485,7 +488,9 @@ function App() {
                               {section.title}
                             </Label>
                             <div className="p-4 bg-secondary rounded-lg border border-neon-pink/30">
-                              <p className="text-base leading-relaxed whitespace-pre-wrap">{section.content}</p>
+                              <p className="text-base leading-relaxed whitespace-pre-wrap">
+                                <MarkdownText>{section.content}</MarkdownText>
+                              </p>
                             </div>
                           </div>
                         ))}
@@ -497,7 +502,9 @@ function App() {
                           Profile
                         </Label>
                         <div className="p-4 bg-secondary rounded-lg border border-neon-pink/30">
-                          <p className="text-base leading-relaxed whitespace-pre-wrap">{apiResponse.reply}</p>
+                          <p className="text-base leading-relaxed whitespace-pre-wrap">
+                            <MarkdownText>{apiResponse.reply}</MarkdownText>
+                          </p>
                         </div>
                       </div>
                     )
