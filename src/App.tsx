@@ -36,13 +36,26 @@ const PRESET_TAGS = [
   { label: 'Acidity', category: 'flavor' },
   { label: 'Fruitiness', category: 'flavor' },
   { label: 'Chocolate', category: 'flavor' },
+  { label: 'Nutty', category: 'flavor' },
+  { label: 'Caramel', category: 'flavor' },
+  { label: 'Berry', category: 'flavor' },
+  { label: 'Citrus', category: 'flavor' },
+  { label: 'Funky', category: 'flavor' },
   { label: 'Thin', category: 'mouthfeel' },
   { label: 'Mouthfeel', category: 'mouthfeel' },
+  { label: 'Creamy', category: 'mouthfeel' },
+  { label: 'Syrupy', category: 'mouthfeel' },
   { label: 'Italian', category: 'style' },
   { label: 'Modern', category: 'style' },
   { label: 'Bloom', category: 'extraction' },
   { label: 'Long', category: 'extraction' },
   { label: 'Short', category: 'extraction' },
+  { label: 'Turbo', category: 'extraction' },
+  { label: 'Light Roast', category: 'roast' },
+  { label: 'Medium Roast', category: 'roast' },
+  { label: 'Dark Roast', category: 'roast' },
+  { label: 'Sweet', category: 'characteristic' },
+  { label: 'Balanced', category: 'characteristic' },
 ]
 
 interface APIResponse {
@@ -175,6 +188,19 @@ function App() {
 
   const canSubmit = imageFile || userPrefs.trim().length > 0 || selectedTags.length > 0
 
+  const getCategoryColor = (category: string) => {
+    const colors = {
+      body: 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20',
+      flavor: 'bg-rose-500/10 border-rose-500/30 hover:bg-rose-500/20',
+      mouthfeel: 'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20',
+      style: 'bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/20',
+      extraction: 'bg-green-500/10 border-green-500/30 hover:bg-green-500/20',
+      roast: 'bg-orange-500/10 border-orange-500/30 hover:bg-orange-500/20',
+      characteristic: 'bg-cyan-500/10 border-cyan-500/30 hover:bg-cyan-500/20',
+    }
+    return colors[category as keyof typeof colors] || ''
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -280,7 +306,7 @@ function App() {
                                   px-3 py-1.5 text-xs font-medium cursor-pointer transition-all duration-200
                                   ${isSelected 
                                     ? 'bg-primary text-primary-foreground border-primary shadow-[0_0_10px_var(--primary)] hover:bg-primary/90' 
-                                    : 'border-input hover:border-primary/50 hover:bg-secondary/80'
+                                    : `${getCategoryColor(tag.category)} border hover:border-primary/40`
                                   }
                                 `}
                               >
