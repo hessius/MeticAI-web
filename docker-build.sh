@@ -29,10 +29,13 @@ fi
 
 # Check for docker compose (try both 'docker compose' and 'docker-compose')
 DOCKER_COMPOSE_CMD=()
+DOCKER_COMPOSE_DISPLAY=""
 if docker compose version &> /dev/null; then
     DOCKER_COMPOSE_CMD=(docker compose)
+    DOCKER_COMPOSE_DISPLAY="docker compose"
 elif command -v docker-compose &> /dev/null; then
     DOCKER_COMPOSE_CMD=(docker-compose)
+    DOCKER_COMPOSE_DISPLAY="docker-compose"
 else
     echo "Error: Docker Compose is not installed."
     echo "Please install Docker Compose from https://docs.docker.com/compose/install/"
@@ -57,16 +60,29 @@ npm run build
 
 # Function to run docker compose with sudo fallback
 run_docker_compose() {
-    if "${DOCKER_COMPOSE_CMD[@]}" "$@" 2>/dev/null; then
+    local stderr_output
+    stderr_output=$(mktemp)
+    
+    if "${DOCKER_COMPOSE_CMD[@]}" "$@" 2>"$stderr_output"; then
+        rm -f "$stderr_output"
         return 0
     else
-        echo "Docker compose failed without sudo, trying with sudo..."
-        if command -v sudo &> /dev/null; then
-            sudo "${DOCKER_COMPOSE_CMD[@]}" "$@"
+        # Check if it's a permission error
+        if grep -qi "permission\|denied" "$stderr_output" 2>/dev/null; then
+            rm -f "$stderr_output"
+            echo "Docker compose requires elevated privileges, trying with sudo..."
+            if command -v sudo &> /dev/null; then
+                sudo "${DOCKER_COMPOSE_CMD[@]}" "$@"
+            else
+                echo "Error: sudo is not available and docker compose requires elevated privileges"
+                echo "Please run this script with appropriate permissions or install sudo"
+                exit 1
+            fi
         else
-            echo "Error: sudo is not available and docker compose requires elevated privileges"
-            echo "Please run this script with appropriate permissions or install sudo"
-            exit 1
+            # Some other error, show it
+            cat "$stderr_output" >&2
+            rm -f "$stderr_output"
+            return 1
         fi
     fi
 }
@@ -91,7 +107,7 @@ echo "If your API is at a different location:"
 echo "  echo '{\"serverUrl\":\"http://your-api-server:PORT\"}' > config.json"
 echo ""
 echo "After creating config.json, restart the container:"
-echo "  ${DOCKER_COMPOSE_CMD[*]} restart"
+echo "  $DOCKER_COMPOSE_DISPLAY restart"
 echo ""
-echo "To view logs: ${DOCKER_COMPOSE_CMD[*]} logs -f"
-echo "To stop: ${DOCKER_COMPOSE_CMD[*]} down"
+echo "To view logs: $DOCKER_COMPOSE_DISPLAY logs -f"
+echo "To stop: $DOCKER_COMPOSE_DISPLAY down"
