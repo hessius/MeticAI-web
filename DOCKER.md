@@ -15,7 +15,7 @@ This guide provides detailed instructions for deploying the MeticAI web applicat
 
 ## Quick Start
 
-The fastest way to get started with Docker. **No Node.js installation required** - the application is built entirely inside the Docker container.
+The fastest way to get started with Docker. **No Bun installation required** - the application is built entirely inside the Docker container.
 
 **Option 1: Using the helper script (easiest)**
 
@@ -25,8 +25,8 @@ The fastest way to get started with Docker. **No Node.js installation required**
 
 This automated script handles everything:
 1. Checks for Docker and Docker Compose
-2. Builds the Docker image (including npm install and build inside the container)
-3. Starts the Docker containers
+2. Builds the Docker image (including bun install and build inside the container)
+3. Start the Docker containers
 
 **Option 2: Using Docker Compose directly**
 
@@ -49,7 +49,7 @@ The application will be available at `http://localhost:3550`.
 
 ### Prerequisites
 
-You only need Docker installed on your system. **Node.js is not required** - the application is built inside the container.
+You only need Docker installed on your system. **Bun is not required** - the application is built inside the container.
 
 ### Basic Build
 
@@ -68,9 +68,9 @@ docker build -t meticai-web:v1.0.0 .
 The Docker setup uses a multi-stage build process:
 
 1. **Stage 1 (Builder)**: 
-   - Uses `node:20-slim` image
-   - Installs npm dependencies with `npm ci`
-   - Builds the application with `npm run build`
+   - Uses `oven/bun:1` image
+   - Installs dependencies with `bun install --frozen-lockfile`
+   - Builds the application with `bun run build`
    - Creates the production-ready `dist` folder
 
 2. **Stage 2 (Production)**: 
@@ -82,8 +82,8 @@ The Docker setup uses a multi-stage build process:
 
 The final production image:
 - Contains only the built static files and nginx
-- Does not include Node.js or build dependencies
-- Is optimized for production deployment (~50MB vs ~500MB with Node.js)
+- Does not include Bun or build dependencies
+- Is optimized for production deployment (~50MB vs ~500MB with Bun)
 
 **Note:** A legacy `Dockerfile.simple` is also available which requires a pre-built `dist` folder. This is no longer the recommended approach.
 
