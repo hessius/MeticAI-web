@@ -1,6 +1,6 @@
 # Simple Dockerfile using pre-built dist folder
-# Use this if the multi-stage build has issues with npm install
-# Build the app first with: npm run build
+# Use this if the multi-stage build has issues
+# Build the app first with: bun run build
 # Then build the Docker image
 
 FROM nginx:alpine
