@@ -1,10 +1,16 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { getNetworkUrl, isLocalhostUrl } from './network-url'
+
+// Mock the config module
+vi.mock('./config', () => ({
+  getServerUrl: vi.fn().mockResolvedValue('http://localhost:5000')
+}))
 
 describe('network-url utilities', () => {
   beforeEach(() => {
     // Reset location mock before each test
     delete (window as { location?: Location }).location
+    vi.clearAllMocks()
   })
 
   describe('isLocalhostUrl', () => {
@@ -60,7 +66,7 @@ describe('network-url utilities', () => {
   })
 
   describe('getNetworkUrl', () => {
-    it('should return current URL when not localhost', () => {
+    it('should return current URL when not localhost', async () => {
       Object.defineProperty(window, 'location', {
         value: { 
           href: 'https://example.com/app',
@@ -70,10 +76,58 @@ describe('network-url utilities', () => {
         configurable: true,
       })
       
-      expect(getNetworkUrl()).toBe('https://example.com/app')
+      const url = await getNetworkUrl()
+      expect(url).toBe('https://example.com/app')
     })
 
-    it('should return current URL when localhost', () => {
+    it('should return current URL when localhost and server URL is also localhost', async () => {
+      const { getServerUrl } = await import('./config')
+      vi.mocked(getServerUrl).mockResolvedValue('http://localhost:5000')
+      
+      Object.defineProperty(window, 'location', {
+        value: { 
+          href: 'http://localhost:5173/app',
+          hostname: 'localhost',
+          protocol: 'http:',
+          port: '5173',
+          pathname: '/app',
+          search: '',
+          hash: ''
+        },
+        writable: true,
+        configurable: true,
+      })
+      
+      const url = await getNetworkUrl()
+      expect(url).toBe('http://localhost:5173/app')
+    })
+
+    it('should replace localhost with server IP when server URL has network IP', async () => {
+      const { getServerUrl } = await import('./config')
+      vi.mocked(getServerUrl).mockResolvedValue('http://192.168.1.100:5000')
+      
+      Object.defineProperty(window, 'location', {
+        value: { 
+          href: 'http://localhost:5173/app',
+          hostname: 'localhost',
+          protocol: 'http:',
+          port: '5173',
+          pathname: '/app',
+          search: '',
+          hash: ''
+        },
+        writable: true,
+        configurable: true,
+      })
+      
+      const url = await getNetworkUrl()
+      expect(url).toBe('http://192.168.1.100:5173/app')
+    })
+
+    it('should handle errors gracefully', async () => {
+      const { getServerUrl } = await import('./config')
+      vi.mocked(getServerUrl).mockRejectedValue(new Error('Config load failed'))
+      
       Object.defineProperty(window, 'location', {
         value: { 
           href: 'http://localhost:5173/app',
@@ -83,20 +137,8 @@ describe('network-url utilities', () => {
         configurable: true,
       })
       
-      expect(getNetworkUrl()).toBe('http://localhost:5173/app')
-    })
-
-    it('should return current URL when 127.0.0.1', () => {
-      Object.defineProperty(window, 'location', {
-        value: { 
-          href: 'http://127.0.0.1:5173/app',
-          hostname: '127.0.0.1'
-        },
-        writable: true,
-        configurable: true,
-      })
-      
-      expect(getNetworkUrl()).toBe('http://127.0.0.1:5173/app')
+      const url = await getNetworkUrl()
+      expect(url).toBe('http://localhost:5173/app')
     })
   })
 })

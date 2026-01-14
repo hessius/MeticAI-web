@@ -2,15 +2,41 @@
  * Utility functions for getting network URLs
  */
 
+import { getServerUrl } from './config'
+
 /**
- * Gets the current page URL
- * Note: In a browser environment, we cannot directly detect the network IP.
- * Returns the current window location URL as-is.
- * For localhost URLs, users may need to manually replace 'localhost' with their network IP.
- * @returns string The current page URL
+ * Gets the current page URL with network-accessible hostname
+ * If the current URL uses localhost and a server URL is configured with a non-localhost hostname,
+ * replaces localhost with the configured server's hostname/IP for network access.
+ * @returns Promise<string> The network-accessible URL
  */
-export function getNetworkUrl(): string {
-  return window.location.href;
+export async function getNetworkUrl(): Promise<string> {
+  const currentUrl = new URL(window.location.href);
+  
+  // If not localhost, return as-is
+  if (!isLocalhostUrl()) {
+    return currentUrl.href;
+  }
+  
+  try {
+    // Get configured server URL
+    const serverUrl = await getServerUrl();
+    const serverUrlObj = new URL(serverUrl);
+    
+    // If server URL is also localhost, return current URL
+    const serverHostname = serverUrlObj.hostname;
+    if (serverHostname === 'localhost' || serverHostname === '127.0.0.1' || serverHostname === '::1') {
+      return currentUrl.href;
+    }
+    
+    // Replace localhost with server's hostname/IP
+    currentUrl.hostname = serverHostname;
+    return currentUrl.href;
+  } catch (error) {
+    // If config loading fails, return current URL
+    console.warn('Failed to get server URL for network access:', error);
+    return currentUrl.href;
+  }
 }
 
 /**
