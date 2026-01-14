@@ -10,6 +10,11 @@ import { Camera, Coffee, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, 
 import { getServerUrl } from '@/lib/config'
 import { MarkdownText } from '@/components/MarkdownText'
 import { domToPng } from 'modern-screenshot'
+import { UpdateBanner } from '@/components/UpdateBanner'
+import { useUpdateStatus } from '@/hooks/useUpdateStatus'
+import { useUpdateTrigger } from '@/hooks/useUpdateTrigger'
+import { Toaster } from '@/components/ui/sonner'
+import { toast } from 'sonner'
 
 const LOADING_MESSAGES = [
   "Analyzing coffee beans...",
@@ -82,9 +87,14 @@ function App() {
   const [errorMessage, setErrorMessage] = useState('')
   const [isCapturing, setIsCapturing] = useState(false)
   const [clickCount, setClickCount] = useState(0)
+  const [bannerDismissed, setBannerDismissed] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const resultsCardRef = useRef<HTMLDivElement>(null)
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // Update functionality
+  const { updateAvailable } = useUpdateStatus()
+  const { triggerUpdate, isUpdating, updateError } = useUpdateTrigger()
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -270,6 +280,19 @@ Special Notes: For maximum clarity and to really make those delicate floral note
 
   const canSubmit = imageFile || userPrefs.trim().length > 0 || selectedTags.length > 0
 
+  const handleUpdate = async () => {
+    setBannerDismissed(false)
+    toast.info('Starting update process...')
+    await triggerUpdate()
+  }
+
+  const handleDismissBanner = () => {
+    setBannerDismissed(true)
+    toast('Update notification dismissed', {
+      description: 'You can check for updates again later',
+    })
+  }
+
   const getCategoryColor = (category: string) => {
     const colors = {
       body: 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20',
@@ -286,6 +309,14 @@ Special Notes: For maximum clarity and to really make those delicate floral note
 
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+      <Toaster />
+      <UpdateBanner
+        updateAvailable={updateAvailable && !bannerDismissed}
+        isUpdating={isUpdating}
+        updateError={updateError}
+        onUpdate={handleUpdate}
+        onDismiss={handleDismissBanner}
+      />
       <div className="w-full max-w-md">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
