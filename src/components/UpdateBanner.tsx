@@ -13,6 +13,11 @@ interface UpdateBannerProps {
   onDismiss: () => void
 }
 
+// Maximum expected update duration (3 minutes)
+const MAX_UPDATE_DURATION = 180000
+// Update progress bar every 500ms for smooth animation
+const PROGRESS_UPDATE_INTERVAL = 500
+
 export function UpdateBanner({
   updateAvailable,
   isUpdating,
@@ -28,16 +33,15 @@ export function UpdateBanner({
     
     // Animate progress bar
     const startTime = Date.now()
-    const duration = 180000 // 3 minutes max
     
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime
-      const percentage = Math.min((elapsed / duration) * 100, 95)
+      const percentage = Math.min((elapsed / MAX_UPDATE_DURATION) * 100, 95)
       setProgress(percentage)
-    }, 500)
+    }, PROGRESS_UPDATE_INTERVAL)
 
     // Clear interval when update completes
-    setTimeout(() => clearInterval(interval), duration)
+    setTimeout(() => clearInterval(interval), MAX_UPDATE_DURATION)
   }
 
   if (!updateAvailable && !isUpdating && !updateError) {

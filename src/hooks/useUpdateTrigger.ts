@@ -15,8 +15,14 @@ interface UseUpdateTriggerReturn {
   updateSuccess: boolean
 }
 
-const HEALTH_CHECK_INTERVAL = 3000 // Check server health every 3 seconds
-const MAX_HEALTH_CHECKS = 60 // Max 3 minutes of health checks
+// Poll server health every 3 seconds after triggering update
+const HEALTH_CHECK_INTERVAL = 3000
+// Maximum number of health checks (60 checks * 3 seconds = 3 minutes max wait)
+const MAX_HEALTH_CHECKS = 60
+// Wait 2 seconds before starting health checks to allow server to begin shutdown
+const INITIAL_SHUTDOWN_WAIT = 2000
+// Wait 1 second after server is back up to ensure it's stable
+const SERVER_STABILIZATION_WAIT = 1000
 
 export function useUpdateTrigger(): UseUpdateTriggerReturn {
   const [isUpdating, setIsUpdating] = useState(false)
@@ -39,7 +45,7 @@ export function useUpdateTrigger(): UseUpdateTriggerReturn {
     let checks = 0
     
     // Wait for server to go down first (optional, server might restart quickly)
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    await new Promise(resolve => setTimeout(resolve, INITIAL_SHUTDOWN_WAIT))
 
     // Poll until server is back up
     while (checks < MAX_HEALTH_CHECKS) {
@@ -47,7 +53,7 @@ export function useUpdateTrigger(): UseUpdateTriggerReturn {
       
       if (isHealthy) {
         // Server is back up, wait a bit more to ensure it's stable
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise(resolve => setTimeout(resolve, SERVER_STABILIZATION_WAIT))
         return true
       }
 

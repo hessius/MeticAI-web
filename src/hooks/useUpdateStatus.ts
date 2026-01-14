@@ -15,7 +15,9 @@ interface UseUpdateStatusReturn {
   lastChecked: string | null
 }
 
-const CHECK_INTERVAL = 5 * 60 * 1000 // Check every 5 minutes
+// Check for updates every 5 minutes
+const CHECK_INTERVAL_MINUTES = 5
+const CHECK_INTERVAL = CHECK_INTERVAL_MINUTES * 60 * 1000
 
 export function useUpdateStatus(): UseUpdateStatusReturn {
   const [updateAvailable, setUpdateAvailable] = useState(false)
