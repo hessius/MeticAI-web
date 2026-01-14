@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Camera, Coffee, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, DownloadSimple, Info } from '@phosphor-icons/react'
+import { Camera, Coffee, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, DownloadSimple, Info, QrCode } from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
 import { MarkdownText } from '@/components/MarkdownText'
 import { domToPng } from 'modern-screenshot'
@@ -15,6 +15,8 @@ import { useUpdateStatus } from '@/hooks/useUpdateStatus'
 import { useUpdateTrigger } from '@/hooks/useUpdateTrigger'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
+import { QRCodeDialog } from '@/components/QRCodeDialog'
+import { useIsDesktop } from '@/hooks/use-desktop'
 
 const LOADING_MESSAGES = [
   "Analyzing coffee beans...",
@@ -88,6 +90,7 @@ function App() {
   const [isCapturing, setIsCapturing] = useState(false)
   const [clickCount, setClickCount] = useState(0)
   const [bannerDismissed, setBannerDismissed] = useState(false)
+  const [qrDialogOpen, setQrDialogOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const resultsCardRef = useRef<HTMLDivElement>(null)
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -95,6 +98,9 @@ function App() {
   // Update functionality
   const { updateAvailable } = useUpdateStatus()
   const { triggerUpdate, isUpdating, updateError } = useUpdateTrigger()
+  
+  // Desktop detection for QR code feature
+  const isDesktop = useIsDesktop()
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -317,14 +323,14 @@ Special Notes: For maximum clarity and to really make those delicate floral note
         onUpdate={handleUpdate}
         onDismiss={handleDismissBanner}
       />
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md relative">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="text-center mb-8"
         >
-          <div className="flex items-center justify-center gap-3 mb-2">
+          <div className="flex items-center justify-center gap-3 mb-2 relative">
             <Coffee size={40} className="text-primary" weight="fill" />
             <h1 
               className="text-4xl font-bold tracking-tight"
@@ -333,6 +339,17 @@ Special Notes: For maximum clarity and to really make those delicate floral note
             >
               Metic<span className="text-primary neon-text">AI</span>
             </h1>
+            {isDesktop && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                onClick={() => setQrDialogOpen(true)}
+                title="Open on mobile"
+              >
+                <QrCode size={24} weight="duotone" />
+              </Button>
+            )}
           </div>
           <p className="text-muted-foreground text-sm">Meticulous Espresso Profile Generator</p>
         </motion.div>
@@ -723,6 +740,8 @@ Special Notes: For maximum clarity and to really make those delicate floral note
             </motion.div>
           )}
         </AnimatePresence>
+        
+        <QRCodeDialog open={qrDialogOpen} onOpenChange={setQrDialogOpen} />
       </div>
     </div>
   )
