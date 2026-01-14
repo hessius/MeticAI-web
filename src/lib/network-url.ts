@@ -3,22 +3,14 @@
  */
 
 /**
- * Gets the current page URL, replacing localhost with the actual network IP if available
- * Falls back to the current window location if network IP detection fails
- * @returns string The network-accessible URL
+ * Gets the current page URL
+ * Note: In a browser environment, we cannot directly detect the network IP.
+ * Returns the current window location URL as-is.
+ * For localhost URLs, users may need to manually replace 'localhost' with their network IP.
+ * @returns string The current page URL
  */
 export function getNetworkUrl(): string {
-  const currentUrl = window.location.href;
-  
-  // If we're already on a non-localhost URL, just return it
-  if (!currentUrl.includes('localhost') && !currentUrl.includes('127.0.0.1')) {
-    return currentUrl;
-  }
-  
-  // Try to get the network URL from the server URL configuration
-  // This is best effort - in a browser environment, we can't directly detect the network IP
-  // So we'll return the current URL and let the user know they might need to adjust it
-  return currentUrl;
+  return window.location.href;
 }
 
 /**
