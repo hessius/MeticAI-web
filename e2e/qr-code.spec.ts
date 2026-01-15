@@ -63,7 +63,7 @@ test.describe('QR Code Feature E2E Tests', () => {
     
     // Should show localhost warning
     await expect(page.getByText(/This is a localhost URL/)).toBeVisible()
-    await expect(page.getByText(/Make sure your phone is on the same network/)).toBeVisible()
+    await expect(page.getByText(/Configure a network IP in config\.json/)).toBeVisible()
   })
 
   test('should close QR dialog when close button is clicked', async ({ page }) => {
