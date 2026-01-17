@@ -8,6 +8,11 @@ interface TriggerUpdateResponse {
   error?: string
 }
 
+interface StatusResponse {
+  update_available: boolean
+  last_check?: string
+}
+
 interface UseUpdateTriggerReturn {
   triggerUpdate: () => Promise<void>
   isUpdating: boolean
@@ -15,54 +20,65 @@ interface UseUpdateTriggerReturn {
   updateSuccess: boolean
 }
 
-// Poll server health every 3 seconds after triggering update
-const HEALTH_CHECK_INTERVAL = 3000
-// Maximum number of health checks (60 checks * 3 seconds = 3 minutes max wait)
-const MAX_HEALTH_CHECKS = 60
-// Wait 2 seconds before starting health checks to allow server to begin shutdown
-const INITIAL_SHUTDOWN_WAIT = 2000
-// Wait 1 second after server is back up to ensure it's stable
-const SERVER_STABILIZATION_WAIT = 1000
+// Poll for update completion every 3 seconds
+const UPDATE_CHECK_INTERVAL = 3000
+// Maximum number of checks (120 checks * 3 seconds = 6 minutes max wait)
+const MAX_UPDATE_CHECKS = 120
+// Wait before starting to poll to give time for update to start
+const INITIAL_UPDATE_WAIT = 5000
 
 export function useUpdateTrigger(): UseUpdateTriggerReturn {
   const [isUpdating, setIsUpdating] = useState(false)
   const [updateError, setUpdateError] = useState<string | null>(null)
   const [updateSuccess, setUpdateSuccess] = useState(false)
 
-  const checkServerHealth = useCallback(async (serverUrl: string): Promise<boolean> => {
+  const checkUpdateStatus = useCallback(async (serverUrl: string): Promise<{ isUp: boolean; updateComplete: boolean }> => {
     try {
       const response = await fetch(`${serverUrl}/status`, {
         method: 'GET',
-        signal: AbortSignal.timeout(2000), // 2 second timeout
+        signal: AbortSignal.timeout(5000), // 5 second timeout
       })
-      return response.ok
+      if (!response.ok) {
+        return { isUp: false, updateComplete: false }
+      }
+      const data: StatusResponse = await response.json()
+      // Update is complete when server is up AND update_available is false
+      return { isUp: true, updateComplete: !data.update_available }
     } catch {
-      return false
+      return { isUp: false, updateComplete: false }
     }
   }, [])
 
-  const waitForServerRestart = useCallback(async (serverUrl: string) => {
+  const waitForUpdateComplete = useCallback(async (serverUrl: string): Promise<boolean> => {
     let checks = 0
+    let serverWentDown = false
     
-    // Wait for server to go down first (optional, server might restart quickly)
-    await new Promise(resolve => setTimeout(resolve, INITIAL_SHUTDOWN_WAIT))
+    // Wait a bit for the update process to start
+    await new Promise(resolve => setTimeout(resolve, INITIAL_UPDATE_WAIT))
 
-    // Poll until server is back up
-    while (checks < MAX_HEALTH_CHECKS) {
-      const isHealthy = await checkServerHealth(serverUrl)
+    // Poll until update is complete (server is up and update_available is false)
+    while (checks < MAX_UPDATE_CHECKS) {
+      const status = await checkUpdateStatus(serverUrl)
       
-      if (isHealthy) {
-        // Server is back up, wait a bit more to ensure it's stable
-        await new Promise(resolve => setTimeout(resolve, SERVER_STABILIZATION_WAIT))
+      // Track if server went down (indicates rebuild is happening)
+      if (!status.isUp) {
+        serverWentDown = true
+      }
+      
+      if (status.isUp && status.updateComplete) {
+        // Give server a moment to stabilize after coming back up
+        if (serverWentDown) {
+          await new Promise(resolve => setTimeout(resolve, 2000))
+        }
         return true
       }
 
       checks++
-      await new Promise(resolve => setTimeout(resolve, HEALTH_CHECK_INTERVAL))
+      await new Promise(resolve => setTimeout(resolve, UPDATE_CHECK_INTERVAL))
     }
 
     return false
-  }, [checkServerHealth])
+  }, [checkUpdateStatus])
 
   const triggerUpdate = useCallback(async () => {
     setIsUpdating(true)
@@ -92,11 +108,11 @@ export function useUpdateTrigger(): UseUpdateTriggerReturn {
         throw new Error(data.error || data.message || 'Update failed')
       }
 
-      // Wait for server to restart
-      const serverRestarted = await waitForServerRestart(serverUrl)
+      // Wait for update to complete (server comes back up with update_available: false)
+      const updateComplete = await waitForUpdateComplete(serverUrl)
 
-      if (!serverRestarted) {
-        throw new Error('Server did not restart within expected time. Please refresh manually.')
+      if (!updateComplete) {
+        throw new Error('Update did not complete within expected time. Please refresh manually.')
       }
 
       setUpdateSuccess(true)
@@ -108,7 +124,7 @@ export function useUpdateTrigger(): UseUpdateTriggerReturn {
       setUpdateError(err instanceof Error ? err.message : 'Failed to trigger update')
       setIsUpdating(false)
     }
-  }, [waitForServerRestart])
+  }, [waitForUpdateComplete])
 
   return {
     triggerUpdate,
