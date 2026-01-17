@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Camera, Coffee, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, DownloadSimple, Info, QrCode } from '@phosphor-icons/react'
+import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, DownloadSimple, Info, QrCode } from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
 import { MarkdownText } from '@/components/MarkdownText'
 import { domToPng } from 'modern-screenshot'
@@ -17,6 +17,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
 import { QRCodeDialog } from '@/components/QRCodeDialog'
 import { useIsDesktop } from '@/hooks/use-desktop'
+import { MeticAILogo } from '@/components/MeticAILogo'
 
 const LOADING_MESSAGES = [
   "Analyzing coffee beans...",
@@ -331,7 +332,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
           className="text-center mb-8"
         >
           <div className="flex items-center justify-center gap-3 mb-2 relative">
-            <Coffee size={40} className="text-primary" weight="fill" />
+            <MeticAILogo size={40} variant="white" />
             <h1 
               className="text-4xl font-bold tracking-tight"
               onClick={handleTitleClick}

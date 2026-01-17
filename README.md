@@ -1,4 +1,10 @@
-# MeticAI - Espresso Profile Generator
+<div align="center">
+
+<img src="public/logo.svg" alt="MeticAI Logo" width="150" />
+
+# MeticAI Web Interface
+
+</div>
 
 MeticAI is a web application that helps you generate customized espresso profiles based on coffee bag images and your taste preferences. Upload a photo of your coffee bag, describe your taste preferences, and get AI-powered espresso extraction recommendations.
 
