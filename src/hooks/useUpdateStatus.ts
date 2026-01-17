@@ -25,7 +25,7 @@ export function useUpdateStatus(): UseUpdateStatusReturn {
   const [error, setError] = useState<string | null>(null)
   const [lastChecked, setLastChecked] = useState<string | null>(null)
 
-  const checkForUpdates = useCallback(async () => {
+  const checkForUpdates = useCallback(async (): Promise<{ updateAvailable: boolean; error: string | null }> => {
     setIsChecking(true)
     setError(null)
 
@@ -38,12 +38,16 @@ export function useUpdateStatus(): UseUpdateStatusReturn {
       }
 
       const data: UpdateStatus = await response.json()
-      setUpdateAvailable(data.update_available || false)
+      const hasUpdate = data.update_available || false
+      setUpdateAvailable(hasUpdate)
       setLastChecked(data.last_check || new Date().toISOString())
+      return { updateAvailable: hasUpdate, error: null }
     } catch (err) {
       console.error('Error checking for updates:', err)
-      setError(err instanceof Error ? err.message : 'Failed to check for updates')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to check for updates'
+      setError(errorMessage)
       setUpdateAvailable(false)
+      return { updateAvailable: false, error: errorMessage }
     } finally {
       setIsChecking(false)
     }

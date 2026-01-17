@@ -746,7 +746,22 @@ Special Notes: For maximum clarity and to really make those delicate floral note
         {/* Discrete footer with check for updates */}
         <div className="mt-8 pb-4 flex justify-center">
           <Button
-            onClick={checkForUpdates}
+            onClick={async () => {
+              const result = await checkForUpdates()
+              if (result.error) {
+                toast.error('Check failed', {
+                  description: result.error,
+                })
+              } else if (result.updateAvailable) {
+                toast.success('Update available!', {
+                  description: 'A new version is ready to install.',
+                })
+              } else {
+                toast.info('You\'re up to date', {
+                  description: 'No updates available.',
+                })
+              }
+            }}
             disabled={isChecking}
             variant="ghost"
             size="sm"
