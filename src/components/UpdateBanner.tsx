@@ -59,7 +59,7 @@ export function UpdateBanner({
       >
         <div className="max-w-md mx-auto">
           {isUpdating ? (
-            <Alert className="bg-background/95 backdrop-blur-sm border-primary/30 shadow-lg">
+            <Alert className="!bg-card/95 backdrop-blur-md border-primary/30 shadow-xl ring-1 ring-white/10">
               <ArrowClockwise size={20} className="animate-spin" />
               <AlertDescription>
                 <div className="space-y-3">
@@ -79,7 +79,7 @@ export function UpdateBanner({
               </AlertDescription>
             </Alert>
           ) : updateError ? (
-            <Alert variant="destructive" className="bg-background/95 backdrop-blur-sm border-destructive/50 shadow-lg">
+            <Alert variant="destructive" className="!bg-card/95 backdrop-blur-md border-destructive/50 shadow-xl ring-1 ring-destructive/20">
               <Warning size={20} weight="fill" />
               <AlertDescription>
                 <div className="space-y-2">
@@ -108,7 +108,7 @@ export function UpdateBanner({
               </AlertDescription>
             </Alert>
           ) : updateAvailable ? (
-            <Alert className="bg-background/95 backdrop-blur-sm border-neon-green/30 shadow-lg">
+            <Alert className="!bg-card/95 backdrop-blur-md border-neon-green/30 shadow-xl ring-1 ring-neon-green/20">
               <DownloadSimple size={20} weight="fill" className="text-neon-green" />
               <AlertDescription>
                 <div className="flex items-center justify-between gap-3">

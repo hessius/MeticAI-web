@@ -96,7 +96,7 @@ function App() {
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null)
   
   // Update functionality
-  const { updateAvailable } = useUpdateStatus()
+  const { updateAvailable, checkForUpdates, isChecking } = useUpdateStatus()
   const { triggerUpdate, isUpdating, updateError } = useUpdateTrigger()
   
   // Desktop detection for QR code feature
@@ -742,6 +742,29 @@ Special Notes: For maximum clarity and to really make those delicate floral note
         </AnimatePresence>
         
         <QRCodeDialog open={qrDialogOpen} onOpenChange={setQrDialogOpen} />
+        
+        {/* Discrete footer with check for updates */}
+        <div className="mt-8 pb-4 flex justify-center">
+          <Button
+            onClick={checkForUpdates}
+            disabled={isChecking}
+            variant="ghost"
+            size="sm"
+            className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+          >
+            {isChecking ? (
+              <>
+                <ArrowClockwise size={12} className="mr-1 animate-spin" />
+                Checking...
+              </>
+            ) : (
+              <>
+                <DownloadSimple size={12} className="mr-1" />
+                Check for updates
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   )
