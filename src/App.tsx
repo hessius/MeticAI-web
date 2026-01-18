@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, DownloadSimple, Info, QrCode } from '@phosphor-icons/react'
+import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, DownloadSimple, Info, QrCode, ClockCounterClockwise, FileJs, Coffee, Image } from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
 import { MarkdownText } from '@/components/MarkdownText'
 import { domToPng } from 'modern-screenshot'
@@ -18,6 +18,8 @@ import { toast } from 'sonner'
 import { QRCodeDialog } from '@/components/QRCodeDialog'
 import { useIsDesktop } from '@/hooks/use-desktop'
 import { MeticAILogo } from '@/components/MeticAILogo'
+import { HistoryView, ProfileDetailView } from '@/components/HistoryView'
+import { HistoryEntry } from '@/hooks/useHistory'
 
 const LOADING_MESSAGES = [
   "Analyzing coffee beans...",
@@ -38,46 +40,16 @@ const LOADING_MESSAGES = [
   "Almost there..."
 ]
 
-const PRESET_TAGS = [
-  { label: 'Light Body', category: 'body' },
-  { label: 'Medium Body', category: 'body' },
-  { label: 'Heavy Body', category: 'body' },
-  { label: 'Florals', category: 'flavor' },
-  { label: 'Acidity', category: 'flavor' },
-  { label: 'Fruitiness', category: 'flavor' },
-  { label: 'Chocolate', category: 'flavor' },
-  { label: 'Nutty', category: 'flavor' },
-  { label: 'Caramel', category: 'flavor' },
-  { label: 'Berry', category: 'flavor' },
-  { label: 'Citrus', category: 'flavor' },
-  { label: 'Funky', category: 'flavor' },
-  { label: 'Thin', category: 'mouthfeel' },
-  { label: 'Mouthfeel', category: 'mouthfeel' },
-  { label: 'Creamy', category: 'mouthfeel' },
-  { label: 'Syrupy', category: 'mouthfeel' },
-  { label: 'Italian', category: 'style' },
-  { label: 'Modern', category: 'style' },
-  { label: 'Lever', category: 'style' },
-  { label: 'Long', category: 'extraction' },
-  { label: 'Short', category: 'extraction' },
-  { label: 'Turbo', category: 'extraction' },
-  { label: 'Light Roast', category: 'roast' },
-  { label: 'Medium Roast', category: 'roast' },
-  { label: 'Dark Roast', category: 'roast' },
-  { label: 'Sweet', category: 'characteristic' },
-  { label: 'Balanced', category: 'characteristic' },
-  { label: 'Bloom', category: 'process' },
-  { label: 'Pre-infusion', category: 'process' },
-  { label: 'Pulse', category: 'process' }
-]
+import { PRESET_TAGS, CATEGORY_COLORS } from '@/lib/tags'
 
 interface APIResponse {
   status: string
   analysis: string
   reply: string
+  history_id?: string
 }
 
-type ViewState = 'form' | 'loading' | 'results' | 'error'
+type ViewState = 'form' | 'loading' | 'results' | 'error' | 'history' | 'history-detail'
 
 function App() {
   const [viewState, setViewState] = useState<ViewState>('form')
@@ -92,6 +64,8 @@ function App() {
   const [clickCount, setClickCount] = useState(0)
   const [bannerDismissed, setBannerDismissed] = useState(false)
   const [qrDialogOpen, setQrDialogOpen] = useState(false)
+  const [selectedHistoryEntry, setSelectedHistoryEntry] = useState<HistoryEntry | null>(null)
+  const [currentProfileJson, setCurrentProfileJson] = useState<Record<string, unknown> | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const resultsCardRef = useRef<HTMLDivElement>(null)
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -188,6 +162,26 @@ function App() {
       
       const data: APIResponse = JSON.parse(responseText)
       setApiResponse(data)
+      
+      // Extract profile JSON from the reply for download functionality
+      const extractProfileJson = (text: string): Record<string, unknown> | null => {
+        const jsonBlockPattern = /```json\s*([\s\S]*?)```/gi
+        const matches = text.matchAll(jsonBlockPattern)
+        
+        for (const match of matches) {
+          try {
+            const parsed = JSON.parse(match[1].trim())
+            if (typeof parsed === 'object' && parsed !== null && ('name' in parsed || 'stages' in parsed)) {
+              return parsed
+            }
+          } catch {
+            continue
+          }
+        }
+        return null
+      }
+      
+      setCurrentProfileJson(extractProfileJson(data.reply))
       setViewState('results')
     } catch (error) {
       clearInterval(messageInterval)
@@ -210,6 +204,43 @@ function App() {
     setApiResponse(null)
     setErrorMessage('')
     setCurrentMessage(0)
+    setCurrentProfileJson(null)
+    setSelectedHistoryEntry(null)
+  }
+
+  const handleViewHistoryEntry = (entry: HistoryEntry) => {
+    setSelectedHistoryEntry(entry)
+    setViewState('history-detail')
+  }
+
+  const handleDownloadJson = () => {
+    const jsonData = selectedHistoryEntry?.profile_json || currentProfileJson
+    if (!jsonData) {
+      toast.error('No profile JSON available')
+      return
+    }
+
+    const profileName = selectedHistoryEntry?.profile_name || 
+      apiResponse?.reply.match(/Profile Created:\s*(.+?)(?:\n|$)/i)?.[1]?.trim() || 
+      'profile'
+    
+    const safeName = profileName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+
+    const blob = new Blob([JSON.stringify(jsonData, null, 2)], {
+      type: 'application/json'
+    })
+    
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${safeName || 'profile'}.json`
+    link.click()
+    URL.revokeObjectURL(url)
+    
+    toast.success('Profile JSON downloaded!')
   }
 
   const handleSaveResults = async () => {
@@ -229,7 +260,11 @@ function App() {
       
       const dataUrl = await domToPng(resultsCardRef.current, {
         scale: 2,
-        backgroundColor: '#09090b'
+        backgroundColor: '#09090b',
+        style: {
+          padding: '20px',
+          boxSizing: 'content-box'
+        }
       })
       
       // Disable capturing mode
@@ -301,17 +336,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
   }
 
   const getCategoryColor = (category: string) => {
-    const colors = {
-      body: 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20',
-      flavor: 'bg-rose-500/10 border-rose-500/30 hover:bg-rose-500/20',
-      mouthfeel: 'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20',
-      style: 'bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/20',
-      extraction: 'bg-green-500/10 border-green-500/30 hover:bg-green-500/20',
-      roast: 'bg-orange-500/10 border-orange-500/30 hover:bg-orange-500/20',
-      characteristic: 'bg-cyan-500/10 border-cyan-500/30 hover:bg-cyan-500/20',
-      process: 'bg-indigo-500/10 border-indigo-500/30 hover:bg-indigo-500/20',
-    }
-    return colors[category as keyof typeof colors] || ''
+    return CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] || ''
   }
 
   return (
@@ -467,15 +492,41 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                   </Alert>
                 )}
 
-                <Button
-                  onClick={handleSubmit}
-                  disabled={!canSubmit}
-                  className="w-full h-12 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
-                >
-                  Generate Profile
-                </Button>
+                <div className="space-y-3">
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={!canSubmit}
+                    className="w-full h-12 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
+                  >
+                    Generate Profile
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setViewState('history')}
+                    variant="outline"
+                    className="w-full h-10 text-sm font-medium border-primary/30 hover:bg-primary/10 transition-all"
+                  >
+                    <ClockCounterClockwise size={18} className="mr-2" weight="bold" />
+                    View History
+                  </Button>
+                </div>
               </Card>
             </motion.div>
+          )}
+
+          {viewState === 'history' && (
+            <HistoryView
+              onBack={() => setViewState('form')}
+              onViewProfile={handleViewHistoryEntry}
+            />
+          )}
+
+          {viewState === 'history-detail' && selectedHistoryEntry && (
+            <ProfileDetailView
+              entry={selectedHistoryEntry}
+              onBack={() => setViewState('history')}
+              onNewProfile={handleReset}
+            />
           )}
 
           {viewState === 'loading' && (
@@ -557,15 +608,15 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                     <p className="text-muted-foreground text-sm">Meticulous Espresso Profile Generator</p>
                   </div>
                 )}
-              <Card className="p-6 space-y-6">
+              <Card className={`p-6 ${isCapturing ? 'space-y-4' : 'space-y-6'}`}>
                 {(() => {
                   const profileNameMatch = apiResponse.reply.match(/Profile Created:\s*(.+?)(?:\n|$)/i)
                   const profileName = profileNameMatch?.[1]?.trim()
                   
                   if (isCapturing && profileName) {
                     return (
-                      <div className="flex items-center gap-3 text-neon-green">
-                        <h2 className="text-2xl font-bold">{profileName}</h2>
+                      <div className="text-neon-green w-full">
+                        <h2 className="text-2xl font-bold break-words">{profileName}</h2>
                       </div>
                     )
                   }
@@ -598,7 +649,6 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                     const parseProfileSections = (text: string) => {
                       const sections: { title: string; content: string }[] = []
                       const sectionHeaders = [
-                        'Profile Created',
                         'Description',
                         'Preparation',
                         'Why This Works',
@@ -626,7 +676,17 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                             }
                           }
                           
-                          const content = remainingText.substring(startIndex, endIndex).trim()
+                          let content = remainingText.substring(startIndex, endIndex).trim()
+                          
+                          // Stop at PROFILE JSON section to hide JSON output
+                          const jsonSectionIndex = content.indexOf('PROFILE JSON')
+                          if (jsonSectionIndex > 0) {
+                            content = content.substring(0, jsonSectionIndex).trim()
+                          }
+                          // Also remove any code blocks that might contain JSON
+                          content = content.replace(/```json[\s\S]*?```/g, '').trim()
+                          content = content.replace(/```[\s\S]*?```/g, '').trim()
+                          
                           if (content) {
                             sections.push({ title: header, content })
                           }
@@ -674,22 +734,33 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                     <Alert className="bg-primary/10 border-primary/30">
                       <Info className="h-4 w-4" />
                       <AlertDescription className="text-sm">
-                        Profile has been saved to your Meticulous device
+                        Profile has been saved to your Meticulous device and history
                       </AlertDescription>
                     </Alert>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-2">
                       <Button
                         onClick={handleSaveResults}
                         variant="outline"
-                        className="h-12 text-base font-semibold border-primary/30 hover:bg-primary/10 transition-all active:scale-95"
+                        className="h-12 text-sm font-semibold border-primary/30 hover:bg-primary/10 transition-all active:scale-95"
+                        title="Save results as image"
                       >
-                        <DownloadSimple size={20} className="mr-2" weight="bold" />
-                        Save Info
+                        <Image size={18} className="mr-1" weight="bold" />
+                        Image
                       </Button>
+                      {currentProfileJson && (
+                        <Button
+                          onClick={handleDownloadJson}
+                          variant="outline"
+                          className="h-12 text-sm font-semibold border-primary/30 hover:bg-primary/10 transition-all active:scale-95"
+                        >
+                          <FileJs size={18} className="mr-1" weight="bold" />
+                          JSON
+                        </Button>
+                      )}
                       <Button
                         onClick={handleReset}
-                        className="h-12 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95"
+                        className={`h-12 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 ${!currentProfileJson ? 'col-span-2' : ''}`}
                       >
                         New Profile
                       </Button>
