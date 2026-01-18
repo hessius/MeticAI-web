@@ -27,7 +27,6 @@ export function MarkdownText({ children, className = '' }: MarkdownTextProps) {
 
   const processInlineMarkdown = (text: string, lineIndex: number): React.ReactNode[] => {
     const parts: React.ReactNode[] = []
-    let remaining = text
     let key = 0
 
     // Combined regex for bold, italic, and code
