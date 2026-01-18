@@ -6,28 +6,71 @@ interface MarkdownTextProps {
 }
 
 export function MarkdownText({ children, className = '' }: MarkdownTextProps) {
-  const renderMarkdown = (text: string) => {
-    const parts: (string | React.ReactElement)[] = []
-    let lastIndex = 0
+  const renderMarkdown = (text: string): React.ReactNode[] => {
+    // Split by newlines first to preserve line breaks
+    const lines = text.split('\n')
+    const result: React.ReactNode[] = []
+    
+    lines.forEach((line, lineIndex) => {
+      // Process inline markdown within each line
+      const processedLine = processInlineMarkdown(line, lineIndex)
+      result.push(...processedLine)
+      
+      // Add line break after each line except the last
+      if (lineIndex < lines.length - 1) {
+        result.push(<br key={`br-${lineIndex}`} />)
+      }
+    })
+    
+    return result
+  }
+
+  const processInlineMarkdown = (text: string, lineIndex: number): React.ReactNode[] => {
+    const parts: React.ReactNode[] = []
+    let remaining = text
     let key = 0
 
-    // Match **bold** text
-    const boldRegex = /\*\*(.+?)\*\*/g
+    // Combined regex for bold, italic, and code
+    const inlineRegex = /(\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)/g
+    let lastIndex = 0
     let match
 
-    while ((match = boldRegex.exec(text)) !== null) {
+    while ((match = inlineRegex.exec(text)) !== null) {
       // Add text before the match
       if (match.index > lastIndex) {
         parts.push(text.substring(lastIndex, match.index))
       }
-      
-      // Add bold text
-      parts.push(
-        <strong key={`bold-${key++}`} className="font-semibold">
-          {match[1]}
-        </strong>
-      )
-      
+
+      if (match[2]) {
+        // ***bold italic***
+        parts.push(
+          <strong key={`bi-${lineIndex}-${key++}`} className="font-semibold italic">
+            {match[2]}
+          </strong>
+        )
+      } else if (match[3]) {
+        // **bold**
+        parts.push(
+          <strong key={`b-${lineIndex}-${key++}`} className="font-semibold">
+            {match[3]}
+          </strong>
+        )
+      } else if (match[4]) {
+        // *italic*
+        parts.push(
+          <em key={`i-${lineIndex}-${key++}`} className="italic">
+            {match[4]}
+          </em>
+        )
+      } else if (match[5]) {
+        // `code`
+        parts.push(
+          <code key={`c-${lineIndex}-${key++}`} className="bg-muted px-1 py-0.5 rounded text-sm font-mono">
+            {match[5]}
+          </code>
+        )
+      }
+
       lastIndex = match.index + match[0].length
     }
 
@@ -36,7 +79,8 @@ export function MarkdownText({ children, className = '' }: MarkdownTextProps) {
       parts.push(text.substring(lastIndex))
     }
 
-    return parts.length > 0 ? parts : text
+    // If no matches found, return original text
+    return parts.length > 0 ? parts : [text]
   }
 
   return (
