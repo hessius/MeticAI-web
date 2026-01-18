@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, DownloadSimple, Info, QrCode, ClockCounterClockwise, FileJs, Coffee, Image } from '@phosphor-icons/react'
+import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, DownloadSimple, Info, QrCode, ClockCounterClockwise, FileJs, Coffee, Image, CaretLeft } from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
 import { MarkdownText } from '@/components/MarkdownText'
 import { domToPng } from 'modern-screenshot'
@@ -600,7 +600,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                 {isCapturing && (
                   <div className="text-center mb-6">
                     <div className="flex items-center justify-center gap-3 mb-2">
-                      <Coffee size={40} className="text-primary" weight="fill" />
+                      <MeticAILogo size={40} variant="white" />
                       <h1 className="text-4xl font-bold tracking-tight">
                         Metic<span className="text-primary neon-text">AI</span>
                       </h1>
@@ -622,9 +622,25 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                   }
                   
                   return (
-                    <div className="flex items-center gap-3 text-neon-green">
-                      <CheckCircle size={32} weight="fill" />
-                      <h2 className="text-2xl font-bold">Profile Generated!</h2>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleReset}
+                        className="shrink-0"
+                        title="Back to form"
+                      >
+                        <CaretLeft size={24} weight="bold" />
+                      </Button>
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <CheckCircle size={28} weight="fill" className="text-neon-green shrink-0" />
+                        <div className="min-w-0">
+                          <h2 className="text-lg font-bold text-neon-green truncate">
+                            {profileName || 'Profile Generated!'}
+                          </h2>
+                          <p className="text-xs text-muted-foreground">Profile saved to device</p>
+                        </div>
+                      </div>
                     </div>
                   )
                 })()}
