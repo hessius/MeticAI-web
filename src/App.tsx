@@ -842,8 +842,8 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                   <h2 className="text-xl font-bold text-foreground">Something went wrong</h2>
                 </div>
 
-                <Alert variant="destructive" className="border-destructive/30 bg-destructive/8 rounded-xl">
-                  <AlertDescription className="text-sm">
+                <Alert variant="destructive" className="border-destructive/30 bg-destructive/8 rounded-xl overflow-hidden">
+                  <AlertDescription className="text-sm break-words whitespace-pre-wrap max-h-48 overflow-y-auto">
                     {errorMessage}
                   </AlertDescription>
                 </Alert>
