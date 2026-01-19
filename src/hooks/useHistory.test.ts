@@ -338,7 +338,6 @@ describe('useHistory', () => {
       
       // Track the link properties
       let capturedDownload = ''
-      let capturedHref = ''
       let clickCalled = false
       
       // Create a real element but intercept the click
@@ -348,7 +347,6 @@ describe('useHistory', () => {
           Object.defineProperty(el, 'click', {
             value: vi.fn(() => {
               capturedDownload = el.download
-              capturedHref = el.href
               clickCalled = true
             })
           })

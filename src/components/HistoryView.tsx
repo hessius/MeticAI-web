@@ -7,7 +7,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { 
   ClockCounterClockwise, 
-  DownloadSimple, 
   Trash, 
   CaretLeft, 
   Warning,
@@ -25,8 +24,7 @@ import { MeticAILogo } from '@/components/MeticAILogo'
 import { 
   extractTagsFromPreferences, 
   getAllTagsFromEntries, 
-  getTagColorClass,
-  PRESET_TAGS
+  getTagColorClass
 } from '@/lib/tags'
 
 interface HistoryViewProps {
