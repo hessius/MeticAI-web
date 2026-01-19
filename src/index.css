@@ -3,81 +3,127 @@
 
 @layer base {
   * {
-    @apply border-border
+    @apply border-border;
   }
   
   body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
   }
   
-  h1, h2, h3 {
-    font-family: 'JetBrains Mono', monospace;
+  h1, h2, h3, h4 {
+    font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
   }
 }
 
+/* Meticulous-inspired color palette - Pure dark with warm neutrals */
 :root {
-  --background: oklch(0.16 0.01 240);
-  --foreground: oklch(1 0 0);
+  /* Background colors - Pure black like Meticulous app */
+  --background: oklch(0.05 0 0);
+  --foreground: oklch(0.98 0 0);
   
-  --card: oklch(0.22 0.01 240);
-  --card-foreground: oklch(1 0 0);
+  /* Card - Noticeably elevated dark surface */
+  --card: oklch(0.16 0.006 250);
+  --card-foreground: oklch(0.98 0 0);
   
-  --popover: oklch(0.22 0.01 240);
-  --popover-foreground: oklch(1 0 0);
+  /* Popover */
+  --popover: oklch(0.18 0.006 250);
+  --popover-foreground: oklch(0.98 0 0);
   
-  --primary: oklch(0.75 0.15 195);
-  --primary-foreground: oklch(0.22 0.01 240);
+  /* Primary - Warm amber/gold accent (like coffee, matches Meticulous warmth) */
+  --primary: oklch(0.78 0.14 75);
+  --primary-foreground: oklch(0.12 0 0);
   
-  --secondary: oklch(0.28 0.01 240);
-  --secondary-foreground: oklch(1 0 0);
+  /* Secondary - Fields, items, interactive areas */
+  --secondary: oklch(0.24 0.006 250);
+  --secondary-foreground: oklch(0.95 0 0);
   
-  --muted: oklch(0.28 0.01 240);
-  --muted-foreground: oklch(0.65 0.01 240);
+  /* Muted - For subtle text and borders */
+  --muted: oklch(0.28 0.006 250);
+  --muted-foreground: oklch(0.60 0 0);
   
-  --accent: oklch(0.75 0.15 195);
-  --accent-foreground: oklch(0.22 0.01 240);
+  /* Accent - Same as primary for consistency */
+  --accent: oklch(0.78 0.14 75);
+  --accent-foreground: oklch(0.12 0 0);
   
-  --destructive: oklch(0.65 0.25 25);
-  --destructive-foreground: oklch(1 0 0);
+  /* Destructive - Soft red */
+  --destructive: oklch(0.6 0.2 25);
+  --destructive-foreground: oklch(0.98 0 0);
   
-  --border: oklch(0.35 0.01 240);
-  --input: oklch(0.35 0.01 240);
-  --ring: oklch(0.75 0.15 195);
+  /* Borders and inputs - more visible */
+  --border: oklch(0.32 0.006 250);
+  --input: oklch(0.26 0.006 250);
+  --ring: oklch(0.78 0.14 75);
   
-  --neon-pink: oklch(0.72 0.22 340);
-  --neon-green: oklch(0.78 0.18 130);
+  /* Semantic colors */
+  --success: oklch(0.7 0.18 145);
+  --warning: oklch(0.78 0.16 75);
+  --info: oklch(0.7 0.15 230);
   
-  --radius: 0.75rem;
+  /* Accent colors for profile sections */
+  --neon-pink: oklch(0.72 0.19 350);
+  --neon-green: oklch(0.75 0.17 150);
+  
+  /* Border radius - Matching Meticulous app rounded corners */
+  --radius: 0.875rem;
 }
 
 .dark {
-  --background: oklch(0.16 0.01 240);
-  --foreground: oklch(1 0 0);
+  --background: oklch(0.05 0 0);
+  --foreground: oklch(0.98 0 0);
   
-  --card: oklch(0.22 0.01 240);
-  --card-foreground: oklch(1 0 0);
+  --card: oklch(0.16 0.006 250);
+  --card-foreground: oklch(0.98 0 0);
   
-  --popover: oklch(0.22 0.01 240);
-  --popover-foreground: oklch(1 0 0);
+  --popover: oklch(0.18 0.006 250);
+  --popover-foreground: oklch(0.98 0 0);
   
-  --primary: oklch(0.75 0.15 195);
-  --primary-foreground: oklch(0.22 0.01 240);
+  --primary: oklch(0.78 0.14 75);
+  --primary-foreground: oklch(0.12 0 0);
   
-  --secondary: oklch(0.28 0.01 240);
-  --secondary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.24 0.006 250);
+  --secondary-foreground: oklch(0.95 0 0);
   
-  --muted: oklch(0.28 0.01 240);
-  --muted-foreground: oklch(0.65 0.01 240);
+  --muted: oklch(0.28 0.006 250);
+  --muted-foreground: oklch(0.60 0 0);
   
-  --accent: oklch(0.75 0.15 195);
-  --accent-foreground: oklch(0.22 0.01 240);
+  --accent: oklch(0.78 0.14 75);
+  --accent-foreground: oklch(0.12 0 0);
   
-  --destructive: oklch(0.65 0.25 25);
-  --destructive-foreground: oklch(1 0 0);
+  --destructive: oklch(0.6 0.2 25);
+  --destructive-foreground: oklch(0.98 0 0);
   
-  --border: oklch(0.35 0.01 240);
-  --input: oklch(0.35 0.01 240);
-  --ring: oklch(0.75 0.15 195);
+  --border: oklch(0.32 0.006 250);
+  --input: oklch(0.26 0.006 250);
+  --ring: oklch(0.78 0.14 75);
 }
 
 @theme {
@@ -101,6 +147,10 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  
   --color-neon-pink: var(--neon-pink);
   --color-neon-green: var(--neon-green);
 
@@ -112,23 +162,79 @@
   --radius-full: 9999px;
 }
 
+/* Subtle glow effects - more refined */
+.subtle-glow {
+  box-shadow: 0 0 15px rgba(var(--primary), 0.15);
+}
+
 .neon-glow {
-  box-shadow: 0 0 20px var(--primary), 0 0 40px var(--primary);
+  box-shadow: 0 0 12px var(--primary), 0 0 24px rgba(var(--primary), 0.3);
 }
 
 .neon-text {
-  text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+  text-shadow: 0 0 8px currentColor, 0 0 16px rgba(currentColor, 0.4);
 }
 
+/* Refined pulse animation */
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary), 0 0 30px var(--primary);
+    box-shadow: 0 0 8px var(--primary), 0 0 16px rgba(var(--primary), 0.4);
+    opacity: 1;
   }
   50% {
-    box-shadow: 0 0 20px var(--primary), 0 0 40px var(--primary), 0 0 60px var(--primary);
+    box-shadow: 0 0 16px var(--primary), 0 0 32px rgba(var(--primary), 0.5);
+    opacity: 0.9;
   }
 }
 
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Smooth fade-in animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+/* Scale tap effect */
+@keyframes tap-scale {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+
+.tap-scale:active {
+  animation: tap-scale 0.15s ease-out;
+}
+
+/* Shimmer loading effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 0%,
+    var(--secondary) 50%,
+    var(--muted) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
 }

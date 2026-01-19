@@ -350,8 +350,8 @@ Special Notes: For maximum clarity and to really make those delicate floral note
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
-      <Toaster />
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-5">
+      <Toaster richColors position="top-center" />
       <UpdateBanner
         updateAvailable={updateAvailable && !bannerDismissed}
         isUpdating={isUpdating}
@@ -363,45 +363,45 @@ Special Notes: For maximum clarity and to really make those delicate floral note
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8"
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="text-center mb-10"
         >
-          <div className="flex items-center justify-center gap-3 mb-2 relative">
-            <MeticAILogo size={40} variant="white" />
+          <div className="flex items-center justify-center gap-3 mb-3 relative">
+            <MeticAILogo size={44} variant="white" />
             <h1 
               className="text-4xl font-bold tracking-tight"
               onClick={handleTitleClick}
               title="Click 5 times to load test results"
             >
-              Metic<span className="text-primary neon-text">AI</span>
+              Metic<span className="text-primary">AI</span>
             </h1>
             {isDesktop && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
                 onClick={() => setQrDialogOpen(true)}
                 title="Open on mobile"
               >
-                <QrCode size={24} weight="duotone" />
+                <QrCode size={22} weight="duotone" />
               </Button>
             )}
           </div>
-          <p className="text-muted-foreground text-sm">Meticulous Espresso Profile Generator</p>
+          <p className="text-muted-foreground text-sm font-medium tracking-wide">Meticulous Espresso Profile Generator</p>
         </motion.div>
 
         <AnimatePresence mode="wait">
           {viewState === 'form' && (
             <motion.div
               key="form"
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
             >
               <Card className="p-6 space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold tracking-wide">
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold tracking-wide text-foreground/90">
                     Coffee Bag Photo <span className="text-muted-foreground font-normal">(Optional)</span>
                   </Label>
                   <input
@@ -415,52 +415,62 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                   
                   {!imagePreview ? (
                     <label htmlFor="file-upload">
-                      <div className="border-2 border-dashed border-input hover:border-primary rounded-lg p-8 cursor-pointer transition-all hover:bg-secondary/50 group">
-                        <div className="flex flex-col items-center gap-3 text-muted-foreground group-hover:text-primary transition-colors">
-                          <div className="flex gap-2">
-                            <Camera size={32} weight="duotone" />
-                            <Upload size={32} weight="duotone" />
+                      <motion.div 
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                        className="border-2 border-dashed border-border/60 hover:border-primary/50 rounded-2xl p-10 cursor-pointer transition-all duration-200 group bg-secondary/30 hover:bg-secondary/50"
+                      >
+                        <div className="flex flex-col items-center gap-4 text-muted-foreground group-hover:text-foreground transition-colors duration-200">
+                          <div className="flex gap-3">
+                            <Camera size={28} weight="duotone" className="group-hover:text-primary transition-colors" />
+                            <Upload size={28} weight="duotone" className="group-hover:text-primary transition-colors" />
                           </div>
                           <div className="text-center">
                             <p className="text-sm font-medium">Tap to upload or take photo</p>
-                            <p className="text-xs mt-1">JPG, PNG, or other image formats</p>
+                            <p className="text-xs mt-1.5 text-muted-foreground">JPG, PNG, or other image formats</p>
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
                     </label>
                   ) : (
-                    <div className="relative rounded-lg overflow-hidden border border-primary/50">
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="relative rounded-2xl overflow-hidden border-2 border-primary/40 shadow-lg"
+                    >
                       <img 
                         src={imagePreview} 
                         alt="Coffee bag preview" 
                         className="w-full h-48 object-cover"
                       />
-                      <button
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={handleRemoveImage}
-                        className="absolute top-2 right-2 p-2 bg-destructive/90 hover:bg-destructive rounded-full transition-colors"
+                        className="absolute top-3 right-3 p-2 bg-black/70 hover:bg-destructive rounded-xl transition-colors backdrop-blur-sm"
                       >
-                        <X size={20} weight="bold" />
-                      </button>
-                    </div>
+                        <X size={18} weight="bold" />
+                      </motion.button>
+                    </motion.div>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="preferences" className="text-sm font-semibold tracking-wide">
+                <div className="space-y-3">
+                  <Label htmlFor="preferences" className="text-sm font-semibold tracking-wide text-foreground/90">
                     Taste Preferences <span className="text-muted-foreground font-normal">(Optional)</span>
                   </Label>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <Textarea
                       id="preferences"
                       value={userPrefs}
                       onChange={(e) => setUserPrefs(e.target.value)}
                       placeholder="e.g., Balanced extraction, nutty notes..."
-                      className="min-h-[80px] resize-none bg-secondary border-input focus:border-primary transition-all"
+                      className="min-h-[90px] resize-none bg-secondary/50 border-border/50 focus:border-primary/60 focus:bg-secondary/80 transition-all duration-200 rounded-xl text-sm placeholder:text-muted-foreground/60"
                     />
                     
-                    <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground">Or select preset tags:</p>
+                    <div className="space-y-2.5">
+                      <p className="text-xs text-muted-foreground font-medium">Or select preset tags:</p>
                       <div className="flex flex-wrap gap-2">
                         {PRESET_TAGS.map((tag) => {
                           const isSelected = selectedTags.includes(tag.label)
@@ -468,7 +478,8 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                             <motion.button
                               key={tag.label}
                               onClick={() => toggleTag(tag.label)}
-                              whileTap={{ scale: 0.95 }}
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.97 }}
                               className="relative"
                             >
                               <Badge
@@ -476,8 +487,8 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                                 className={`
                                   px-3 py-1.5 text-xs font-medium cursor-pointer transition-all duration-200
                                   ${isSelected 
-                                    ? 'bg-primary text-primary-foreground border-primary shadow-[0_0_10px_var(--primary)] hover:bg-primary/90' 
-                                    : `${getCategoryColor(tag.category)} border hover:border-primary/40`
+                                    ? 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20' 
+                                    : `${getCategoryColor(tag.category)} border`
                                   }
                                 `}
                               >
@@ -490,31 +501,37 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                     </div>
                   </div>
                   
-                  <p className="text-xs text-muted-foreground mt-2">
+                  <p className="text-xs text-muted-foreground/80 mt-3">
                     Describe your ideal espresso flavor profile using text, tags, or both
                   </p>
                 </div>
 
                 {errorMessage && (
-                  <Alert variant="destructive" className="border-destructive/50">
-                    <Warning size={20} weight="fill" />
-                    <AlertDescription>{errorMessage}</AlertDescription>
-                  </Alert>
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <Alert variant="destructive" className="border-destructive/40 bg-destructive/10">
+                      <Warning size={18} weight="fill" />
+                      <AlertDescription className="text-sm">{errorMessage}</AlertDescription>
+                    </Alert>
+                  </motion.div>
                 )}
 
-                <div className="space-y-3">
+                <div className="space-y-3 pt-2">
                   <Button
                     onClick={handleSubmit}
                     disabled={!canSubmit}
-                    className="w-full h-12 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
+                    className="w-full h-13 text-base font-semibold transition-all duration-200"
                   >
+                    <Sparkle size={18} weight="fill" className="mr-1" />
                     Generate Profile
                   </Button>
                   
                   <Button
                     onClick={() => setViewState('history')}
-                    variant="outline"
-                    className="w-full h-10 text-sm font-medium border-primary/30 hover:bg-primary/10 transition-all"
+                    variant="ghost"
+                    className="w-full h-11 text-sm font-medium text-muted-foreground hover:text-foreground"
                   >
                     <ClockCounterClockwise size={18} className="mr-2" weight="bold" />
                     View History
@@ -542,36 +559,34 @@ Special Notes: For maximum clarity and to really make those delicate floral note
           {viewState === 'loading' && (
             <motion.div
               key="loading"
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
             >
-              <Card className="p-8">
-                <div className="flex flex-col items-center gap-6">
+              <Card className="p-10">
+                <div className="flex flex-col items-center gap-8">
                   <motion.div
                     animate={{ 
                       rotate: 360,
-                      scale: [1, 1.1, 1]
                     }}
                     transition={{ 
-                      rotate: { duration: 2, repeat: Infinity, ease: "linear" },
-                      scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                      rotate: { duration: 3, repeat: Infinity, ease: "linear" },
                     }}
-                    className="animate-pulse-glow rounded-full p-6"
+                    className="rounded-full p-5 bg-primary/10 border border-primary/20"
                   >
-                    <Sparkle size={48} className="text-primary" weight="fill" />
+                    <Sparkle size={40} className="text-primary" weight="fill" />
                   </motion.div>
 
                   <div className="text-center space-y-4 w-full">
                     <AnimatePresence mode="wait">
                       <motion.p
                         key={currentMessage}
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.4 }}
-                        className="text-lg font-medium text-primary neon-text min-h-[3.5rem]"
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.3 }}
+                        className="text-lg font-semibold text-primary min-h-[3.5rem]"
                       >
                         {LOADING_MESSAGES[currentMessage]}
                       </motion.p>
@@ -581,9 +596,9 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                     </p>
                   </div>
 
-                  <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-secondary rounded-full h-1.5 overflow-hidden">
                     <motion.div
-                      className="h-full bg-gradient-to-r from-primary via-neon-pink to-neon-green"
+                      className="h-full bg-gradient-to-r from-primary via-amber-400 to-primary rounded-full"
                       initial={{ width: "0%" }}
                       animate={{ width: "100%" }}
                       transition={{ duration: 75, ease: "linear" }}
@@ -597,13 +612,13 @@ Special Notes: For maximum clarity and to really make those delicate floral note
           {viewState === 'results' && apiResponse && (
             <motion.div
               key="results"
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               transition={{ 
                 type: "spring",
-                stiffness: 200,
-                damping: 20
+                stiffness: 300,
+                damping: 25
               }}
             >
               <div ref={resultsCardRef}>
@@ -612,20 +627,20 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                     <div className="flex items-center justify-center gap-3 mb-2">
                       <MeticAILogo size={40} variant="white" />
                       <h1 className="text-4xl font-bold tracking-tight">
-                        Metic<span className="text-primary neon-text">AI</span>
+                        Metic<span className="text-primary">AI</span>
                       </h1>
                     </div>
                     <p className="text-muted-foreground text-sm">Meticulous Espresso Profile Generator</p>
                   </div>
                 )}
-              <Card className={`p-6 ${isCapturing ? 'space-y-4' : 'space-y-6'}`}>
+              <Card className={`p-6 ${isCapturing ? 'space-y-4' : 'space-y-5'}`}>
                 {(() => {
                   const profileNameMatch = apiResponse.reply.match(/Profile Created:\s*(.+?)(?:\n|$)/i)
                   const profileName = profileNameMatch?.[1]?.trim()
                   
                   if (isCapturing && profileName) {
                     return (
-                      <div className="text-neon-green w-full">
+                      <div className="text-success w-full">
                         <h2 className="text-2xl font-bold break-words">{profileName}</h2>
                       </div>
                     )
@@ -640,12 +655,14 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                         className="shrink-0"
                         title="Back to form"
                       >
-                        <CaretLeft size={24} weight="bold" />
+                        <CaretLeft size={22} weight="bold" />
                       </Button>
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <CheckCircle size={28} weight="fill" className="text-neon-green shrink-0" />
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="p-2 rounded-xl bg-success/10 shrink-0">
+                          <CheckCircle size={24} weight="fill" className="text-success" />
+                        </div>
                         <div className="min-w-0">
-                          <h2 className="text-lg font-bold text-neon-green truncate">
+                          <h2 className="text-lg font-bold text-foreground truncate">
                             {profileName || 'Profile Generated!'}
                           </h2>
                           <p className="text-xs text-muted-foreground">Profile saved to device</p>
@@ -658,16 +675,21 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                 <div className="space-y-4">
                   {/* Only show Coffee Analysis if it has content */}
                   {apiResponse.analysis && apiResponse.analysis.trim() && (
-                    <div className="space-y-2">
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      className="space-y-2"
+                    >
                       <Label className="text-sm font-semibold tracking-wide text-primary">
                         Coffee Analysis
                       </Label>
-                      <div className="p-4 bg-secondary rounded-lg border border-primary/30">
-                        <p className="text-base leading-relaxed">
+                      <div className="p-4 bg-secondary/60 rounded-xl border border-primary/20">
+                        <p className="text-sm leading-relaxed text-foreground/90">
                           <MarkdownText>{apiResponse.analysis}</MarkdownText>
                         </p>
                       </div>
-                    </div>
+                    </motion.div>
                   )}
 
                   {/* Parse and display structured profile sections */}
@@ -727,26 +749,32 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                     return sections.length > 0 ? (
                       <div className="space-y-3">
                         {sections.map((section, index) => (
-                          <div key={index} className="space-y-2">
-                            <Label className="text-sm font-semibold tracking-wide text-neon-pink">
+                          <motion.div 
+                            key={index} 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.15 + index * 0.05 }}
+                            className="space-y-2"
+                          >
+                            <Label className="text-sm font-semibold tracking-wide text-amber-400">
                               {section.title}
                             </Label>
-                            <div className="p-4 bg-secondary rounded-lg border border-neon-pink/30">
-                              <p className="text-base leading-relaxed whitespace-pre-wrap">
+                            <div className="p-4 bg-secondary/60 rounded-xl border border-amber-500/15">
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
                                 <MarkdownText>{section.content}</MarkdownText>
                               </p>
                             </div>
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
                     ) : (
                       // Fallback to original display if parsing fails
                       <div className="space-y-2">
-                        <Label className="text-sm font-semibold tracking-wide text-neon-pink">
+                        <Label className="text-sm font-semibold tracking-wide text-amber-400">
                           Profile
                         </Label>
-                        <div className="p-4 bg-secondary rounded-lg border border-neon-pink/30">
-                          <p className="text-base leading-relaxed whitespace-pre-wrap">
+                        <div className="p-4 bg-secondary/60 rounded-xl border border-amber-500/15">
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
                             <MarkdownText>{apiResponse.reply}</MarkdownText>
                           </p>
                         </div>
@@ -757,36 +785,36 @@ Special Notes: For maximum clarity and to really make those delicate floral note
 
                 {!isCapturing && (
                   <>
-                    <Alert className="bg-primary/10 border-primary/30">
-                      <Info className="h-4 w-4" />
-                      <AlertDescription className="text-sm">
+                    <Alert className="bg-success/8 border-success/20 rounded-xl">
+                      <Info className="h-4 w-4 text-success" />
+                      <AlertDescription className="text-sm text-foreground/80">
                         Profile has been saved to your Meticulous device and history
                       </AlertDescription>
                     </Alert>
 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-2.5">
                       <Button
                         onClick={handleSaveResults}
                         variant="outline"
-                        className="h-12 text-sm font-semibold border-primary/30 hover:bg-primary/10 transition-all active:scale-95"
+                        className="h-12 text-sm font-semibold"
                         title="Save results as image"
                       >
-                        <Image size={18} className="mr-1" weight="bold" />
+                        <Image size={18} className="mr-1.5" weight="bold" />
                         Image
                       </Button>
                       {currentProfileJson && (
                         <Button
                           onClick={handleDownloadJson}
                           variant="outline"
-                          className="h-12 text-sm font-semibold border-primary/30 hover:bg-primary/10 transition-all active:scale-95"
+                          className="h-12 text-sm font-semibold"
                         >
-                          <FileJs size={18} className="mr-1" weight="bold" />
+                          <FileJs size={18} className="mr-1.5" weight="bold" />
                           JSON
                         </Button>
                       )}
                       <Button
                         onClick={handleReset}
-                        className={`h-12 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 ${!currentProfileJson ? 'col-span-2' : ''}`}
+                        className={`h-12 text-sm font-semibold ${!currentProfileJson ? 'col-span-2' : ''}`}
                       >
                         New Profile
                       </Button>
@@ -801,19 +829,21 @@ Special Notes: For maximum clarity and to really make those delicate floral note
           {viewState === 'error' && (
             <motion.div
               key="error"
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.25 }}
             >
-              <Card className="p-6 space-y-6">
-                <div className="flex items-center gap-3 text-destructive">
-                  <Warning size={32} weight="fill" />
-                  <h2 className="text-2xl font-bold">Error</h2>
+              <Card className="p-6 space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-destructive/15">
+                    <Warning size={24} weight="fill" className="text-destructive" />
+                  </div>
+                  <h2 className="text-xl font-bold text-foreground">Something went wrong</h2>
                 </div>
 
-                <Alert variant="destructive" className="border-destructive/50">
-                  <AlertDescription className="text-base">
+                <Alert variant="destructive" className="border-destructive/30 bg-destructive/8 rounded-xl">
+                  <AlertDescription className="text-sm">
                     {errorMessage}
                   </AlertDescription>
                 </Alert>
@@ -821,15 +851,15 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                 <div className="flex gap-3">
                   <Button
                     onClick={handleSubmit}
-                    className="flex-1 h-12 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95"
+                    className="flex-1 h-12 text-sm font-semibold"
                   >
-                    <ArrowClockwise size={20} weight="bold" className="mr-2" />
+                    <ArrowClockwise size={18} weight="bold" className="mr-2" />
                     Retry
                   </Button>
                   <Button
                     onClick={handleReset}
                     variant="outline"
-                    className="flex-1 h-12 text-base font-semibold border-primary/50 hover:bg-secondary transition-all active:scale-95"
+                    className="flex-1 h-12 text-sm font-semibold"
                   >
                     Back to Form
                   </Button>
@@ -842,7 +872,12 @@ Special Notes: For maximum clarity and to really make those delicate floral note
         <QRCodeDialog open={qrDialogOpen} onOpenChange={setQrDialogOpen} />
         
         {/* Discrete footer with check for updates */}
-        <div className="mt-8 pb-4 flex justify-center">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="mt-10 pb-6 flex justify-center"
+        >
           <Button
             onClick={async () => {
               const result = await checkForUpdates()
@@ -863,21 +898,21 @@ Special Notes: For maximum clarity and to really make those delicate floral note
             disabled={isChecking}
             variant="ghost"
             size="sm"
-            className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+            className="text-xs text-muted-foreground/40 hover:text-muted-foreground transition-colors"
           >
             {isChecking ? (
               <>
-                <ArrowClockwise size={12} className="mr-1 animate-spin" />
+                <ArrowClockwise size={12} className="mr-1.5 animate-spin" />
                 Checking...
               </>
             ) : (
               <>
-                <DownloadSimple size={12} className="mr-1" />
+                <DownloadSimple size={12} className="mr-1.5" />
                 Check for updates
               </>
             )}
           </Button>
-        </div>
+        </motion.div>
       </div>
     </div>
   )

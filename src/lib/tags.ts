@@ -34,26 +34,27 @@ export const PRESET_TAGS = [
 
 export type TagCategory = typeof PRESET_TAGS[number]['category']
 
+// Refined color palette - more subtle and professional
 export const CATEGORY_COLORS: Record<TagCategory, string> = {
-  body: 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 text-amber-200',
-  flavor: 'bg-rose-500/10 border-rose-500/30 hover:bg-rose-500/20 text-rose-200',
-  mouthfeel: 'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20 text-blue-200',
-  style: 'bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/20 text-purple-200',
-  extraction: 'bg-green-500/10 border-green-500/30 hover:bg-green-500/20 text-green-200',
-  roast: 'bg-orange-500/10 border-orange-500/30 hover:bg-orange-500/20 text-orange-200',
-  characteristic: 'bg-cyan-500/10 border-cyan-500/30 hover:bg-cyan-500/20 text-cyan-200',
-  process: 'bg-indigo-500/10 border-indigo-500/30 hover:bg-indigo-500/20 text-indigo-200',
+  body: 'bg-amber-500/8 border-amber-500/25 hover:bg-amber-500/15 hover:border-amber-500/40 text-amber-300',
+  flavor: 'bg-rose-500/8 border-rose-500/25 hover:bg-rose-500/15 hover:border-rose-500/40 text-rose-300',
+  mouthfeel: 'bg-sky-500/8 border-sky-500/25 hover:bg-sky-500/15 hover:border-sky-500/40 text-sky-300',
+  style: 'bg-violet-500/8 border-violet-500/25 hover:bg-violet-500/15 hover:border-violet-500/40 text-violet-300',
+  extraction: 'bg-emerald-500/8 border-emerald-500/25 hover:bg-emerald-500/15 hover:border-emerald-500/40 text-emerald-300',
+  roast: 'bg-orange-500/8 border-orange-500/25 hover:bg-orange-500/15 hover:border-orange-500/40 text-orange-300',
+  characteristic: 'bg-teal-500/8 border-teal-500/25 hover:bg-teal-500/15 hover:border-teal-500/40 text-teal-300',
+  process: 'bg-indigo-500/8 border-indigo-500/25 hover:bg-indigo-500/15 hover:border-indigo-500/40 text-indigo-300',
 }
 
 export const CATEGORY_COLORS_SELECTED: Record<TagCategory, string> = {
-  body: 'bg-amber-500 border-amber-500 text-white',
-  flavor: 'bg-rose-500 border-rose-500 text-white',
-  mouthfeel: 'bg-blue-500 border-blue-500 text-white',
-  style: 'bg-purple-500 border-purple-500 text-white',
-  extraction: 'bg-green-500 border-green-500 text-white',
-  roast: 'bg-orange-500 border-orange-500 text-white',
-  characteristic: 'bg-cyan-500 border-cyan-500 text-white',
-  process: 'bg-indigo-500 border-indigo-500 text-white',
+  body: 'bg-amber-500/90 border-amber-400 text-white shadow-sm shadow-amber-500/25',
+  flavor: 'bg-rose-500/90 border-rose-400 text-white shadow-sm shadow-rose-500/25',
+  mouthfeel: 'bg-sky-500/90 border-sky-400 text-white shadow-sm shadow-sky-500/25',
+  style: 'bg-violet-500/90 border-violet-400 text-white shadow-sm shadow-violet-500/25',
+  extraction: 'bg-emerald-500/90 border-emerald-400 text-white shadow-sm shadow-emerald-500/25',
+  roast: 'bg-orange-500/90 border-orange-400 text-white shadow-sm shadow-orange-500/25',
+  characteristic: 'bg-teal-500/90 border-teal-400 text-white shadow-sm shadow-teal-500/25',
+  process: 'bg-indigo-500/90 border-indigo-400 text-white shadow-sm shadow-indigo-500/25',
 }
 
 // Get category for a tag label

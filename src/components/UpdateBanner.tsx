@@ -108,12 +108,12 @@ export function UpdateBanner({
               </AlertDescription>
             </Alert>
           ) : updateAvailable ? (
-            <Alert className="!bg-card/95 backdrop-blur-md border-neon-green/30 shadow-xl ring-1 ring-neon-green/20">
-              <DownloadSimple size={20} weight="fill" className="text-neon-green" />
+            <Alert className="!bg-card/95 backdrop-blur-md border-success/30 shadow-xl ring-1 ring-success/20">
+              <DownloadSimple size={20} weight="fill" className="text-success" />
               <AlertDescription>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1">
-                    <div className="font-semibold text-neon-green">Update Available</div>
+                    <div className="font-semibold text-success">Update Available</div>
                     <div className="text-xs text-muted-foreground mt-1">
                       A new version of MeticAI is ready to install
                     </div>
@@ -122,7 +122,7 @@ export function UpdateBanner({
                     <Button
                       onClick={handleUpdate}
                       size="sm"
-                      className="h-9 bg-neon-green text-black hover:bg-neon-green/90"
+                      className="h-9 bg-success text-black hover:bg-success/90"
                     >
                       <CheckCircle size={16} className="mr-1" weight="fill" />
                       Update Now
