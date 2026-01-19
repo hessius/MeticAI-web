@@ -161,10 +161,17 @@ function App() {
       console.log('Response text:', responseText)
       
       const data: APIResponse = JSON.parse(responseText)
+      
+      // Check if the API returned an error status
+      if (data.status === 'error') {
+        throw new Error((data as unknown as { message?: string }).message || 'Profile generation failed on the server')
+      }
+      
       setApiResponse(data)
       
       // Extract profile JSON from the reply for download functionality
-      const extractProfileJson = (text: string): Record<string, unknown> | null => {
+      const extractProfileJson = (text: string | undefined | null): Record<string, unknown> | null => {
+        if (!text) return null
         const jsonBlockPattern = /```json\s*([\s\S]*?)```/gi
         const matches = text.matchAll(jsonBlockPattern)
         
