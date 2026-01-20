@@ -150,19 +150,19 @@ function App() {
         if (advancedOptions.basketType) {
           advancedParams.push(`Basket type: ${advancedOptions.basketType}`)
         }
-        if (advancedOptions.waterTemp !== undefined && advancedOptions.waterTemp !== '') {
+        if (advancedOptions.waterTemp !== undefined) {
           advancedParams.push(`Water temperature: ${advancedOptions.waterTemp}°C`)
         }
-        if (advancedOptions.maxPressure !== undefined && advancedOptions.maxPressure !== '') {
+        if (advancedOptions.maxPressure !== undefined) {
           advancedParams.push(`Max pressure: ${advancedOptions.maxPressure} bar`)
         }
-        if (advancedOptions.maxFlow !== undefined && advancedOptions.maxFlow !== '') {
+        if (advancedOptions.maxFlow !== undefined) {
           advancedParams.push(`Max flow: ${advancedOptions.maxFlow} ml/s`)
         }
-        if (advancedOptions.shotVolume !== undefined && advancedOptions.shotVolume !== '') {
+        if (advancedOptions.shotVolume !== undefined) {
           advancedParams.push(`Shot volume: ${advancedOptions.shotVolume} ml`)
         }
-        if (advancedOptions.dose !== undefined && advancedOptions.dose !== '') {
+        if (advancedOptions.dose !== undefined) {
           advancedParams.push(`Dose: ${advancedOptions.dose}g`)
         }
         if (advancedOptions.bottomFilter !== undefined) {

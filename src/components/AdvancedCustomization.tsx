@@ -97,7 +97,7 @@ export function AdvancedCustomization({ value, onChange }: AdvancedCustomization
                     max="100"
                     step="0.5"
                     value={value.waterTemp || ''}
-                    onChange={(e) => handleChange('waterTemp', e.target.value ? parseFloat(e.target.value) : '')}
+                    onChange={(e) => handleChange('waterTemp', e.target.value ? parseFloat(e.target.value) : undefined)}
                     placeholder="e.g., 93"
                     className="bg-background/50"
                   />
@@ -115,7 +115,7 @@ export function AdvancedCustomization({ value, onChange }: AdvancedCustomization
                     max="12"
                     step="0.1"
                     value={value.maxPressure || ''}
-                    onChange={(e) => handleChange('maxPressure', e.target.value ? parseFloat(e.target.value) : '')}
+                    onChange={(e) => handleChange('maxPressure', e.target.value ? parseFloat(e.target.value) : undefined)}
                     placeholder="e.g., 9"
                     className="bg-background/50"
                   />
@@ -133,7 +133,7 @@ export function AdvancedCustomization({ value, onChange }: AdvancedCustomization
                     max="10"
                     step="0.1"
                     value={value.maxFlow || ''}
-                    onChange={(e) => handleChange('maxFlow', e.target.value ? parseFloat(e.target.value) : '')}
+                    onChange={(e) => handleChange('maxFlow', e.target.value ? parseFloat(e.target.value) : undefined)}
                     placeholder="e.g., 4.5"
                     className="bg-background/50"
                   />
@@ -151,7 +151,7 @@ export function AdvancedCustomization({ value, onChange }: AdvancedCustomization
                     max="100"
                     step="1"
                     value={value.shotVolume || ''}
-                    onChange={(e) => handleChange('shotVolume', e.target.value ? parseFloat(e.target.value) : '')}
+                    onChange={(e) => handleChange('shotVolume', e.target.value ? parseFloat(e.target.value) : undefined)}
                     placeholder="e.g., 40"
                     className="bg-background/50"
                   />
@@ -169,7 +169,7 @@ export function AdvancedCustomization({ value, onChange }: AdvancedCustomization
                     max="25"
                     step="0.1"
                     value={value.dose || ''}
-                    onChange={(e) => handleChange('dose', e.target.value ? parseFloat(e.target.value) : '')}
+                    onChange={(e) => handleChange('dose', e.target.value ? parseFloat(e.target.value) : undefined)}
                     placeholder="e.g., 18"
                     className="bg-background/50"
                   />
