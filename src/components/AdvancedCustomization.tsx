@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Button } from '@/components/ui/button'
 import { CaretDown, X } from '@phosphor-icons/react'
@@ -16,7 +15,7 @@ export interface AdvancedCustomizationOptions {
   maxFlow?: number
   shotVolume?: number
   dose?: number
-  bottomFilter?: boolean
+  bottomFilter?: 'yes' | 'no'
 }
 
 interface AdvancedCustomizationProps {
@@ -35,7 +34,7 @@ export function AdvancedCustomization({ value, onChange }: AdvancedCustomization
   }
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="overflow-hidden">
       <CollapsibleTrigger asChild>
         <motion.button
           whileHover={{ scale: 1.01 }}
@@ -64,7 +63,7 @@ export function AdvancedCustomization({ value, onChange }: AdvancedCustomization
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="mt-3 p-4 rounded-xl border border-border/50 bg-secondary/30 space-y-4">
+              <div className="mt-3 p-4 rounded-xl border border-border/50 bg-secondary/30 space-y-4 overflow-hidden">
                 {/* Basket Size */}
                 <div className="space-y-2">
                   <Label htmlFor="basket-size" className="text-sm font-medium text-foreground/90">
@@ -291,15 +290,35 @@ export function AdvancedCustomization({ value, onChange }: AdvancedCustomization
                 </div>
 
                 {/* Bottom Filter */}
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="bottom-filter" className="text-sm font-medium text-foreground/90 cursor-pointer">
+                <div className="space-y-2">
+                  <Label htmlFor="bottom-filter" className="text-sm font-medium text-foreground/90">
                     Bottom Filter
                   </Label>
-                  <Switch
-                    id="bottom-filter"
-                    checked={value.bottomFilter ?? false}
-                    onCheckedChange={(checked) => handleChange('bottomFilter', checked)}
-                  />
+                  <div className="flex gap-2">
+                    <Select
+                      value={value.bottomFilter || ''}
+                      onValueChange={(val) => handleChange('bottomFilter', val || undefined)}
+                    >
+                      <SelectTrigger id="bottom-filter" className="w-full bg-background/50">
+                        <SelectValue placeholder="Doesn't matter" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="yes">Yes</SelectItem>
+                        <SelectItem value="no">No</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {value.bottomFilter && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 h-9 w-9"
+                        onClick={() => handleChange('bottomFilter', undefined)}
+                      >
+                        <X size={16} weight="bold" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </motion.div>

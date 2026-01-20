@@ -168,8 +168,8 @@ function App() {
         if (advancedOptions.dose !== undefined) {
           advancedParams.push(`Dose: ${advancedOptions.dose} g`)
         }
-        if (advancedOptions.bottomFilter !== undefined) {
-          advancedParams.push(`Bottom filter: ${advancedOptions.bottomFilter ? 'yes' : 'no'}`)
+        if (advancedOptions.bottomFilter) {
+          advancedParams.push(`Bottom filter: ${advancedOptions.bottomFilter}`)
         }
         
         if (advancedParams.length > 0) {
@@ -387,7 +387,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-5">
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-5 overflow-x-hidden">
       <Toaster richColors position="top-center" />
       <UpdateBanner
         updateAvailable={updateAvailable && !bannerDismissed}
@@ -396,7 +396,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
         onUpdate={handleUpdate}
         onDismiss={handleDismissBanner}
       />
-      <div className="w-full max-w-md relative">
+      <div className="w-full max-w-md relative overflow-hidden">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -913,48 +913,50 @@ Special Notes: For maximum clarity and to really make those delicate floral note
         
         <QRCodeDialog open={qrDialogOpen} onOpenChange={setQrDialogOpen} />
         
-        {/* Discrete footer with check for updates */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-10 pb-6 flex justify-center"
-        >
-          <Button
-            onClick={async () => {
-              const result = await checkForUpdates()
-              if (result.error) {
-                toast.error('Check failed', {
-                  description: result.error,
-                })
-              } else if (result.updateAvailable) {
-                toast.success('Update available!', {
-                  description: 'A new version is ready to install.',
-                })
-              } else {
-                toast.info('You\'re up to date', {
-                  description: 'No updates available.',
-                })
-              }
-            }}
-            disabled={isChecking}
-            variant="ghost"
-            size="sm"
-            className="text-xs text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+        {/* Discrete footer with check for updates - only show on home page */}
+        {viewState === 'form' && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="mt-10 pb-6 flex justify-center"
           >
-            {isChecking ? (
-              <>
-                <ArrowClockwise size={12} className="mr-1.5 animate-spin" />
-                Checking...
-              </>
-            ) : (
-              <>
-                <DownloadSimple size={12} className="mr-1.5" />
-                Check for updates
-              </>
-            )}
-          </Button>
-        </motion.div>
+            <Button
+              onClick={async () => {
+                const result = await checkForUpdates()
+                if (result.error) {
+                  toast.error('Check failed', {
+                    description: result.error,
+                  })
+                } else if (result.updateAvailable) {
+                  toast.success('Update available!', {
+                    description: 'A new version is ready to install.',
+                  })
+                } else {
+                  toast.info('You\'re up to date', {
+                    description: 'No updates available.',
+                  })
+                }
+              }}
+              disabled={isChecking}
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+            >
+              {isChecking ? (
+                <>
+                  <ArrowClockwise size={12} className="mr-1.5 animate-spin" />
+                  Checking...
+                </>
+              ) : (
+                <>
+                  <DownloadSimple size={12} className="mr-1.5" />
+                  Check for updates
+                </>
+              )}
+            </Button>
+          </motion.div>
+        )}
       </div>
     </div>
   )
