@@ -70,7 +70,7 @@ export function AdvancedCustomization({ value, onChange }: AdvancedCustomization
                   </Label>
                   <Select
                     value={value.basketType || ''}
-                    onValueChange={(val) => handleChange('basketType', val)}
+                    onValueChange={(val) => handleChange('basketType', val || undefined)}
                   >
                     <SelectTrigger id="basket-type" className="w-full bg-background/50">
                       <SelectValue placeholder="Select basket type" />
@@ -182,7 +182,7 @@ export function AdvancedCustomization({ value, onChange }: AdvancedCustomization
                   </Label>
                   <Switch
                     id="bottom-filter"
-                    checked={value.bottomFilter || false}
+                    checked={value.bottomFilter ?? false}
                     onCheckedChange={(checked) => handleChange('bottomFilter', checked)}
                   />
                 </div>

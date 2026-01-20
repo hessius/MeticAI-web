@@ -144,7 +144,7 @@ function App() {
       }
 
       // Add advanced customization options if any are set
-      if (Object.keys(advancedOptions).length > 0) {
+      if (Object.values(advancedOptions).some(val => val !== undefined)) {
         const advancedParams: string[] = []
         
         if (advancedOptions.basketType) {
