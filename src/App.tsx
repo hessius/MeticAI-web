@@ -163,7 +163,7 @@ function App() {
           advancedParams.push(`Shot volume: ${advancedOptions.shotVolume} ml`)
         }
         if (advancedOptions.dose !== undefined) {
-          advancedParams.push(`Dose: ${advancedOptions.dose}g`)
+          advancedParams.push(`Dose: ${advancedOptions.dose} g`)
         }
         if (advancedOptions.bottomFilter !== undefined) {
           advancedParams.push(`Bottom filter: ${advancedOptions.bottomFilter ? 'yes' : 'no'}`)

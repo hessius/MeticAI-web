@@ -25,7 +25,7 @@ interface AdvancedCustomizationProps {
 export function AdvancedCustomization({ value, onChange }: AdvancedCustomizationProps) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const handleChange = (key: keyof AdvancedCustomizationOptions, newValue: string | number | boolean) => {
+  const handleChange = (key: keyof AdvancedCustomizationOptions, newValue: string | number | boolean | undefined) => {
     onChange({
       ...value,
       [key]: newValue,
