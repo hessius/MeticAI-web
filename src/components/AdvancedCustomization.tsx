@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { CaretDown } from '@phosphor-icons/react'
+import { Button } from '@/components/ui/button'
+import { CaretDown, X } from '@phosphor-icons/react'
 
 export interface AdvancedCustomizationOptions {
+  basketSize?: string
   basketType?: string
   waterTemp?: number
   maxPressure?: number
@@ -63,26 +65,74 @@ export function AdvancedCustomization({ value, onChange }: AdvancedCustomization
               className="overflow-hidden"
             >
               <div className="mt-3 p-4 rounded-xl border border-border/50 bg-secondary/30 space-y-4">
+                {/* Basket Size */}
+                <div className="space-y-2">
+                  <Label htmlFor="basket-size" className="text-sm font-medium text-foreground/90">
+                    Basket Size
+                  </Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={value.basketSize || ''}
+                      onValueChange={(val) => handleChange('basketSize', val || undefined)}
+                    >
+                      <SelectTrigger id="basket-size" className="w-full bg-background/50">
+                        <SelectValue placeholder="Select basket size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="single">Single</SelectItem>
+                        <SelectItem value="double">Double</SelectItem>
+                        <SelectItem value="16g">16g</SelectItem>
+                        <SelectItem value="18g">18g</SelectItem>
+                        <SelectItem value="20g">20g</SelectItem>
+                        <SelectItem value="22g">22g</SelectItem>
+                        <SelectItem value="24g">24g</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {value.basketSize && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 h-9 w-9"
+                        onClick={() => handleChange('basketSize', undefined)}
+                      >
+                        <X size={16} weight="bold" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
                 {/* Basket Type */}
                 <div className="space-y-2">
                   <Label htmlFor="basket-type" className="text-sm font-medium text-foreground/90">
                     Basket Type
                   </Label>
-                  <Select
-                    value={value.basketType || ''}
-                    onValueChange={(val) => handleChange('basketType', val || undefined)}
-                  >
-                    <SelectTrigger id="basket-type" className="w-full bg-background/50">
-                      <SelectValue placeholder="Select basket type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="single">Single</SelectItem>
-                      <SelectItem value="double">Double</SelectItem>
-                      <SelectItem value="step-down">Step-down</SelectItem>
-                      <SelectItem value="vst">VST</SelectItem>
-                      <SelectItem value="high-extraction">High Extraction</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select
+                      value={value.basketType || ''}
+                      onValueChange={(val) => handleChange('basketType', val || undefined)}
+                    >
+                      <SelectTrigger id="basket-type" className="w-full bg-background/50">
+                        <SelectValue placeholder="Select basket type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="step-down">Step-down</SelectItem>
+                        <SelectItem value="vst">VST</SelectItem>
+                        <SelectItem value="high-extraction">High Extraction</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {value.basketType && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 h-9 w-9"
+                        onClick={() => handleChange('basketType', undefined)}
+                      >
+                        <X size={16} weight="bold" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Water Temperature */}
@@ -90,17 +140,30 @@ export function AdvancedCustomization({ value, onChange }: AdvancedCustomization
                   <Label htmlFor="water-temp" className="text-sm font-medium text-foreground/90">
                     Water Temperature (°C)
                   </Label>
-                  <Input
-                    id="water-temp"
-                    type="number"
-                    min="85"
-                    max="100"
-                    step="0.5"
-                    value={value.waterTemp || ''}
-                    onChange={(e) => handleChange('waterTemp', e.target.value ? parseFloat(e.target.value) : undefined)}
-                    placeholder="e.g., 93"
-                    className="bg-background/50"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="water-temp"
+                      type="number"
+                      min="85"
+                      max="100"
+                      step="0.5"
+                      value={value.waterTemp || ''}
+                      onChange={(e) => handleChange('waterTemp', e.target.value ? parseFloat(e.target.value) : undefined)}
+                      placeholder="e.g., 93"
+                      className="bg-background/50"
+                    />
+                    {value.waterTemp !== undefined && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 h-9 w-9"
+                        onClick={() => handleChange('waterTemp', undefined)}
+                      >
+                        <X size={16} weight="bold" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Max Pressure */}
@@ -108,17 +171,30 @@ export function AdvancedCustomization({ value, onChange }: AdvancedCustomization
                   <Label htmlFor="max-pressure" className="text-sm font-medium text-foreground/90">
                     Max Pressure (bar)
                   </Label>
-                  <Input
-                    id="max-pressure"
-                    type="number"
-                    min="1"
-                    max="12"
-                    step="0.1"
-                    value={value.maxPressure || ''}
-                    onChange={(e) => handleChange('maxPressure', e.target.value ? parseFloat(e.target.value) : undefined)}
-                    placeholder="e.g., 9"
-                    className="bg-background/50"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="max-pressure"
+                      type="number"
+                      min="1"
+                      max="12"
+                      step="0.1"
+                      value={value.maxPressure || ''}
+                      onChange={(e) => handleChange('maxPressure', e.target.value ? parseFloat(e.target.value) : undefined)}
+                      placeholder="e.g., 9"
+                      className="bg-background/50"
+                    />
+                    {value.maxPressure !== undefined && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 h-9 w-9"
+                        onClick={() => handleChange('maxPressure', undefined)}
+                      >
+                        <X size={16} weight="bold" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Max Flow */}
@@ -126,17 +202,30 @@ export function AdvancedCustomization({ value, onChange }: AdvancedCustomization
                   <Label htmlFor="max-flow" className="text-sm font-medium text-foreground/90">
                     Max Flow (ml/s)
                   </Label>
-                  <Input
-                    id="max-flow"
-                    type="number"
-                    min="0.5"
-                    max="10"
-                    step="0.1"
-                    value={value.maxFlow || ''}
-                    onChange={(e) => handleChange('maxFlow', e.target.value ? parseFloat(e.target.value) : undefined)}
-                    placeholder="e.g., 4.5"
-                    className="bg-background/50"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="max-flow"
+                      type="number"
+                      min="0.5"
+                      max="10"
+                      step="0.1"
+                      value={value.maxFlow || ''}
+                      onChange={(e) => handleChange('maxFlow', e.target.value ? parseFloat(e.target.value) : undefined)}
+                      placeholder="e.g., 4.5"
+                      className="bg-background/50"
+                    />
+                    {value.maxFlow !== undefined && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 h-9 w-9"
+                        onClick={() => handleChange('maxFlow', undefined)}
+                      >
+                        <X size={16} weight="bold" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Shot Volume */}
@@ -144,17 +233,30 @@ export function AdvancedCustomization({ value, onChange }: AdvancedCustomization
                   <Label htmlFor="shot-volume" className="text-sm font-medium text-foreground/90">
                     Shot Volume (ml)
                   </Label>
-                  <Input
-                    id="shot-volume"
-                    type="number"
-                    min="15"
-                    max="100"
-                    step="1"
-                    value={value.shotVolume || ''}
-                    onChange={(e) => handleChange('shotVolume', e.target.value ? parseFloat(e.target.value) : undefined)}
-                    placeholder="e.g., 40"
-                    className="bg-background/50"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="shot-volume"
+                      type="number"
+                      min="15"
+                      max="100"
+                      step="1"
+                      value={value.shotVolume || ''}
+                      onChange={(e) => handleChange('shotVolume', e.target.value ? parseFloat(e.target.value) : undefined)}
+                      placeholder="e.g., 40"
+                      className="bg-background/50"
+                    />
+                    {value.shotVolume !== undefined && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 h-9 w-9"
+                        onClick={() => handleChange('shotVolume', undefined)}
+                      >
+                        <X size={16} weight="bold" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Dose */}
@@ -162,17 +264,30 @@ export function AdvancedCustomization({ value, onChange }: AdvancedCustomization
                   <Label htmlFor="dose" className="text-sm font-medium text-foreground/90">
                     Dose (g)
                   </Label>
-                  <Input
-                    id="dose"
-                    type="number"
-                    min="7"
-                    max="25"
-                    step="0.1"
-                    value={value.dose || ''}
-                    onChange={(e) => handleChange('dose', e.target.value ? parseFloat(e.target.value) : undefined)}
-                    placeholder="e.g., 18"
-                    className="bg-background/50"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="dose"
+                      type="number"
+                      min="7"
+                      max="25"
+                      step="0.1"
+                      value={value.dose || ''}
+                      onChange={(e) => handleChange('dose', e.target.value ? parseFloat(e.target.value) : undefined)}
+                      placeholder="e.g., 18"
+                      className="bg-background/50"
+                    />
+                    {value.dose !== undefined && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 h-9 w-9"
+                        onClick={() => handleChange('dose', undefined)}
+                      >
+                        <X size={16} weight="bold" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Bottom Filter */}

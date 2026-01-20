@@ -147,6 +147,9 @@ function App() {
       if (Object.values(advancedOptions).some(val => val !== undefined)) {
         const advancedParams: string[] = []
         
+        if (advancedOptions.basketSize) {
+          advancedParams.push(`Basket size: ${advancedOptions.basketSize}`)
+        }
         if (advancedOptions.basketType) {
           advancedParams.push(`Basket type: ${advancedOptions.basketType}`)
         }
