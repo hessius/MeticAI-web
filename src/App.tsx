@@ -44,6 +44,7 @@ const LOADING_MESSAGES = [
 ]
 
 import { PRESET_TAGS, CATEGORY_COLORS } from '@/lib/tags'
+import { AdvancedCustomization, AdvancedCustomizationOptions } from '@/components/AdvancedCustomization'
 
 interface APIResponse {
   status: string
@@ -60,6 +61,7 @@ function App() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [userPrefs, setUserPrefs] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [advancedOptions, setAdvancedOptions] = useState<AdvancedCustomizationOptions>({})
   const [currentMessage, setCurrentMessage] = useState(0)
   const [apiResponse, setApiResponse] = useState<APIResponse | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
@@ -141,6 +143,37 @@ function App() {
         formData.append('user_prefs', combinedPrefs)
       }
 
+      // Add advanced customization options if any are set
+      if (Object.keys(advancedOptions).length > 0) {
+        const advancedParams: string[] = []
+        
+        if (advancedOptions.basketType) {
+          advancedParams.push(`Basket type: ${advancedOptions.basketType}`)
+        }
+        if (advancedOptions.waterTemp !== undefined && advancedOptions.waterTemp !== '') {
+          advancedParams.push(`Water temperature: ${advancedOptions.waterTemp}°C`)
+        }
+        if (advancedOptions.maxPressure !== undefined && advancedOptions.maxPressure !== '') {
+          advancedParams.push(`Max pressure: ${advancedOptions.maxPressure} bar`)
+        }
+        if (advancedOptions.maxFlow !== undefined && advancedOptions.maxFlow !== '') {
+          advancedParams.push(`Max flow: ${advancedOptions.maxFlow} ml/s`)
+        }
+        if (advancedOptions.shotVolume !== undefined && advancedOptions.shotVolume !== '') {
+          advancedParams.push(`Shot volume: ${advancedOptions.shotVolume} ml`)
+        }
+        if (advancedOptions.dose !== undefined && advancedOptions.dose !== '') {
+          advancedParams.push(`Dose: ${advancedOptions.dose}g`)
+        }
+        if (advancedOptions.bottomFilter !== undefined) {
+          advancedParams.push(`Bottom filter: ${advancedOptions.bottomFilter ? 'yes' : 'no'}`)
+        }
+        
+        if (advancedParams.length > 0) {
+          formData.append('advanced_customization', advancedParams.join(', '))
+        }
+      }
+
       const serverUrl = await getServerUrl()
       console.log('Sending request to:', `${serverUrl}/analyze_and_profile`)
       
@@ -211,6 +244,7 @@ function App() {
     setImagePreview(null)
     setUserPrefs('')
     setSelectedTags([])
+    setAdvancedOptions({})
     setApiResponse(null)
     setErrorMessage('')
     setCurrentMessage(0)
@@ -505,6 +539,11 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                     Describe your ideal espresso flavor profile using text, tags, or both
                   </p>
                 </div>
+
+                <AdvancedCustomization
+                  value={advancedOptions}
+                  onChange={setAdvancedOptions}
+                />
 
                 {errorMessage && (
                   <motion.div
