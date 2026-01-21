@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -6,6 +6,14 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   CaretLeft,
   Warning,
@@ -14,7 +22,13 @@ import {
   Drop,
   Thermometer,
   Gauge,
-  ArrowsCounterClockwise
+  ArrowsCounterClockwise,
+  Play,
+  Pause,
+  ArrowCounterClockwise,
+  GitDiff,
+  Brain,
+  Timer
 } from '@phosphor-icons/react'
 import { useShotHistory, ShotInfo, ShotData } from '@/hooks/useShotHistory'
 import { formatDistanceToNow, format } from 'date-fns'
@@ -27,7 +41,8 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  ReferenceArea
+  ReferenceArea,
+  ReferenceLine
 } from 'recharts'
 
 // Chart colors matching Meticulous app style (muted to fit dark theme)
@@ -61,6 +76,9 @@ const STAGE_BORDER_COLORS = [
   'rgba(20, 184, 166, 0.4)',
 ]
 
+// Playback speed options - defined outside component to avoid re-creation
+const SPEED_OPTIONS: number[] = [0.5, 1, 2, 3, 5]
+
 interface ShotHistoryViewProps {
   profileName: string
   onBack: () => void
@@ -88,15 +106,16 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   
   // Find stage from the first payload item if available
   const stageData = payload[0]?.payload as ChartDataPoint | undefined
+  const stageName = stageData?.stage
   
   return (
     <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg p-3 shadow-lg">
       <p className="text-xs font-medium text-muted-foreground mb-1.5">
-        Time: {label?.toFixed(1)}s
+        Time: {typeof label === 'number' ? label.toFixed(1) : '0'}s
       </p>
-      {stageData?.stage && (
+      {stageName && typeof stageName === 'string' && (
         <p className="text-xs font-medium text-primary mb-1.5">
-          Stage: {stageData.stage}
+          Stage: {stageName}
         </p>
       )}
       <div className="space-y-1">
@@ -104,10 +123,10 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
           <div key={index} className="flex items-center gap-2 text-xs">
             <div 
               className="w-2 h-2 rounded-full" 
-              style={{ backgroundColor: item.color }}
+              style={{ backgroundColor: item.color || '#888' }}
             />
-            <span className="capitalize">{item.name}:</span>
-            <span className="font-medium">{item.value?.toFixed(2)}</span>
+            <span className="capitalize">{typeof item.name === 'string' ? item.name : 'Value'}:</span>
+            <span className="font-medium">{typeof item.value === 'number' ? item.value.toFixed(2) : '-'}</span>
           </div>
         ))}
       </div>
@@ -192,16 +211,124 @@ function SearchingLoader({ estimatedSeconds = 60 }: { estimatedSeconds?: number 
 }
 
 export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
-  const { shots, isLoading, error, fetchShotsByProfile, fetchShotData } = useShotHistory()
+  const { shots, isLoading, isBackgroundRefreshing, error, lastFetched, fetchShotsByProfile, backgroundRefresh, fetchShotData } = useShotHistory()
   const [selectedShot, setSelectedShot] = useState<ShotInfo | null>(null)
   const [shotData, setShotData] = useState<ShotData | null>(null)
   const [loadingData, setLoadingData] = useState(false)
   const [dataError, setDataError] = useState<string | null>(null)
+  
+  // Action tab state
+  const [activeAction, setActiveAction] = useState<'replay' | 'compare' | 'analyze'>('replay')
 
+  // Replay state
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [playbackSpeed, setPlaybackSpeed] = useState(1)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [maxTime, setMaxTime] = useState(0)
+  const animationRef = useRef<number | null>(null)
+  const lastFrameTimeRef = useRef<number>(0)
+
+  // Reset replay state when shot changes
   useEffect(() => {
-    fetchShotsByProfile(profileName, { limit: 20, includeData: false })
-      .catch(err => console.error('Failed to fetch shots:', err))
-  }, [profileName, fetchShotsByProfile])
+    setIsPlaying(false)
+    setCurrentTime(0)
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current)
+      animationRef.current = null
+    }
+  }, [selectedShot])
+
+  // Animation loop for replay
+  useEffect(() => {
+    if (!isPlaying || maxTime === 0) return
+
+    const animate = (timestamp: number) => {
+      if (lastFrameTimeRef.current === 0) {
+        lastFrameTimeRef.current = timestamp
+      }
+
+      const deltaMs = timestamp - lastFrameTimeRef.current
+      lastFrameTimeRef.current = timestamp
+
+      // Convert to seconds and apply playback speed
+      const deltaSeconds = (deltaMs / 1000) * playbackSpeed
+
+      setCurrentTime(prev => {
+        const next = prev + deltaSeconds
+        if (next >= maxTime) {
+          setIsPlaying(false)
+          return maxTime
+        }
+        return next
+      })
+
+      animationRef.current = requestAnimationFrame(animate)
+    }
+
+    animationRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+        animationRef.current = null
+      }
+      lastFrameTimeRef.current = 0
+    }
+  }, [isPlaying, playbackSpeed, maxTime])
+
+  // Replay control functions
+  const handlePlayPause = useCallback(() => {
+    if (currentTime >= maxTime) {
+      // If at end, restart from beginning
+      setCurrentTime(0)
+    }
+    setIsPlaying(prev => !prev)
+  }, [currentTime, maxTime])
+
+  const handleRestart = useCallback(() => {
+    setCurrentTime(0)
+    setIsPlaying(false)
+  }, [])
+
+  // Calculate max time when shot data changes
+  useEffect(() => {
+    if (shotData) {
+      // Extract time data from shot data
+      const dataEntries = shotData.data as Array<{
+        shot?: { pressure?: number };
+        time?: number;
+        profile_time?: number;
+      }> || []
+      
+      if (Array.isArray(dataEntries) && dataEntries.length > 0) {
+        // Get the last entry's time
+        const lastEntry = dataEntries[dataEntries.length - 1]
+        const lastTime = (lastEntry?.time || lastEntry?.profile_time || 0) / 1000
+        if (lastTime > 0) {
+          setMaxTime(lastTime)
+        }
+      }
+    }
+  }, [shotData])
+
+  // Fetch shots with stale-while-revalidate pattern
+  useEffect(() => {
+    const loadShots = async () => {
+      try {
+        const result = await fetchShotsByProfile(profileName, { limit: 20, includeData: false })
+        
+        // If server returned stale data, trigger background refresh
+        if (result.is_stale) {
+          console.log('Cache is stale, refreshing in background...')
+          backgroundRefresh(profileName, { limit: 20 })
+        }
+      } catch (err) {
+        console.error('Failed to fetch shots:', err)
+      }
+    }
+    
+    loadShots()
+  }, [profileName, fetchShotsByProfile, backgroundRefresh])
 
   const handleSelectShot = async (shot: ShotInfo) => {
     setSelectedShot(shot)
@@ -230,8 +357,8 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
   }
 
   const handleRefresh = () => {
-    fetchShotsByProfile(profileName, { limit: 20, includeData: false })
-      .catch(err => console.error('Failed to refresh shots:', err))
+    // Use background refresh to keep showing cached data while fetching
+    backgroundRefresh(profileName, { limit: 20 })
   }
 
   // Transform shot data into chart-compatible format
@@ -340,19 +467,24 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
 
   const formatShotTime = (shot: ShotInfo) => {
     try {
-      if (shot.timestamp) {
-        // Unix timestamp in seconds
-        const date = new Date(shot.timestamp * 1000)
-        return format(date, 'MMM d, HH:mm')
+      if (shot.timestamp && (typeof shot.timestamp === 'string' || typeof shot.timestamp === 'number')) {
+        // Unix timestamp in seconds - might be string or number
+        const ts = typeof shot.timestamp === 'string' ? parseFloat(shot.timestamp) : shot.timestamp
+        if (!isNaN(ts) && ts > 0) {
+          const date = new Date(ts * 1000)
+          return format(date, 'MMM d, HH:mm')
+        }
       }
       // Extract time from filename (format: HH:MM:SS.shot.json.zst or HH:MM:SS.shot.json)
-      const timeMatch = shot.filename.match(/^(\d{2}):(\d{2}):(\d{2})/)
-      if (timeMatch) {
-        return `${shot.date} ${timeMatch[0]}`
+      if (shot.filename && typeof shot.filename === 'string') {
+        const timeMatch = shot.filename.match(/^(\d{2}):(\d{2}):(\d{2})/)
+        if (timeMatch) {
+          return `${shot.date || ''} ${timeMatch[0]}`
+        }
       }
-      return shot.date
+      return shot.date || 'Unknown'
     } catch {
-      return shot.date
+      return shot.date || 'Unknown'
     }
   }
 
@@ -400,7 +532,7 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
             <div className="space-y-4">
               {/* Shot Summary Stats */}
               <div className="grid grid-cols-3 gap-3">
-                {selectedShot.total_time && (
+                {typeof selectedShot.total_time === 'number' && (
                   <div className="p-3 bg-secondary/40 rounded-xl border border-border/20">
                     <div className="flex items-center gap-2 text-muted-foreground mb-1">
                       <Clock size={14} weight="bold" />
@@ -411,7 +543,7 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                     </p>
                   </div>
                 )}
-                {selectedShot.final_weight && (
+                {typeof selectedShot.final_weight === 'number' && (
                   <div className="p-3 bg-secondary/40 rounded-xl border border-border/20">
                     <div className="flex items-center gap-2 text-muted-foreground mb-1">
                       <Drop size={14} weight="fill" />
@@ -422,7 +554,7 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                     </p>
                   </div>
                 )}
-                {shotData.profile?.temperature && (
+                {typeof shotData.profile?.temperature === 'number' && (
                   <div className="p-3 bg-secondary/40 rounded-xl border border-border/20">
                     <div className="flex items-center gap-2 text-muted-foreground mb-1">
                       <Thermometer size={14} weight="fill" />
@@ -437,24 +569,57 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
 
               {/* Chart */}
               <div className="space-y-2">
-                <Label className="text-sm font-semibold tracking-wide text-primary flex items-center gap-2">
-                  <ChartLine size={16} weight="bold" />
-                  Extraction Graph
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold tracking-wide text-primary flex items-center gap-2">
+                    <ChartLine size={16} weight="bold" />
+                    Extraction Graph
+                  </Label>
+                  {isPlaying && (
+                    <Badge variant="secondary" className="animate-pulse">
+                      <Play size={10} weight="fill" className="mr-1" />
+                      Replaying {playbackSpeed}x
+                    </Badge>
+                  )}
+                </div>
                 <div className="p-1 bg-secondary/40 rounded-xl border border-border/20">
                   <div className="h-80">
                     {(() => {
                       const chartData = getChartData(shotData)
                       const stageRanges = getStageRanges(chartData)
                       const hasGravFlow = chartData.some(d => d.gravimetricFlow !== undefined && d.gravimetricFlow > 0)
+                      const dataMaxTime = chartData.length > 0 ? chartData[chartData.length - 1].time : 0
+                      
+                      // Calculate fixed max values from full dataset for stable axes
+                      const maxPressure = Math.max(...chartData.map(d => d.pressure || 0), 12)
+                      const maxFlow = Math.max(...chartData.map(d => Math.max(d.flow || 0, d.gravimetricFlow || 0)), 8)
+                      const maxLeftAxis = Math.ceil(Math.max(maxPressure, maxFlow) * 1.1)
+                      const maxWeight = Math.max(...chartData.map(d => d.weight || 0), 50)
+                      const maxRightAxis = Math.ceil(maxWeight * 1.1)
+                      
+                      // Filter data for replay - show data up to currentTime, or all data if not playing
+                      const isReplaying = (isPlaying || currentTime > 0) && currentTime < dataMaxTime
+                      const displayData = isReplaying
+                        ? chartData.filter(d => d.time <= currentTime)
+                        : chartData
+                      
+                      // Filter stage ranges to only show stages that have started (for progressive reveal)
+                      const displayStageRanges = isReplaying
+                        ? stageRanges
+                            .filter(stage => stage.startTime <= currentTime)
+                            .map(stage => ({
+                              ...stage,
+                              // Clip the end time to current time if stage is still in progress
+                              endTime: Math.min(stage.endTime, currentTime)
+                            }))
+                        : stageRanges
                       
                       return (
                         <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={chartData} margin={{ top: 5, right: 0, left: -5, bottom: 5 }}>
+                          <LineChart data={displayData} margin={{ top: 5, right: 0, left: -5, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.3} />
                             
-                            {/* Stage background areas */}
-                            {stageRanges.map((stage, idx) => (
+                            {/* Stage background areas - progressively revealed during replay */}
+                            {displayStageRanges.map((stage, idx) => (
                               <ReferenceArea
                                 key={idx}
                                 yAxisId="left"
@@ -468,6 +633,17 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                               />
                             ))}
                             
+                            {/* Playhead reference line during replay */}
+                            {isReplaying && (
+                              <ReferenceLine
+                                yAxisId="left"
+                                x={currentTime}
+                                stroke="#fff"
+                                strokeWidth={2}
+                                strokeDasharray="4 2"
+                              />
+                            )}
+                            
                             <XAxis 
                               dataKey="time" 
                               stroke="#666" 
@@ -475,25 +651,30 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                               tickFormatter={(value) => `${Math.round(value)}s`}
                               axisLine={{ stroke: '#444' }}
                               tickLine={{ stroke: '#444' }}
+                              domain={[0, dataMaxTime]}
+                              type="number"
+                              allowDataOverflow={false}
                             />
                             <YAxis 
                               yAxisId="left" 
                               stroke="#666" 
                               fontSize={10}
-                              domain={[0, 'auto']}
+                              domain={[0, maxLeftAxis]}
                               axisLine={{ stroke: '#444' }}
                               tickLine={{ stroke: '#444' }}
                               width={35}
+                              allowDataOverflow={false}
                             />
                             <YAxis 
                               yAxisId="right" 
                               orientation="right" 
                               stroke="#666" 
                               fontSize={10}
-                              domain={[0, 'auto']}
+                              domain={[0, maxRightAxis]}
                               axisLine={{ stroke: '#444' }}
                               tickLine={{ stroke: '#444' }}
                               width={35}
+                              allowDataOverflow={false}
                             />
                             <Tooltip content={<CustomTooltip />} />
                             <Legend 
@@ -565,13 +746,152 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                             borderColor: STAGE_BORDER_COLORS[stage.colorIndex]
                           }}
                         >
-                          {stage.name}
+                          {typeof stage.name === 'string' ? stage.name : String(stage.name || '')}
                         </Badge>
                       ))}
                     </div>
                   )
                 })()}
               </div>
+
+              {/* Action Tabs */}
+              <Tabs value={activeAction} onValueChange={(v) => setActiveAction(v as typeof activeAction)} className="w-full">
+                <TabsList className="grid w-full grid-cols-3 h-11">
+                  <TabsTrigger value="replay" className="gap-1.5 text-xs">
+                    <Play size={14} weight="bold" />
+                    Replay
+                  </TabsTrigger>
+                  <TabsTrigger value="compare" className="gap-1.5 text-xs">
+                    <GitDiff size={14} weight="bold" />
+                    Compare
+                  </TabsTrigger>
+                  <TabsTrigger value="analyze" className="gap-1.5 text-xs">
+                    <Brain size={14} weight="bold" />
+                    Analyze
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Replay Tab Content */}
+                <TabsContent value="replay" className="mt-4 space-y-4">
+                  {/* Progress Bar */}
+                  {maxTime > 0 && (
+                    <div className="space-y-2">
+                      <div 
+                        className="h-2 bg-secondary/60 rounded-full overflow-hidden cursor-pointer relative group"
+                        onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect()
+                          const x = e.clientX - rect.left
+                          const percent = x / rect.width
+                          setCurrentTime(percent * maxTime)
+                        }}
+                      >
+                        <motion.div 
+                          className="h-full bg-primary rounded-full"
+                          initial={false}
+                          animate={{ width: `${(currentTime / maxTime) * 100}%` }}
+                          transition={{ duration: 0.05 }}
+                        />
+                        {/* Hover indicator */}
+                        <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      
+                      {/* Time display */}
+                      <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
+                        <span>{currentTime.toFixed(1)}s</span>
+                        <span>{maxTime.toFixed(1)}s</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Playback Controls */}
+                  <div className="flex items-center justify-center gap-3">
+                    {/* Restart Button */}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleRestart}
+                      className="h-10 w-10 rounded-full"
+                      title="Restart"
+                    >
+                      <ArrowCounterClockwise size={18} weight="bold" />
+                    </Button>
+                    
+                    {/* Play/Pause Button */}
+                    <Button
+                      variant={isPlaying ? "secondary" : "default"}
+                      size="icon"
+                      onClick={handlePlayPause}
+                      className="h-14 w-14 rounded-full shadow-lg"
+                      title={isPlaying ? "Pause" : "Play"}
+                    >
+                      {isPlaying ? (
+                        <Pause size={28} weight="fill" />
+                      ) : (
+                        <Play size={28} weight="fill" className="ml-1" />
+                      )}
+                    </Button>
+                    
+                    {/* Speed Control Dropdown */}
+                    <Select 
+                      value={playbackSpeed.toString()} 
+                      onValueChange={(v) => setPlaybackSpeed(parseFloat(v))}
+                    >
+                      <SelectTrigger className="w-24 h-10 rounded-full font-medium">
+                        <Timer size={14} weight="bold" className="mr-1 shrink-0" />
+                        <span className="font-mono">{playbackSpeed}x</span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SPEED_OPTIONS.map((speed) => (
+                          <SelectItem key={speed} value={speed.toString()}>
+                            <span className="flex items-center gap-1.5">
+                              <Timer size={12} weight="bold" />
+                              {speed}x
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </TabsContent>
+
+                {/* Compare Tab Content (Mock) */}
+                <TabsContent value="compare" className="mt-4">
+                  <div className="text-center py-8 space-y-3">
+                    <div className="p-4 rounded-2xl bg-secondary/40 inline-block">
+                      <GitDiff size={32} className="text-muted-foreground/60" weight="duotone" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground/80">Compare Shots</p>
+                      <p className="text-xs text-muted-foreground/60 mt-1 max-w-[250px] mx-auto">
+                        Select up to 3 shots to compare extraction curves, timing, and yield side-by-side.
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" className="mt-2" disabled>
+                      <GitDiff size={14} weight="bold" className="mr-1.5" />
+                      Coming Soon
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                {/* Analyze Tab Content (Mock) */}
+                <TabsContent value="analyze" className="mt-4">
+                  <div className="text-center py-8 space-y-3">
+                    <div className="p-4 rounded-2xl bg-secondary/40 inline-block">
+                      <Brain size={32} className="text-muted-foreground/60" weight="duotone" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground/80">AI Shot Analysis</p>
+                      <p className="text-xs text-muted-foreground/60 mt-1 max-w-[250px] mx-auto">
+                        Use AI to analyze shot performance against profile expectations and get improvement suggestions.
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" className="mt-2" disabled>
+                      <Brain size={14} weight="bold" className="mr-1.5" />
+                      Coming Soon
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
           ) : (
             <p className="text-center text-muted-foreground py-8">
@@ -623,6 +943,24 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
           </Alert>
         )}
 
+        {/* Background refresh indicator */}
+        {isBackgroundRefreshing && !isLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-2"
+          >
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <ArrowsCounterClockwise size={12} className="animate-spin" weight="bold" />
+                Checking for new shots...
+              </span>
+            </div>
+            <Progress value={undefined} className="h-1" />
+          </motion.div>
+        )}
+
         {isLoading ? (
           <SearchingLoader estimatedSeconds={60} />
         ) : shots.length === 0 ? (
@@ -655,13 +993,13 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                           {formatShotTime(shot)}
                         </h3>
                         <div className="flex items-center gap-3 mt-1.5">
-                          {shot.total_time && (
+                          {typeof shot.total_time === 'number' && (
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <Clock size={12} weight="bold" />
                               {shot.total_time.toFixed(1)}s
                             </span>
                           )}
-                          {shot.final_weight && (
+                          {typeof shot.final_weight === 'number' && (
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <Drop size={12} weight="fill" />
                               {shot.final_weight.toFixed(1)}g
@@ -682,16 +1020,22 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
           </div>
         )}
         
-        {/* Refresh Button */}
+        {/* Last Updated & Refresh */}
         {!isLoading && (
-          <div className="pt-2 border-t border-border/20">
+          <div className="pt-3 border-t border-border/20 space-y-2">
+            {lastFetched && (
+              <p className="text-xs text-muted-foreground/60 text-center">
+                Last updated: {formatDistanceToNow(lastFetched, { addSuffix: true })}
+              </p>
+            )}
             <Button
               variant="ghost"
               onClick={handleRefresh}
-              className="w-full h-10 text-sm font-medium text-muted-foreground hover:text-foreground"
+              disabled={isBackgroundRefreshing}
+              className="w-full h-9 text-sm font-medium text-muted-foreground hover:text-foreground"
             >
-              <ArrowsCounterClockwise size={16} weight="bold" className="mr-2" />
-              Refresh Shot History
+              <ArrowsCounterClockwise size={16} weight="bold" className={`mr-2 ${isBackgroundRefreshing ? 'animate-spin' : ''}`} />
+              {isBackgroundRefreshing ? 'Refreshing...' : 'Check for New Shots'}
             </Button>
           </div>
         )}

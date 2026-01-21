@@ -359,16 +359,20 @@ export function HistoryView({ onBack, onViewProfile }: HistoryViewProps) {
                   >
                     <div className="p-4 bg-secondary/40 hover:bg-secondary/70 rounded-xl border border-border/20 hover:border-border/40 transition-all duration-200">
                       <div className="flex items-start justify-between gap-3">
-                        {/* Profile Image */}
-                        {profileImage && (
-                          <div className="w-10 h-10 rounded-full overflow-hidden border border-border/30 shrink-0 mt-0.5">
+                        {/* Profile Image - fixed size to prevent layout shift */}
+                        <div className="w-10 h-10 rounded-full overflow-hidden border border-border/30 shrink-0 mt-0.5 bg-secondary/60">
+                          {profileImage ? (
                             <img 
                               src={profileImage} 
                               alt={entry.profile_name}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover animate-in fade-in duration-300"
                             />
-                          </div>
-                        )}
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Coffee size={18} className="text-muted-foreground/40" weight="fill" />
+                            </div>
+                          )}
+                        </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                             {entry.profile_name}
@@ -515,16 +519,6 @@ export function ProfileDetailView({ entry, onBack, onNewProfile }: ProfileDetail
     }
     fetchProfileImage()
   }, [entry.profile_name, imageUploadSuccess, imageCacheBuster])
-
-  // If showing shot history, render that component instead
-  if (showShotHistory) {
-    return (
-      <ShotHistoryView 
-        profileName={entry.profile_name} 
-        onBack={() => setShowShotHistory(false)} 
-      />
-    )
-  }
 
   const handleUploadProfileImage = async (blob: Blob) => {
     setIsUploadingImage(true)
@@ -770,6 +764,17 @@ export function ProfileDetailView({ entry, onBack, onNewProfile }: ProfileDetail
 
   const sections = parseProfileSections(entry.reply)
 
+  // If showing shot history, render that component instead
+  if (showShotHistory) {
+    return (
+      <ShotHistoryView 
+        key={`shot-history-${entry.profile_name}`}
+        profileName={entry.profile_name} 
+        onBack={() => setShowShotHistory(false)} 
+      />
+    )
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -814,20 +819,24 @@ export function ProfileDetailView({ entry, onBack, onNewProfile }: ProfileDetail
                   })}
                 </p>
               </div>
-              {/* Profile Image */}
-              {profileImage && (
-                <div 
-                  className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary/30 shrink-0 cursor-pointer hover:border-primary/50 transition-colors"
-                  onClick={() => setShowLightbox(true)}
-                  title="Click to enlarge"
-                >
+              {/* Profile Image - fixed size to prevent layout shift */}
+              <div 
+                className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary/30 shrink-0 cursor-pointer hover:border-primary/50 transition-colors bg-secondary/60"
+                onClick={profileImage ? () => setShowLightbox(true) : undefined}
+                title={profileImage ? "Click to enlarge" : undefined}
+              >
+                {profileImage ? (
                   <img 
                     src={profileImage} 
                     alt={entry.profile_name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover animate-in fade-in duration-300"
                   />
-                </div>
-              )}
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Coffee size={20} className="text-muted-foreground/40" weight="fill" />
+                  </div>
+                )}
+              </div>
             </div>
           )}
           {isCapturing && (
@@ -895,11 +904,10 @@ export function ProfileDetailView({ entry, onBack, onNewProfile }: ProfileDetail
             {/* Shot History Button */}
             <Button
               onClick={() => setShowShotHistory(true)}
-              variant="outline"
-              className="w-full h-12 text-sm font-semibold border-primary/30 hover:border-primary/50 hover:bg-primary/5"
+              className="w-full h-12 text-sm font-semibold"
             >
               <ChartLine size={18} className="mr-2" weight="bold" />
-              View Shot History
+              Shot History
             </Button>
             
             {/* Profile Image Upload */}
@@ -913,42 +921,36 @@ export function ProfileDetailView({ entry, onBack, onNewProfile }: ProfileDetail
                 className="hidden"
                 id="profile-image-upload"
               />
-              <label htmlFor="profile-image-upload">
-                <Button
-                  variant="outline"
-                  className="w-full h-11 text-sm font-semibold cursor-pointer"
-                  disabled={isUploadingImage}
-                  asChild
-                >
-                  <span>
-                    {isUploadingImage ? (
-                      <>
-                        <SpinnerGap size={18} className="mr-1.5 animate-spin" weight="bold" />
-                        Uploading...
-                      </>
-                    ) : imageUploadSuccess ? (
-                      <>
-                        <CheckCircle size={18} className="mr-1.5 text-success" weight="fill" />
-                        Image Uploaded!
-                      </>
-                    ) : (
-                      <>
-                        <Camera size={18} className="mr-1.5" weight="bold" />
-                        Upload Profile Image
-                      </>
-                    )}
-                  </span>
-                </Button>
-              </label>
-              {imageUploadError && (
-                <p className="text-xs text-destructive text-center">{imageUploadError}</p>
-              )}
-              <p className="text-[10px] text-muted-foreground/60 text-center">
-                Image will be cropped to square and synced to your machine
-              </p>
-              
-              {/* AI Image Generation */}
-              <div className="mt-3 pt-3 border-t border-border/10">
+              <div className="grid grid-cols-2 gap-2">
+                <label htmlFor="profile-image-upload">
+                  <Button
+                    variant="outline"
+                    className="w-full h-11 text-sm font-semibold cursor-pointer"
+                    disabled={isUploadingImage}
+                    asChild
+                  >
+                    <span>
+                      {isUploadingImage ? (
+                        <>
+                          <SpinnerGap size={18} className="mr-1.5 animate-spin" weight="bold" />
+                          Uploading...
+                        </>
+                      ) : imageUploadSuccess ? (
+                        <>
+                          <CheckCircle size={18} className="mr-1.5 text-success" weight="fill" />
+                          Uploaded!
+                        </>
+                      ) : (
+                        <>
+                          <Camera size={18} className="mr-1.5" weight="bold" />
+                          Upload
+                        </>
+                      )}
+                    </span>
+                  </Button>
+                </label>
+                
+                {/* AI Image Generation */}
                 <Button
                   variant="outline"
                   className="w-full h-11 text-sm font-semibold border-dashed"
@@ -963,12 +965,19 @@ export function ProfileDetailView({ entry, onBack, onNewProfile }: ProfileDetail
                   ) : (
                     <>
                       <MagicWand size={18} className="mr-1.5" weight="bold" />
-                      Generate with AI
+                      Generate
                     </>
                   )}
                 </Button>
-                
-                <AnimatePresence>
+              </div>
+              {imageUploadError && (
+                <p className="text-xs text-destructive text-center">{imageUploadError}</p>
+              )}
+              <p className="text-[10px] text-muted-foreground/60 text-center">
+                Image will be cropped to square and synced to your machine
+              </p>
+              
+              <AnimatePresence>
                   {showStylePicker && !isGeneratingImage && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
@@ -1018,7 +1027,6 @@ export function ProfileDetailView({ entry, onBack, onNewProfile }: ProfileDetail
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
             </div>
             
             {/* Export Buttons */}
@@ -1127,8 +1135,6 @@ export function ProfileDetailView({ entry, onBack, onNewProfile }: ProfileDetail
             >
               <h3 className="text-lg font-bold text-center mb-4">Generated Image Preview</h3>
               <div className="rounded-xl overflow-hidden border-2 border-primary/30 mb-6">
-                {/* Debug: log what we're actually rendering */}
-                {console.log('RENDERING PREVIEW with src length:', previewImage?.length, 'starts with:', previewImage?.substring(0, 30))}
                 <img 
                   key={previewImage?.substring(0, 100)}
                   src={previewImage}

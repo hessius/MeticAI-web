@@ -4,13 +4,13 @@ import { Button } from "./components/ui/button";
 import { AlertTriangleIcon, RefreshCwIcon } from "lucide-react";
 
 export const ErrorFallback = ({ error, resetErrorBoundary }) => {
-  // When encountering an error in the development mode, rethrow it and don't display the boundary.
-  // The parent UI will take care of showing a more helpful dialog.
-  if (import.meta.env.DEV) throw error;
+  // Log error details to console for debugging
+  console.error('ErrorFallback caught error:', error);
+  console.error('Error stack:', error?.stack);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-lg">
         <Alert variant="destructive" className="mb-6">
           <AlertTriangleIcon />
           <AlertTitle>Application Error</AlertTitle>
@@ -20,11 +20,20 @@ export const ErrorFallback = ({ error, resetErrorBoundary }) => {
         </Alert>
         
         <div className="bg-card border rounded-lg p-4 mb-6">
-          <h3 className="font-semibold text-sm text-muted-foreground mb-2">Error Details:</h3>
-          <pre className="text-xs text-destructive bg-muted/50 p-3 rounded border overflow-auto max-h-32">
-            {error.message}
+          <h3 className="font-semibold text-sm text-muted-foreground mb-2">Error Message:</h3>
+          <pre className="text-xs text-destructive bg-muted/50 p-3 rounded border overflow-auto max-h-24 whitespace-pre-wrap">
+            {error?.message || String(error)}
           </pre>
         </div>
+
+        {error?.stack && (
+          <div className="bg-card border rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-sm text-muted-foreground mb-2">Stack Trace:</h3>
+            <pre className="text-[10px] text-muted-foreground bg-muted/50 p-3 rounded border overflow-auto max-h-48 whitespace-pre-wrap">
+              {error.stack}
+            </pre>
+          </div>
+        )}
         
         <Button 
           onClick={resetErrorBoundary} 

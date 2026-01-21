@@ -16,4 +16,7 @@ export default defineConfig({
       '@': resolve(projectRoot, 'src')
     }
   },
+  build: {
+    sourcemap: true,  // Enable source maps for better error debugging
+  },
 });

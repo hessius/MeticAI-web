@@ -56,6 +56,7 @@ interface APIResponse {
 type ViewState = 'start' | 'form' | 'loading' | 'results' | 'error' | 'history' | 'history-detail'
 
 function App() {
+  const [isInitializing, setIsInitializing] = useState(true)
   const [viewState, setViewState] = useState<ViewState>('form')
   const [profileCount, setProfileCount] = useState<number | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -101,6 +102,8 @@ function App() {
         console.error('Failed to check profiles:', err)
         // On error, default to form view
         setProfileCount(0)
+      } finally {
+        setIsInitializing(false)
       }
     }
     checkProfiles()
@@ -474,7 +477,23 @@ Special Notes: For maximum clarity and to really make those delicate floral note
         </motion.div>
 
         <AnimatePresence mode="wait">
-          {viewState === 'start' && (
+          {isInitializing && (
+            <motion.div
+              key="initializing"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              <Card className="p-6">
+                <div className="flex items-center justify-center h-32">
+                  <div className="animate-pulse text-muted-foreground text-sm">Loading...</div>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+          
+          {!isInitializing && viewState === 'start' && (
             <motion.div
               key="start"
               initial={{ opacity: 0, scale: 0.98 }}
@@ -512,7 +531,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
             </motion.div>
           )}
 
-          {viewState === 'form' && (
+          {!isInitializing && viewState === 'form' && (
             <motion.div
               key="form"
               initial={{ opacity: 0, scale: 0.98 }}
