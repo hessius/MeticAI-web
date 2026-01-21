@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 // Coffee icon is used by HistoryView (child component) and must be imported here
 // to avoid bundling issues when downloading images with domToPng
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, DownloadSimple, Info, QrCode, ClockCounterClockwise, FileJs, Coffee, Image, CaretLeft } from '@phosphor-icons/react'
+import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, DownloadSimple, Info, QrCode, ClockCounterClockwise, FileJs, Coffee, Image, CaretLeft, Plus } from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
 import { MarkdownText } from '@/components/MarkdownText'
 import { domToPng } from 'modern-screenshot'
@@ -53,10 +53,11 @@ interface APIResponse {
   history_id?: string
 }
 
-type ViewState = 'form' | 'loading' | 'results' | 'error' | 'history' | 'history-detail'
+type ViewState = 'start' | 'form' | 'loading' | 'results' | 'error' | 'history' | 'history-detail'
 
 function App() {
   const [viewState, setViewState] = useState<ViewState>('form')
+  const [profileCount, setProfileCount] = useState<number | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [userPrefs, setUserPrefs] = useState('')
@@ -81,6 +82,43 @@ function App() {
   
   // Desktop detection for QR code feature
   const isDesktop = useIsDesktop()
+
+  // Check for existing profiles on mount
+  useEffect(() => {
+    const checkProfiles = async () => {
+      try {
+        const serverUrl = await getServerUrl()
+        const response = await fetch(`${serverUrl}/api/history?limit=1&offset=0`)
+        if (response.ok) {
+          const data = await response.json()
+          setProfileCount(data.total || 0)
+          // If profiles exist, show the start page; otherwise go straight to form
+          if (data.total > 0) {
+            setViewState('start')
+          }
+        }
+      } catch (err) {
+        console.error('Failed to check profiles:', err)
+        // On error, default to form view
+        setProfileCount(0)
+      }
+    }
+    checkProfiles()
+  }, [])
+
+  // Update profile count when returning from history view
+  const refreshProfileCount = async () => {
+    try {
+      const serverUrl = await getServerUrl()
+      const response = await fetch(`${serverUrl}/api/history?limit=1&offset=0`)
+      if (response.ok) {
+        const data = await response.json()
+        setProfileCount(data.total || 0)
+      }
+    } catch (err) {
+      console.error('Failed to refresh profile count:', err)
+    }
+  }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -242,6 +280,8 @@ function App() {
   }
 
   const handleReset = () => {
+    // Refresh profile count before switching view
+    refreshProfileCount()
     setViewState('form')
     setImageFile(null)
     setImagePreview(null)
@@ -253,6 +293,12 @@ function App() {
     setCurrentMessage(0)
     setCurrentProfileJson(null)
     setSelectedHistoryEntry(null)
+  }
+
+  const handleBackToStart = () => {
+    refreshProfileCount()
+    // Only go back to start if profiles exist, otherwise go to form
+    setViewState(profileCount && profileCount > 0 ? 'start' : 'form')
   }
 
   const handleViewHistoryEntry = (entry: HistoryEntry) => {
@@ -428,6 +474,44 @@ Special Notes: For maximum clarity and to really make those delicate floral note
         </motion.div>
 
         <AnimatePresence mode="wait">
+          {viewState === 'start' && (
+            <motion.div
+              key="start"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+            >
+              <Card className="p-6 space-y-6">
+                <div className="text-center space-y-2">
+                  <h2 className="text-xl font-bold tracking-tight text-foreground">Welcome back!</h2>
+                  <p className="text-sm text-muted-foreground">
+                    You have {profileCount} profile{profileCount !== 1 ? 's' : ''} saved
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <Button
+                    onClick={() => setViewState('form')}
+                    className="w-full h-14 text-base font-semibold"
+                  >
+                    <Plus size={20} className="mr-2" weight="bold" />
+                    Generate New Profile
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setViewState('history')}
+                    variant="outline"
+                    className="w-full h-14 text-base font-semibold border-primary/30 hover:border-primary/50 hover:bg-primary/5"
+                  >
+                    <Coffee size={20} className="mr-2" weight="fill" />
+                    Profile Catalogue
+                  </Button>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
           {viewState === 'form' && (
             <motion.div
               key="form"
@@ -437,6 +521,21 @@ Special Notes: For maximum clarity and to really make those delicate floral note
               transition={{ duration: 0.25, ease: "easeOut" }}
             >
               <Card className="p-6 space-y-6">
+                {/* Header with back button when profiles exist */}
+                {profileCount !== null && profileCount > 0 && (
+                  <div className="flex items-center gap-3 -mt-1 -mx-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleBackToStart}
+                      className="shrink-0"
+                    >
+                      <CaretLeft size={22} weight="bold" />
+                    </Button>
+                    <h2 className="text-lg font-bold tracking-tight">New Profile</h2>
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   <Label className="text-sm font-semibold tracking-wide text-foreground/90">
                     Coffee Bag Photo <span className="text-muted-foreground font-normal">(Optional)</span>
@@ -570,14 +669,17 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                     Generate Profile
                   </Button>
                   
-                  <Button
-                    onClick={() => setViewState('history')}
-                    variant="ghost"
-                    className="w-full h-11 text-sm font-medium text-muted-foreground hover:text-foreground"
-                  >
-                    <ClockCounterClockwise size={18} className="mr-2" weight="bold" />
-                    View History
-                  </Button>
+                  {/* Only show catalogue button when no profiles exist (no back button visible) */}
+                  {(profileCount === null || profileCount === 0) && (
+                    <Button
+                      onClick={() => setViewState('history')}
+                      variant="ghost"
+                      className="w-full h-11 text-sm font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      <Coffee size={18} className="mr-2" weight="fill" />
+                      Profile Catalogue
+                    </Button>
+                  )}
                 </div>
               </Card>
             </motion.div>
@@ -585,7 +687,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
 
           {viewState === 'history' && (
             <HistoryView
-              onBack={() => setViewState('form')}
+              onBack={handleBackToStart}
               onViewProfile={handleViewHistoryEntry}
             />
           )}
@@ -913,8 +1015,8 @@ Special Notes: For maximum clarity and to really make those delicate floral note
         
         <QRCodeDialog open={qrDialogOpen} onOpenChange={setQrDialogOpen} />
         
-        {/* Discrete footer with check for updates - only show on home page */}
-        {viewState === 'form' && (
+        {/* Discrete footer with check for updates - only show on home pages */}
+        {(viewState === 'form' || viewState === 'start') && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

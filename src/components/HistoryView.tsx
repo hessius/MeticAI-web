@@ -14,18 +14,43 @@ import {
   Coffee,
   Image,
   Funnel,
-  X
+  X,
+  ChartLine,
+  Camera,
+  CheckCircle,
+  SpinnerGap,
+  MagicWand,
+  Info,
+  Check,
+  XCircle,
+  MagnifyingGlassPlus
 } from '@phosphor-icons/react'
 import { useHistory, HistoryEntry } from '@/hooks/useHistory'
 import { MarkdownText } from '@/components/MarkdownText'
 import { formatDistanceToNow } from 'date-fns'
 import { domToPng } from 'modern-screenshot'
 import { MeticAILogo } from '@/components/MeticAILogo'
+import { ShotHistoryView } from '@/components/ShotHistoryView'
+import { ImageCropDialog } from '@/components/ImageCropDialog'
+import { getServerUrl } from '@/lib/config'
 import { 
   extractTagsFromPreferences, 
   getAllTagsFromEntries, 
   getTagColorClass
 } from '@/lib/tags'
+
+// Helper to extract Description section from profile reply
+function extractDescription(reply: string): string | null {
+  if (!reply) return null
+  
+  const descMatch = reply.match(/Description:\s*([\s\S]*?)(?:Preparation:|Why This Works:|Special Notes:|PROFILE JSON|```|$)/i)
+  if (descMatch && descMatch[1]) {
+    const desc = descMatch[1].trim()
+    // Clean up any trailing headers or code blocks
+    return desc.replace(/```[\s\S]*$/g, '').trim() || null
+  }
+  return null
+}
 
 interface HistoryViewProps {
   onBack: () => void
@@ -47,10 +72,44 @@ export function HistoryView({ onBack, onViewProfile }: HistoryViewProps) {
   const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([])
   const [filterMode, setFilterMode] = useState<'AND' | 'OR'>('OR')
   const [showFilters, setShowFilters] = useState(false)
+  const [profileImages, setProfileImages] = useState<Record<string, string>>({})
 
   useEffect(() => {
     fetchHistory()
   }, [fetchHistory])
+
+  // Fetch profile images for all entries
+  useEffect(() => {
+    const fetchImages = async () => {
+      if (entries.length === 0) return
+      
+      const serverUrl = await getServerUrl()
+      const newImages: Record<string, string> = {}
+      
+      // Fetch images in parallel (limit to avoid overwhelming the server)
+      const fetchPromises = entries.slice(0, 20).map(async (entry) => {
+        try {
+          const response = await fetch(
+            `${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}`
+          )
+          if (response.ok) {
+            const data = await response.json()
+            if (data.profile?.image) {
+              // Use the proxy endpoint to get the actual image
+              newImages[entry.profile_name] = `${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}/image-proxy`
+            }
+          }
+        } catch (err) {
+          // Silently ignore errors for individual profile fetches
+        }
+      })
+      
+      await Promise.allSettled(fetchPromises)
+      setProfileImages(prev => ({ ...prev, ...newImages }))
+    }
+    
+    fetchImages()
+  }, [entries])
 
   // Get all available tags from entries for filtering
   const availableTags = useMemo(() => {
@@ -139,9 +198,9 @@ export function HistoryView({ onBack, onViewProfile }: HistoryViewProps) {
           </Button>
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 rounded-lg bg-primary/10">
-              <ClockCounterClockwise size={22} className="text-primary" weight="fill" />
+              <Coffee size={22} className="text-primary" weight="fill" />
             </div>
-            <h2 className="text-lg font-bold tracking-tight">Profile History</h2>
+            <h2 className="text-lg font-bold tracking-tight">Profile Catalogue</h2>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <Button
@@ -287,6 +346,7 @@ export function HistoryView({ onBack, onViewProfile }: HistoryViewProps) {
             <AnimatePresence>
               {filteredEntries.map((entry, index) => {
                 const entryTags = extractTagsFromPreferences(entry.user_preferences)
+                const profileImage = profileImages[entry.profile_name]
                 return (
                   <motion.div
                     key={entry.id}
@@ -299,6 +359,16 @@ export function HistoryView({ onBack, onViewProfile }: HistoryViewProps) {
                   >
                     <div className="p-4 bg-secondary/40 hover:bg-secondary/70 rounded-xl border border-border/20 hover:border-border/40 transition-all duration-200">
                       <div className="flex items-start justify-between gap-3">
+                        {/* Profile Image */}
+                        {profileImage && (
+                          <div className="w-10 h-10 rounded-full overflow-hidden border border-border/30 shrink-0 mt-0.5">
+                            <img 
+                              src={profileImage} 
+                              alt={entry.profile_name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                             {entry.profile_name}
@@ -326,11 +396,25 @@ export function HistoryView({ onBack, onViewProfile }: HistoryViewProps) {
                               )}
                             </div>
                           )}
-                          {entry.coffee_analysis && (
-                            <p className="text-sm text-muted-foreground/80 mt-2 line-clamp-2 leading-relaxed">
-                              {entry.coffee_analysis}
-                            </p>
-                          )}
+                          {(() => {
+                            const description = extractDescription(entry.reply)
+                            if (description) {
+                              return (
+                                <p className="text-sm text-muted-foreground/80 mt-2 line-clamp-2 leading-relaxed">
+                                  {description}
+                                </p>
+                              )
+                            }
+                            // Fallback to coffee_analysis if no description
+                            if (entry.coffee_analysis) {
+                              return (
+                                <p className="text-sm text-muted-foreground/80 mt-2 line-clamp-2 leading-relaxed">
+                                  {entry.coffee_analysis}
+                                </p>
+                              )
+                            }
+                            return null
+                          })()}
                         </div>
                         <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                           {entry.profile_json && (
@@ -368,6 +452,16 @@ export function HistoryView({ onBack, onViewProfile }: HistoryViewProps) {
   )
 }
 
+// Image generation style options
+const IMAGE_STYLES = [
+  { id: 'abstract', label: 'Abstract', description: 'Artistic abstract interpretation' },
+  { id: 'minimalist', label: 'Minimalist', description: 'Clean, minimal design' },
+  { id: 'pixel-art', label: 'Pixel Art', description: 'Retro pixel art style' },
+  { id: 'watercolor', label: 'Watercolor', description: 'Soft watercolor painting' },
+  { id: 'modern', label: 'Modern', description: 'Contemporary art style' },
+  { id: 'vintage', label: 'Vintage', description: 'Retro aesthetic' }
+] as const
+
 interface ProfileDetailViewProps {
   entry: HistoryEntry
   onBack: () => void
@@ -378,7 +472,206 @@ export function ProfileDetailView({ entry, onBack, onNewProfile }: ProfileDetail
   const { downloadJson } = useHistory()
   const [isDownloading, setIsDownloading] = useState(false)
   const [isCapturing, setIsCapturing] = useState(false)
+  const [showShotHistory, setShowShotHistory] = useState(false)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [imageUploadSuccess, setImageUploadSuccess] = useState(false)
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null)
+  const [profileImage, setProfileImage] = useState<string | null>(null)
+  const [imageCacheBuster, setImageCacheBuster] = useState(Date.now())
+  const [showCropDialog, setShowCropDialog] = useState(false)
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
+  // Image generation states
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
+  const [selectedStyle, setSelectedStyle] = useState<string>('abstract')
+  const [showStylePicker, setShowStylePicker] = useState(false)
+  const [generateError, setGenerateError] = useState<string | null>(null)
+  // Image preview states (for generated images)
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false)
+  const [isApplyingImage, setIsApplyingImage] = useState(false)
+  // Lightbox state for viewing profile image
+  const [showLightbox, setShowLightbox] = useState(false)
   const resultsCardRef = useRef<HTMLDivElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+
+  // Fetch profile image on mount
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      try {
+        const serverUrl = await getServerUrl()
+        const response = await fetch(
+          `${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}`
+        )
+        if (response.ok) {
+          const data = await response.json()
+          if (data.profile?.image) {
+            // Use the proxy endpoint to get the actual image with cache buster
+            setProfileImage(`${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}/image-proxy?t=${imageCacheBuster}`)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch profile image:', err)
+      }
+    }
+    fetchProfileImage()
+  }, [entry.profile_name, imageUploadSuccess, imageCacheBuster])
+
+  // If showing shot history, render that component instead
+  if (showShotHistory) {
+    return (
+      <ShotHistoryView 
+        profileName={entry.profile_name} 
+        onBack={() => setShowShotHistory(false)} 
+      />
+    )
+  }
+
+  const handleUploadProfileImage = async (blob: Blob) => {
+    setIsUploadingImage(true)
+    setImageUploadError(null)
+    setImageUploadSuccess(false)
+    
+    try {
+      const serverUrl = await getServerUrl()
+      const formData = new FormData()
+      formData.append('file', blob, 'profile-image.png')
+      
+      const response = await fetch(
+        `${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}/image`,
+        {
+          method: 'POST',
+          body: formData
+        }
+      )
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Upload failed' }))
+        throw new Error(error.detail?.message || error.message || 'Failed to upload image')
+      }
+      
+      setImageUploadSuccess(true)
+      setShowCropDialog(false)
+      setCropImageSrc(null)
+      // Reset success message after 3 seconds
+      setTimeout(() => setImageUploadSuccess(false), 3000)
+    } catch (err) {
+      console.error('Failed to upload profile image:', err)
+      setImageUploadError(err instanceof Error ? err.message : 'Failed to upload image')
+    } finally {
+      setIsUploadingImage(false)
+      // Reset file input
+      if (imageInputRef.current) {
+        imageInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setImageUploadError('Please select an image file')
+        return
+      }
+      // Create object URL for cropping
+      const imageUrl = URL.createObjectURL(file)
+      setCropImageSrc(imageUrl)
+      setShowCropDialog(true)
+    }
+  }
+
+  // Extract tags from user preferences for image generation
+  const entryTags = useMemo(() => {
+    return extractTagsFromPreferences(entry.user_preferences)
+  }, [entry.user_preferences])
+
+  const handleGenerateImage = async () => {
+    setIsGeneratingImage(true)
+    setGenerateError(null)
+    
+    try {
+      const serverUrl = await getServerUrl()
+      const tagsParam = entryTags.join(',')
+      
+      // Use preview mode to get the image without saving
+      const response = await fetch(
+        `${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}/generate-image?style=${selectedStyle}&tags=${encodeURIComponent(tagsParam)}&preview=true`,
+        { method: 'POST' }
+      )
+      
+      if (response.status === 402) {
+        setGenerateError('Image generation requires a paid Gemini API key. Please configure GEMINI_API_KEY.')
+        return
+      }
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Generation failed' }))
+        throw new Error(typeof error.detail === 'string' ? error.detail : error.detail?.message || 'Failed to generate image')
+      }
+      
+      const data = await response.json()
+      console.log('Generate image response:', data)
+      console.log('Image data length:', data.image_data?.length)
+      console.log('Image data starts with:', data.image_data?.substring(0, 50))
+      
+      // Show the preview dialog with the generated image
+      if (data.image_data) {
+        // Make sure we close any other dialogs first
+        setShowLightbox(false)
+        setPreviewImage(data.image_data)
+        setShowPreviewDialog(true)
+        setShowStylePicker(false)
+      } else {
+        throw new Error('No image data received from server')
+      }
+    } catch (err) {
+      console.error('Failed to generate image:', err)
+      setGenerateError(err instanceof Error ? err.message : 'Failed to generate image')
+    } finally {
+      setIsGeneratingImage(false)
+    }
+  }
+
+  const handleApprovePreview = async () => {
+    if (!previewImage) return
+    
+    setIsApplyingImage(true)
+    
+    try {
+      const serverUrl = await getServerUrl()
+      
+      const response = await fetch(
+        `${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}/apply-image`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_data: previewImage })
+        }
+      )
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Failed to apply image' }))
+        throw new Error(typeof error.detail === 'string' ? error.detail : 'Failed to apply image')
+      }
+      
+      // Close dialog and trigger refetch with new cache buster
+      setShowPreviewDialog(false)
+      setPreviewImage(null)
+      setImageCacheBuster(Date.now())  // Force refresh of profile image
+      setImageUploadSuccess(true)
+      setTimeout(() => setImageUploadSuccess(false), 3000)
+    } catch (err) {
+      console.error('Failed to apply image:', err)
+      setGenerateError(err instanceof Error ? err.message : 'Failed to apply image')
+    } finally {
+      setIsApplyingImage(false)
+    }
+  }
+
+  const handleDiscardPreview = () => {
+    setShowPreviewDialog(false)
+    setPreviewImage(null)
+  }
 
   const handleDownload = async () => {
     try {
@@ -521,6 +814,20 @@ export function ProfileDetailView({ entry, onBack, onNewProfile }: ProfileDetail
                   })}
                 </p>
               </div>
+              {/* Profile Image */}
+              {profileImage && (
+                <div 
+                  className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary/30 shrink-0 cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => setShowLightbox(true)}
+                  title="Click to enlarge"
+                >
+                  <img 
+                    src={profileImage} 
+                    alt={entry.profile_name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
             </div>
           )}
           {isCapturing && (
@@ -584,37 +891,281 @@ export function ProfileDetailView({ entry, onBack, onNewProfile }: ProfileDetail
         </div>
 
         {!isCapturing && (
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="space-y-2.5">
+            {/* Shot History Button */}
             <Button
-              onClick={handleSaveImage}
+              onClick={() => setShowShotHistory(true)}
               variant="outline"
-              className="h-12 text-sm font-semibold"
-              title="Save results as image"
+              className="w-full h-12 text-sm font-semibold border-primary/30 hover:border-primary/50 hover:bg-primary/5"
             >
-              <Image size={18} className="mr-1.5" weight="bold" />
-              Image
+              <ChartLine size={18} className="mr-2" weight="bold" />
+              View Shot History
             </Button>
-            {entry.profile_json && (
-              <Button
-                onClick={handleDownload}
-                disabled={isDownloading}
-                variant="outline"
-                className="h-12 text-sm font-semibold"
-              >
-                <FileJs size={18} className="mr-1.5" weight="bold" />
-                JSON
-              </Button>
-            )}
-            <Button
-              onClick={onNewProfile}
-              className={`h-12 text-sm font-semibold ${!entry.profile_json ? 'col-span-2' : ''}`}
-            >
-              New Profile
-            </Button>
+            
+            {/* Profile Image Upload */}
+            <div className="space-y-1.5 mt-4 pt-4 border-t border-border/20">
+              <Label className="text-xs font-medium text-muted-foreground block text-center">Profile Picture</Label>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+                id="profile-image-upload"
+              />
+              <label htmlFor="profile-image-upload">
+                <Button
+                  variant="outline"
+                  className="w-full h-11 text-sm font-semibold cursor-pointer"
+                  disabled={isUploadingImage}
+                  asChild
+                >
+                  <span>
+                    {isUploadingImage ? (
+                      <>
+                        <SpinnerGap size={18} className="mr-1.5 animate-spin" weight="bold" />
+                        Uploading...
+                      </>
+                    ) : imageUploadSuccess ? (
+                      <>
+                        <CheckCircle size={18} className="mr-1.5 text-success" weight="fill" />
+                        Image Uploaded!
+                      </>
+                    ) : (
+                      <>
+                        <Camera size={18} className="mr-1.5" weight="bold" />
+                        Upload Profile Image
+                      </>
+                    )}
+                  </span>
+                </Button>
+              </label>
+              {imageUploadError && (
+                <p className="text-xs text-destructive text-center">{imageUploadError}</p>
+              )}
+              <p className="text-[10px] text-muted-foreground/60 text-center">
+                Image will be cropped to square and synced to your machine
+              </p>
+              
+              {/* AI Image Generation */}
+              <div className="mt-3 pt-3 border-t border-border/10">
+                <Button
+                  variant="outline"
+                  className="w-full h-11 text-sm font-semibold border-dashed"
+                  disabled={isGeneratingImage}
+                  onClick={() => setShowStylePicker(!showStylePicker)}
+                >
+                  {isGeneratingImage ? (
+                    <>
+                      <SpinnerGap size={18} className="mr-1.5 animate-spin" weight="bold" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <MagicWand size={18} className="mr-1.5" weight="bold" />
+                      Generate with AI
+                    </>
+                  )}
+                </Button>
+                
+                <AnimatePresence>
+                  {showStylePicker && !isGeneratingImage && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-3 p-3 bg-secondary/40 rounded-lg border border-border/20 space-y-3">
+                        <Label className="text-xs font-medium text-muted-foreground">Select Style</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {IMAGE_STYLES.map((style) => (
+                            <button
+                              key={style.id}
+                              onClick={() => setSelectedStyle(style.id)}
+                              className={`p-2 text-left rounded-md border transition-all ${
+                                selectedStyle === style.id
+                                  ? 'border-primary bg-primary/10 text-primary'
+                                  : 'border-border/30 hover:border-border/50 text-foreground/80'
+                              }`}
+                            >
+                              <div className="text-xs font-medium">{style.label}</div>
+                              <div className="text-[10px] text-muted-foreground mt-0.5">{style.description}</div>
+                            </button>
+                          ))}
+                        </div>
+                        
+                        <Button
+                          onClick={handleGenerateImage}
+                          className="w-full h-10 text-sm font-semibold"
+                          disabled={isGeneratingImage}
+                        >
+                          <MagicWand size={16} className="mr-1.5" weight="bold" />
+                          Generate {selectedStyle.charAt(0).toUpperCase() + selectedStyle.slice(1)} Image
+                        </Button>
+                        
+                        {generateError && (
+                          <p className="text-xs text-destructive text-center">{generateError}</p>
+                        )}
+                        
+                        <div className="flex items-start gap-1.5 p-2 bg-amber-500/10 rounded-md border border-amber-500/20">
+                          <Info size={14} className="text-amber-500 shrink-0 mt-0.5" weight="fill" />
+                          <p className="text-[10px] text-amber-500/90 leading-relaxed">
+                            AI image generation requires a paid Gemini API key. Free tier keys may not work.
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+            
+            {/* Export Buttons */}
+            <div className="space-y-1.5 mt-4 pt-4 border-t border-border/20">
+              <Label className="text-xs font-medium text-muted-foreground block text-center">Export as</Label>
+              <div className={`grid gap-2.5 ${entry.profile_json ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                <Button
+                  onClick={handleSaveImage}
+                  variant="outline"
+                  className="h-11 text-sm font-semibold"
+                  title="Save results as image"
+                >
+                  <Image size={18} className="mr-1.5" weight="bold" />
+                  Image
+                </Button>
+                {entry.profile_json && (
+                  <Button
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                    variant="outline"
+                    className="h-11 text-sm font-semibold"
+                  >
+                    <FileJs size={18} className="mr-1.5" weight="bold" />
+                    JSON
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         )}
         </Card>
       </div>
+      
+      {/* Image Crop Dialog */}
+      {cropImageSrc && (
+        <ImageCropDialog
+          open={showCropDialog}
+          onOpenChange={(open) => {
+            setShowCropDialog(open)
+            if (!open) {
+              URL.revokeObjectURL(cropImageSrc)
+              setCropImageSrc(null)
+            }
+          }}
+          imageSrc={cropImageSrc}
+          onCropComplete={handleUploadProfileImage}
+          isUploading={isUploadingImage}
+        />
+      )}
+
+      {/* Lightbox for Profile Image */}
+      <AnimatePresence>
+        {showLightbox && profileImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowLightbox(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="relative max-w-lg w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute -top-12 right-0 text-white hover:bg-white/20"
+                onClick={() => setShowLightbox(false)}
+              >
+                <XCircle size={28} weight="bold" />
+              </Button>
+              <div className="rounded-2xl overflow-hidden border-4 border-primary/30 shadow-2xl">
+                <img 
+                  src={profileImage} 
+                  alt={entry.profile_name}
+                  className="w-full h-auto object-contain"
+                />
+              </div>
+              <p className="text-center text-white/80 mt-4 text-sm font-medium">{entry.profile_name}</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Preview Dialog for Generated Image */}
+      <AnimatePresence>
+        {showPreviewDialog && previewImage && (
+          <motion.div
+            key="preview-dialog"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => handleDiscardPreview()}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative max-w-md w-full bg-card rounded-2xl p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold text-center mb-4">Generated Image Preview</h3>
+              <div className="rounded-xl overflow-hidden border-2 border-primary/30 mb-6">
+                {/* Debug: log what we're actually rendering */}
+                {console.log('RENDERING PREVIEW with src length:', previewImage?.length, 'starts with:', previewImage?.substring(0, 30))}
+                <img 
+                  key={previewImage?.substring(0, 100)}
+                  src={previewImage}
+                  alt="Generated preview"
+                  className="w-full h-auto object-contain"
+                />
+              </div>
+              <p className="text-sm text-muted-foreground text-center mb-6">
+                Would you like to use this image for your profile?
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-12"
+                  onClick={handleDiscardPreview}
+                  disabled={isApplyingImage}
+                >
+                  <XCircle size={20} className="mr-2" weight="bold" />
+                  Discard
+                </Button>
+                <Button
+                  className="flex-1 h-12"
+                  onClick={handleApprovePreview}
+                  disabled={isApplyingImage}
+                >
+                  {isApplyingImage ? (
+                    <SpinnerGap size={20} className="mr-2 animate-spin" weight="bold" />
+                  ) : (
+                    <Check size={20} className="mr-2" weight="bold" />
+                  )}
+                  {isApplyingImage ? 'Applying...' : 'Apply'}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }
