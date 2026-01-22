@@ -23,7 +23,8 @@ import {
   Info,
   Check,
   XCircle,
-  MagnifyingGlassPlus
+  MagnifyingGlassPlus,
+  Plus
 } from '@phosphor-icons/react'
 import { useHistory, HistoryEntry } from '@/hooks/useHistory'
 import { MarkdownText } from '@/components/MarkdownText'
@@ -32,6 +33,7 @@ import { domToPng } from 'modern-screenshot'
 import { MeticAILogo } from '@/components/MeticAILogo'
 import { ShotHistoryView } from '@/components/ShotHistoryView'
 import { ImageCropDialog } from '@/components/ImageCropDialog'
+import { ProfileImportDialog } from '@/components/ProfileImportDialog'
 import { getServerUrl } from '@/lib/config'
 import { 
   extractTagsFromPreferences, 
@@ -55,9 +57,10 @@ function extractDescription(reply: string): string | null {
 interface HistoryViewProps {
   onBack: () => void
   onViewProfile: (entry: HistoryEntry) => void
+  onGenerateNew: () => void
 }
 
-export function HistoryView({ onBack, onViewProfile }: HistoryViewProps) {
+export function HistoryView({ onBack, onViewProfile, onGenerateNew }: HistoryViewProps) {
   const { 
     entries, 
     total, 
@@ -73,6 +76,7 @@ export function HistoryView({ onBack, onViewProfile }: HistoryViewProps) {
   const [filterMode, setFilterMode] = useState<'AND' | 'OR'>('OR')
   const [showFilters, setShowFilters] = useState(false)
   const [profileImages, setProfileImages] = useState<Record<string, string>>({})
+  const [showImportDialog, setShowImportDialog] = useState(false)
 
   useEffect(() => {
     fetchHistory()
@@ -203,6 +207,14 @@ export function HistoryView({ onBack, onViewProfile }: HistoryViewProps) {
             <h2 className="text-lg font-bold tracking-tight">Profile Catalogue</h2>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <Button
+              onClick={() => setShowImportDialog(true)}
+              size="icon"
+              className="h-9 w-9 bg-amber-500 hover:bg-amber-600 text-zinc-900"
+              title="Add Profile"
+            >
+              <Plus size={18} weight="bold" />
+            </Button>
             <Button
               variant={showFilters ? "secondary" : "ghost"}
               size="icon"
@@ -451,7 +463,30 @@ export function HistoryView({ onBack, onViewProfile }: HistoryViewProps) {
             </AnimatePresence>
           </div>
         )}
+        
+        {/* Add Profile Button at bottom */}
+        <Button
+          onClick={() => setShowImportDialog(true)}
+          className="w-full h-12 mt-4 bg-amber-500 hover:bg-amber-600 text-zinc-900 font-semibold"
+        >
+          <Plus size={18} weight="bold" className="mr-2" />
+          Add Profile
+        </Button>
       </Card>
+      
+      {/* Profile Import Dialog */}
+      <ProfileImportDialog
+        isOpen={showImportDialog}
+        onClose={() => setShowImportDialog(false)}
+        onImported={() => {
+          setShowImportDialog(false)
+          fetchHistory()
+        }}
+        onGenerateNew={() => {
+          setShowImportDialog(false)
+          onGenerateNew()
+        }}
+      />
     </motion.div>
   )
 }
@@ -907,7 +942,7 @@ export function ProfileDetailView({ entry, onBack, onNewProfile }: ProfileDetail
               className="w-full h-12 text-sm font-semibold"
             >
               <ChartLine size={18} className="mr-2" weight="bold" />
-              Shot History
+              Shot History & Analysis
             </Button>
             
             {/* Profile Image Upload */}

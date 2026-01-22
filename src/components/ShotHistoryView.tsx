@@ -1249,23 +1249,23 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                 <TabsList className="grid w-full grid-cols-3 h-11 bg-secondary/60">
                   <TabsTrigger 
                     value="replay" 
-                    className="gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
+                    className="gap-1.5 text-xs data-[state=active]:bg-amber-500 dark:data-[state=active]:bg-amber-500 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-900 data-[state=active]:font-semibold"
                   >
-                    <Play size={14} weight="bold" />
+                    <Play size={14} weight={activeAction === 'replay' ? 'fill' : 'bold'} />
                     Replay
                   </TabsTrigger>
                   <TabsTrigger 
                     value="compare" 
-                    className="gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
+                    className="gap-1.5 text-xs data-[state=active]:bg-amber-500 dark:data-[state=active]:bg-amber-500 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-900 data-[state=active]:font-semibold"
                   >
-                    <GitDiff size={14} weight="bold" />
+                    <GitDiff size={14} weight={activeAction === 'compare' ? 'fill' : 'bold'} />
                     Compare
                   </TabsTrigger>
                   <TabsTrigger 
                     value="analyze" 
-                    className="gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
+                    className="gap-1.5 text-xs data-[state=active]:bg-amber-500 dark:data-[state=active]:bg-amber-500 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-900 data-[state=active]:font-semibold"
                   >
-                    <MagnifyingGlass size={14} weight="bold" />
+                    <MagnifyingGlass size={14} weight={activeAction === 'analyze' ? 'fill' : 'bold'} />
                     Analyze
                   </TabsTrigger>
                 </TabsList>
@@ -1328,13 +1328,13 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                       variant={isPlaying ? "secondary" : "default"}
                       size="icon"
                       onClick={handlePlayPause}
-                      className="h-14 w-14 rounded-full shadow-lg"
+                      className="h-10 w-10 rounded-full shadow-lg"
                       title={isPlaying ? "Pause" : "Play"}
                     >
                       {isPlaying ? (
-                        <Pause size={28} weight="fill" />
+                        <Pause size={20} weight="fill" />
                       ) : (
-                        <Play size={28} weight="fill" className="ml-1" />
+                        <Play size={20} weight="fill" className="ml-0.5" />
                       )}
                     </Button>
                     
@@ -1404,28 +1404,22 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                         No other shots available to compare
                       </p>
                     ) : (
-                      <Select onValueChange={handleSelectComparisonShot}>
-                        <SelectTrigger className="h-9 text-sm bg-background/50">
-                          <SelectValue placeholder="Select a shot to compare..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {selectableShots.map((shot) => (
-                            <SelectItem 
-                              key={`${shot.date}|${shot.filename}`} 
-                              value={`${shot.date}|${shot.filename}`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span>{formatShotTime(shot)}</span>
-                                {typeof shot.final_weight === 'number' && (
-                                  <span className="text-muted-foreground text-[10px]">
-                                    {shot.final_weight.toFixed(1)}g
-                                  </span>
-                                )}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                        {selectableShots.map((shot) => (
+                          <button
+                            key={`${shot.date}|${shot.filename}`}
+                            onClick={() => handleSelectComparisonShot(`${shot.date}|${shot.filename}`)}
+                            className="w-full flex items-center justify-between gap-2 p-2.5 rounded-lg bg-background/50 hover:bg-primary/10 border border-border/30 hover:border-primary/30 transition-colors text-left"
+                          >
+                            <span className="text-sm font-medium">{formatShotTime(shot)}</span>
+                            {typeof shot.final_weight === 'number' && (
+                              <span className="text-xs text-muted-foreground">
+                                {shot.final_weight.toFixed(1)}g
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
                     )}
                   </div>
 
@@ -1946,7 +1940,7 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                       return (
                                         <div 
                                           key={tIdx}
-                                          className={`px-2 py-1 rounded text-xs ${
+                                          className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
                                             wasTriggered 
                                               ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
                                               : 'bg-secondary/60 text-muted-foreground border border-border/30'
