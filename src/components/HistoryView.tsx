@@ -176,10 +176,13 @@ export function HistoryView({ onBack, onViewProfile, onGenerateNew }: HistoryVie
   }
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'Recently added'
     try {
-      return formatDistanceToNow(new Date(dateStr), { addSuffix: true })
+      const date = new Date(dateStr)
+      if (isNaN(date.getTime())) return 'Recently added'
+      return formatDistanceToNow(date, { addSuffix: true })
     } catch {
-      return dateStr
+      return 'Recently added'
     }
   }
 
@@ -845,13 +848,18 @@ export function ProfileDetailView({ entry, onBack, onNewProfile }: ProfileDetail
                   {entry.profile_name}
                 </h2>
                 <p className="text-xs text-muted-foreground/70">
-                  {new Date(entry.created_at).toLocaleDateString(undefined, {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                  {(() => {
+                    if (!entry.created_at) return 'Added to MeticAI'
+                    const date = new Date(entry.created_at)
+                    if (isNaN(date.getTime())) return 'Added to MeticAI'
+                    return date.toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })
+                  })()}
                 </p>
               </div>
               {/* Profile Image - fixed size to prevent layout shift */}
