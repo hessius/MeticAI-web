@@ -1,14 +1,17 @@
 import React from 'react'
 
 interface MarkdownTextProps {
-  children: string
+  children?: string
+  text?: string
   className?: string
 }
 
-export function MarkdownText({ children, className = '' }: MarkdownTextProps) {
-  const renderMarkdown = (text: string): React.ReactNode[] => {
+export function MarkdownText({ children, text, className = '' }: MarkdownTextProps) {
+  const content = text ?? children ?? ''
+  
+  const renderMarkdown = (textContent: string): React.ReactNode[] => {
     // Split by newlines first to preserve line breaks
-    const lines = text.split('\n')
+    const lines = textContent.split('\n')
     const result: React.ReactNode[] = []
     
     lines.forEach((line, lineIndex) => {
@@ -84,7 +87,7 @@ export function MarkdownText({ children, className = '' }: MarkdownTextProps) {
 
   return (
     <span className={className}>
-      {renderMarkdown(children)}
+      {renderMarkdown(content)}
     </span>
   )
 }

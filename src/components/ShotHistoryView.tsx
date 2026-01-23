@@ -35,10 +35,13 @@ import {
   Equals,
   X,
   DownloadSimple,
-  Info
+  Info,
+  Brain,
+  SpinnerGap
 } from '@phosphor-icons/react'
 import { domToPng } from 'modern-screenshot'
 import { useShotHistory, ShotInfo, ShotData } from '@/hooks/useShotHistory'
+import { LlmAnalysisModal } from '@/components/LlmAnalysisModal'
 import { getServerUrl } from '@/lib/config'
 import { formatDistanceToNow, format } from 'date-fns'
 import {
@@ -364,6 +367,67 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
   const [analysisError, setAnalysisError] = useState<string | null>(null)
   const [isExportingAnalysis, setIsExportingAnalysis] = useState(false)
   const analysisCardRef = useRef<HTMLDivElement>(null)
+  
+  // LLM Analysis state
+  const [llmAnalysisResult, setLlmAnalysisResult] = useState<string | null>(null)
+  const [isLlmAnalyzing, setIsLlmAnalyzing] = useState(false)
+  const [llmAnalysisError, setLlmAnalysisError] = useState<string | null>(null)
+  const [showLlmModal, setShowLlmModal] = useState(false)
+  const [isLlmCached, setIsLlmCached] = useState(false)
+  
+  // Debug: Log when showLlmModal state changes
+  useEffect(() => {
+    console.log('[ShotHistoryView] *** showLlmModal STATE CHANGED TO:', showLlmModal)
+  }, [showLlmModal])
+  
+  // LLM Analysis cache key generator
+  const getLlmCacheKey = (shotDate: string, shotFilename: string) => 
+    `llm_analysis_${profileName}_${shotDate}_${shotFilename}`
+  
+  // Load cached LLM analysis when shot changes
+  useEffect(() => {
+    console.log('[ShotHistoryView] Cache useEffect triggered - selectedShot:', selectedShot?.filename, 'profileName:', profileName)
+    
+    if (!selectedShot) {
+      console.log('[ShotHistoryView] No selectedShot - clearing cache state')
+      setLlmAnalysisResult(null)
+      setIsLlmCached(false)
+      return
+    }
+    
+    const cacheKey = getLlmCacheKey(selectedShot.date, selectedShot.filename)
+    console.log('[ShotHistoryView] Looking for cache key:', cacheKey)
+    const cached = localStorage.getItem(cacheKey)
+    console.log('[ShotHistoryView] Cached value exists:', !!cached)
+    
+    if (cached) {
+      try {
+        const { analysis, timestamp } = JSON.parse(cached)
+        const ttlMs = 3 * 24 * 60 * 60 * 1000 // 3 days in milliseconds
+        const now = Date.now()
+        const age = now - timestamp
+        console.log('[ShotHistoryView] Cache age:', age / 1000 / 60, 'minutes, TTL:', ttlMs / 1000 / 60, 'minutes')
+        
+        if (now - timestamp < ttlMs) {
+          console.log('[ShotHistoryView] Cache is VALID - using cached analysis')
+          setLlmAnalysisResult(analysis)
+          setIsLlmCached(true)
+          return
+        } else {
+          console.log('[ShotHistoryView] Cache is EXPIRED - removing')
+          // Expired - remove from cache
+          localStorage.removeItem(cacheKey)
+        }
+      } catch (e) {
+        console.log('[ShotHistoryView] Cache parse error:', e)
+        localStorage.removeItem(cacheKey)
+      }
+    }
+    
+    console.log('[ShotHistoryView] No valid cache found')
+    setLlmAnalysisResult(null)
+    setIsLlmCached(false)
+  }, [selectedShot, profileName])
 
   // Replay state
   const [isPlaying, setIsPlaying] = useState(false)
@@ -615,9 +679,11 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
 
   // Auto-analyze when shot data loads (runs in background so it's ready when user switches to Analyze tab)
   useEffect(() => {
-    // Reset previous analysis
+    // Reset previous analysis (both local and LLM)
     setAnalysisResult(null)
     setAnalysisError(null)
+    setLlmAnalysisResult(null)
+    setLlmAnalysisError(null)
     
     // Auto-trigger analysis when shot data is available
     if (selectedShot && shotData && !isAnalyzing) {
@@ -672,6 +738,147 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
     } finally {
       setIsExportingAnalysis(false)
     }
+  }
+
+  // LLM-powered expert analysis
+  const handleLlmAnalysis = async () => {
+    console.log('[ShotHistoryView] handleLlmAnalysis called')
+    console.log('[ShotHistoryView] selectedShot:', selectedShot?.filename, 'shotData exists:', !!shotData)
+    
+    if (!selectedShot || !shotData) {
+      console.log('[ShotHistoryView] Aborting - no selectedShot or shotData')
+      return
+    }
+    
+    // Open modal immediately and start loading
+    console.log('[ShotHistoryView] Setting showLlmModal to TRUE')
+    setShowLlmModal(true)
+    setIsLlmAnalyzing(true)
+    setLlmAnalysisError(null)
+    
+    try {
+      const serverUrl = await getServerUrl()
+      
+      const formData = new FormData()
+      formData.append('profile_name', profileName)
+      formData.append('shot_date', selectedShot.date)
+      formData.append('shot_filename', selectedShot.filename)
+      
+      // Pass profile description if available
+      const profileData = shotData.profile as { description?: string; notes?: string } | undefined
+      const profileDesc = profileData?.description || profileData?.notes
+      if (profileDesc) {
+        formData.append('profile_description', profileDesc)
+      }
+      
+      const response = await fetch(`${serverUrl}/api/shots/analyze-llm`, {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'LLM Analysis failed' }))
+        throw new Error(errorData.detail?.message || errorData.detail?.error || errorData.message || 'LLM Analysis failed')
+      }
+      
+      const result = await response.json()
+      console.log('[ShotHistoryView] LLM API result:', result)
+      
+      if (result.status === 'success') {
+        console.log('[ShotHistoryView] Analysis success, caching result')
+        setLlmAnalysisResult(result.llm_analysis)
+        setIsLlmCached(false)
+        
+        // Save to cache with timestamp
+        const cacheKey = getLlmCacheKey(selectedShot.date, selectedShot.filename)
+        console.log('[ShotHistoryView] Saving to cache with key:', cacheKey)
+        localStorage.setItem(cacheKey, JSON.stringify({
+          analysis: result.llm_analysis,
+          timestamp: Date.now()
+        }))
+      } else {
+        throw new Error(result.message || 'LLM Analysis failed')
+      }
+    } catch (err) {
+      console.error('LLM Analysis failed:', err)
+      setLlmAnalysisError(err instanceof Error ? err.message : 'Failed to get expert analysis')
+    } finally {
+      setIsLlmAnalyzing(false)
+    }
+  }
+  
+  // Open LLM modal to view cached result
+  const handleViewLlmAnalysis = () => {
+    console.log('[ShotHistoryView] handleViewLlmAnalysis called - opening modal')
+    setShowLlmModal(true)
+  }
+  
+  // Re-analyze (force fresh analysis, ignore cache)
+  const handleReAnalyze = async () => {
+    if (!selectedShot || !shotData) return
+    
+    console.log('[ShotHistoryView] Re-analyzing - clearing cache first')
+    
+    // Clear the cached result
+    const cacheKey = getLlmCacheKey(selectedShot.date, selectedShot.filename)
+    localStorage.removeItem(cacheKey)
+    
+    // Reset state
+    setLlmAnalysisResult(null)
+    setIsLlmCached(false)
+    setLlmAnalysisError(null)
+    setIsLlmAnalyzing(true)
+    
+    try {
+      const serverUrl = await getServerUrl()
+      
+      const formData = new FormData()
+      formData.append('profile_name', profileName)
+      formData.append('shot_date', selectedShot.date)
+      formData.append('shot_filename', selectedShot.filename)
+      
+      const profileData = shotData.profile as { description?: string; notes?: string } | undefined
+      const profileDesc = profileData?.description || profileData?.notes
+      if (profileDesc) {
+        formData.append('profile_description', profileDesc)
+      }
+      
+      const response = await fetch(`${serverUrl}/api/shots/analyze-llm`, {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'LLM Analysis failed' }))
+        throw new Error(errorData.detail?.message || errorData.detail?.error || errorData.message || 'LLM Analysis failed')
+      }
+      
+      const result = await response.json()
+      
+      if (result.status === 'success') {
+        setLlmAnalysisResult(result.llm_analysis)
+        setIsLlmCached(false)
+        
+        // Save to cache
+        localStorage.setItem(cacheKey, JSON.stringify({
+          analysis: result.llm_analysis,
+          timestamp: Date.now()
+        }))
+      } else {
+        throw new Error(result.message || 'LLM Analysis failed')
+      }
+    } catch (err) {
+      console.error('Re-analysis failed:', err)
+      setLlmAnalysisError(err instanceof Error ? err.message : 'Failed to get expert analysis')
+    } finally {
+      setIsLlmAnalyzing(false)
+    }
+  }
+  
+  // Close LLM modal handler
+  const handleCloseLlmModal = () => {
+    console.log('[ShotHistoryView] Closing LLM modal')
+    setShowLlmModal(false)
   }
 
   // Transform shot data into chart-compatible format
@@ -2028,8 +2235,8 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                       </div>
                       </div>{/* End of analysisCardRef */}
                       
-                      {/* Export button */}
-                      <div className="flex justify-center pt-2">
+                      {/* Action buttons */}
+                      <div className="flex justify-center gap-2 pt-2">
                         <Button
                           variant="outline"
                           size="sm"
@@ -2040,6 +2247,30 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                           <DownloadSimple size={14} weight="bold" />
                           {isExportingAnalysis ? 'Exporting...' : 'Export as Image'}
                         </Button>
+                        
+                        {/* Show "View" if cached, otherwise "Get" */}
+                        {(llmAnalysisResult || isLlmCached) && !isLlmAnalyzing ? (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={handleViewLlmAnalysis}
+                            className="gap-1.5 bg-violet-600 hover:bg-violet-700 border-0"
+                          >
+                            <Brain size={14} weight="fill" />
+                            View Expert Analysis (AI)
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={handleLlmAnalysis}
+                            disabled={isLlmAnalyzing}
+                            className="gap-1.5 bg-violet-600 hover:bg-violet-700 border-0"
+                          >
+                            <Brain size={14} weight="fill" />
+                            Get Expert Analysis (AI)
+                          </Button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -2054,6 +2285,19 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
             </p>
           )}
         </Card>
+        
+        {/* LLM Analysis Modal - Must be inside selectedShot block! */}
+        <LlmAnalysisModal
+          isOpen={showLlmModal}
+          isLoading={isLlmAnalyzing}
+          analysisResult={llmAnalysisResult}
+          error={llmAnalysisError}
+          onClose={handleCloseLlmModal}
+          onReAnalyze={handleReAnalyze}
+          profileName={profileName}
+          shotDate={selectedShot?.date}
+          isCached={isLlmCached}
+        />
       </motion.div>
     )
   }
