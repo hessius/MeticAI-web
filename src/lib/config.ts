@@ -43,7 +43,7 @@ export async function loadConfig(): Promise<AppConfig> {
  */
 function getDefaultConfig(): AppConfig {
   return {
-    serverUrl: 'http://localhost:5000'
+    serverUrl: 'http://localhost:8000'
   };
 }
 

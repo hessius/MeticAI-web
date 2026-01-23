@@ -11,7 +11,7 @@ interface UseUpdateStatusReturn {
   updateAvailable: boolean
   isChecking: boolean
   error: string | null
-  checkForUpdates: () => Promise<void>
+  checkForUpdates: () => Promise<{ updateAvailable: boolean; error: string | null }>
   lastChecked: string | null
 }
 
