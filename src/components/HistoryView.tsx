@@ -335,7 +335,7 @@ export function HistoryView({ onBack, onViewProfile, onGenerateNew }: HistoryVie
             </div>
             <p className="text-foreground/80 font-medium">No profiles yet</p>
             <p className="text-sm text-muted-foreground/60 mt-1.5">
-              Generate your first espresso profile to see it here
+              Add your first espresso profile to see it here
             </p>
           </div>
         ) : filteredEntries.length === 0 ? (
