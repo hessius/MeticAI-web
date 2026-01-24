@@ -57,7 +57,7 @@ type ViewState = 'start' | 'form' | 'loading' | 'results' | 'error' | 'history' 
 
 function App() {
   const [isInitializing, setIsInitializing] = useState(true)
-  const [viewState, setViewState] = useState<ViewState>('form')
+  const [viewState, setViewState] = useState<ViewState>('start')
   const [profileCount, setProfileCount] = useState<number | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -93,10 +93,6 @@ function App() {
         if (response.ok) {
           const data = await response.json()
           setProfileCount(data.total || 0)
-          // If profiles exist, show the start page; otherwise go straight to form
-          if (data.total > 0) {
-            setViewState('start')
-          }
         }
       } catch (err) {
         console.error('Failed to check profiles:', err)
@@ -503,9 +499,11 @@ Special Notes: For maximum clarity and to really make those delicate floral note
             >
               <Card className="p-6 space-y-6">
                 <div className="text-center space-y-2">
-                  <h2 className="text-xl font-bold tracking-tight text-foreground">Welcome back!</h2>
+                  <h2 className="text-xl font-bold tracking-tight text-foreground">Welcome!</h2>
                   <p className="text-sm text-muted-foreground">
-                    You have {profileCount} profile{profileCount !== 1 ? 's' : ''} saved
+                    {profileCount && profileCount > 0
+                      ? `You have ${profileCount} profile${profileCount !== 1 ? 's' : ''} saved`
+                      : 'Get started by generating your first profile'}
                   </p>
                 </div>
 
