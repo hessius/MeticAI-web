@@ -296,8 +296,7 @@ function App() {
 
   const handleBackToStart = () => {
     refreshProfileCount()
-    // Only go back to start if profiles exist, otherwise go to form
-    setViewState(profileCount && profileCount > 0 ? 'start' : 'form')
+    setViewState('start')
   }
 
   const handleViewHistoryEntry = (entry: HistoryEntry) => {
@@ -469,7 +468,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
               </Button>
             )}
           </div>
-          <p className="text-muted-foreground text-sm font-medium tracking-wide">Meticulous Espresso Profile Generator</p>
+          <p className="text-muted-foreground text-sm font-medium tracking-wide">Meticulous Espresso AI Profiler</p>
         </motion.div>
 
         <AnimatePresence mode="wait">
@@ -538,20 +537,18 @@ Special Notes: For maximum clarity and to really make those delicate floral note
               transition={{ duration: 0.25, ease: "easeOut" }}
             >
               <Card className="p-6 space-y-6">
-                {/* Header with back button when profiles exist */}
-                {profileCount !== null && profileCount > 0 && (
-                  <div className="flex items-center gap-3 -mt-1 -mx-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleBackToStart}
-                      className="shrink-0"
-                    >
-                      <CaretLeft size={22} weight="bold" />
-                    </Button>
-                    <h2 className="text-lg font-bold tracking-tight">New Profile</h2>
-                  </div>
-                )}
+                {/* Header with back button */}
+                <div className="flex items-center gap-3 -mt-1 -mx-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleBackToStart}
+                    className="shrink-0"
+                  >
+                    <CaretLeft size={22} weight="bold" />
+                  </Button>
+                  <h2 className="text-lg font-bold tracking-tight">New Profile</h2>
+                </div>
 
                 <div className="space-y-3">
                   <Label className="text-sm font-semibold tracking-wide text-foreground/90">
@@ -792,7 +789,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                         Metic<span className="text-primary">AI</span>
                       </h1>
                     </div>
-                    <p className="text-muted-foreground text-sm">Meticulous Espresso Profile Generator</p>
+                    <p className="text-muted-foreground text-sm">Meticulous Espresso AI Profiler</p>
                   </div>
                 )}
               <Card className={`p-6 ${isCapturing ? 'space-y-4' : 'space-y-5'}`}>
