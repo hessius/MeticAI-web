@@ -160,6 +160,133 @@ MeticAI is an AI-powered espresso profile generator that helps coffee enthusiast
 
 ---
 
+### Demo Results View
+
+![Demo Results Desktop](screenshots/07-demo-results-desktop.png)
+
+**Description:** Complete espresso profile results display showing:
+- **Profile Header:**
+  - "Riesling to the Occasion" profile name
+  - "Profile saved to device" confirmation
+  - Back to form navigation button
+- **Coffee Analysis** section with detailed bean information
+- **Description** of the extraction profile and its characteristics
+- **Preparation** details including:
+  - Dose: 18g
+  - Grind specifications
+  - Water temperature: 94°C
+  - Yield ratio and timing
+- **Why This Works** - Technical explanation of the profile design
+- **Special Notes** - Additional tips and recommendations
+- **Action buttons:**
+  - Save as image
+  - Create new profile
+
+**Use Case:** Users receive a comprehensive, detailed espresso profile they can save, share, or use as a reference when brewing. The profile includes both technical parameters and practical brewing guidance.
+
+**Note:** This demo view can be accessed by quickly clicking the MeticAI header 5 times, allowing users to see a sample profile without connecting to a backend server.
+
+---
+
+## Mobile Screenshots
+
+The application is fully responsive and optimized for mobile devices. Below are screenshots showcasing the mobile experience:
+
+### Mobile Welcome Screen
+
+![Mobile Welcome Screen](screenshots/mobile-01-welcome-screen.png)
+
+**Description:** Mobile-optimized welcome screen featuring:
+- Centered MeticAI logo and branding
+- Clear call-to-action buttons stacked vertically
+- Touch-friendly button sizes
+- Optimized spacing for smaller screens
+- Note: QR code button is hidden on mobile (not needed when already on mobile)
+
+**Use Case:** Mobile users get immediate access to profile generation or browsing existing profiles with a clean, uncluttered interface.
+
+---
+
+### Mobile Form - Empty State
+
+![Mobile Form Empty](screenshots/mobile-02-form-empty.png)
+
+**Description:** Profile generation form optimized for mobile:
+- Stacked vertical layout for better scrolling
+- Large, touch-friendly upload area
+- Text input with mobile keyboard optimization
+- Tag selection with wrap layout
+- All tags visible and easily tappable
+- Buttons stacked at bottom for thumb access
+
+**Use Case:** Users can comfortably create profiles on mobile devices with all functionality accessible through touch-friendly controls.
+
+---
+
+### Mobile Form - With Tags Selected
+
+![Mobile Form with Tags](screenshots/mobile-03-form-with-tags.png)
+
+**Description:** Mobile form showing selected taste preference tags:
+- Selected tags highlighted with distinct styling
+- Color-coded categories maintained from desktop
+- Easy to select/deselect tags with single tap
+- Scrollable tag area for viewing all options
+- Generate Profile button becomes enabled when tags are selected
+
+**Use Case:** Mobile users can quickly build their flavor profile using intuitive tag selection optimized for touch interaction.
+
+---
+
+### Mobile Advanced Customization
+
+![Mobile Advanced Customization](screenshots/mobile-04-advanced-customization.png)
+
+**Description:** Advanced options panel expanded on mobile:
+- Accordion-style expansion preserves screen space
+- All equipment and extraction parameters accessible
+- Mobile-optimized input controls:
+  - Dropdown selectors for basket options
+  - Numeric spinners for precise values
+  - Touch-friendly increase/decrease buttons
+- Vertical stacking of all fields for easy scrolling
+
+**Use Case:** Advanced users on mobile can access the same granular controls as desktop users with an interface optimized for smaller screens.
+
+---
+
+### Mobile Demo Results
+
+![Mobile Demo Results](screenshots/mobile-05-demo-results.png)
+
+**Description:** Full profile results view optimized for mobile:
+- Scrollable single-column layout
+- All profile information accessible
+- Large, readable text optimized for mobile
+- Collapsible sections for easy navigation
+- Back button and action buttons easily accessible
+- Success notification displayed at bottom
+
+**Use Case:** Mobile users receive the complete profile information in a format perfect for viewing on-the-go or at the espresso machine.
+
+---
+
+### Mobile Profile Catalogue
+
+![Mobile Profile Catalogue](screenshots/mobile-06-profile-catalogue.png)
+
+**Description:** Profile management interface on mobile:
+- Header with back navigation
+- Add and filter buttons accessible
+- Profile count display
+- Empty state messaging
+- Large "Add Profile" button
+- Optimized for one-handed operation
+
+**Use Case:** Mobile users can easily manage their profile collection with touch-optimized controls and clear visual hierarchy.
+
+---
+
 ## Branding Assets
 
 ### Logo
@@ -245,12 +372,22 @@ The MeticAI logo features a stylized coffee bean design with "AI" highlighted in
 
 All screenshots are organized in the `resources/screenshots/` directory with descriptive filenames:
 
+**Desktop Screenshots:**
 - `01-welcome-screen.png` - Initial landing page
 - `02-upload-form-empty.png` - Profile generation form (empty state)
 - `03-form-with-tags-selected.png` - Form with multiple tags selected
 - `04-advanced-customization.png` - Advanced options expanded
 - `05-qr-code-dialog.png` - Mobile access QR code
 - `06-profile-catalogue-empty.png` - Profile catalogue (empty state)
+- `07-demo-results-desktop.png` - Complete profile results view
+
+**Mobile Screenshots (375x812 viewport):**
+- `mobile-01-welcome-screen.png` - Mobile welcome/start screen
+- `mobile-02-form-empty.png` - Mobile profile generation form (empty)
+- `mobile-03-form-with-tags.png` - Mobile form with tags selected
+- `mobile-04-advanced-customization.png` - Mobile advanced options expanded
+- `mobile-05-demo-results.png` - Mobile profile results view
+- `mobile-06-profile-catalogue.png` - Mobile profile catalogue
 
 ---
 
@@ -259,17 +396,19 @@ All screenshots are organized in the `resources/screenshots/` directory with des
 ### Website Updates
 
 These screenshots are ideal for:
-- **Homepage hero section** - Welcome screen showcases clean design
+- **Homepage hero section** - Welcome screen showcases clean design (desktop and mobile)
 - **Features page** - Individual screenshots highlight specific capabilities
 - **How it works section** - Step-by-step visual guide using form screenshots
-- **Mobile features** - QR code dialog demonstrates cross-device functionality
+- **Mobile features** - Mobile screenshots demonstrate responsive design and cross-device functionality
+- **Demo section** - Results view shows the value proposition
 
 ### Promotional Materials
 
-- **Social media posts** - Tag selection interface shows unique value proposition
-- **Blog articles** - Screenshots illustrate advanced features and customization
-- **Documentation** - Visual guides for user onboarding
-- **Presentations** - Professional screenshots for demos and pitches
+- **Social media posts** - Tag selection interface shows unique value proposition; mobile screenshots demonstrate responsive design
+- **Blog articles** - Screenshots illustrate advanced features and customization on both desktop and mobile
+- **Documentation** - Visual guides for user onboarding with platform-specific examples
+- **Presentations** - Professional screenshots for demos and pitches showcasing cross-platform support
+- **Mobile app stores** - Mobile screenshots ready for app store listings (if PWA is published)
 
 ### App Store / Repository
 
