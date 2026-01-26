@@ -9,6 +9,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
+      toastOptions={{
+        style: {
+          // Add safe area padding for dynamic island on iOS
+          marginTop: 'max(0px, calc(env(safe-area-inset-top) - 1rem))',
+        },
+      }}
       style={
         {
           "--normal-bg": "var(--popover)",
