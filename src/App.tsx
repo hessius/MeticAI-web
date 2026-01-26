@@ -374,6 +374,19 @@ function App() {
   }
 
   const loadMockResults = () => {
+    const mockProfileJson = {
+      name: "Riesling to the Occasion",
+      author: "MeticAI",
+      temperature: 94,
+      final_weight: 45,
+      stages: [
+        { name: "Pre-infusion", pressure: 3, flow: 2, duration: 10 },
+        { name: "Bloom", pressure: 2, flow: 1.5, duration: 15 },
+        { name: "Extraction", pressure: 9, flow: null, duration: 20 },
+        { name: "Decline", pressure: 6, flow: null, duration: 10 }
+      ]
+    }
+    
     setApiResponse({
       status: 'success',
       analysis: "Standout Coffee's Washed Pink Bourbon, grown in the Huila region of Colombia at 1800 masl on the Zarza farm, offers floral notes of rose and lily with flavors of cantaloupe, sweet mango, pink lemonade, and sparkling Austrian riesling.",
@@ -391,6 +404,7 @@ Why This Works: We're giving this exceptional coffee the spa treatment. The init
 
 Special Notes: For maximum clarity and to really make those delicate floral notes pop, consider using a paper filter at the bottom of your basket.`
     })
+    setCurrentProfileJson(mockProfileJson)
     setViewState('results')
   }
 
@@ -966,33 +980,40 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                       </AlertDescription>
                     </Alert>
 
-                    <div className="grid grid-cols-3 gap-2.5">
-                      <Button
-                        onClick={handleSaveResults}
-                        variant="outline"
-                        className="h-12 text-sm font-semibold"
-                        title="Save results as image"
-                      >
-                        <Image size={18} className="mr-1.5" weight="bold" />
-                        Image
-                      </Button>
-                      {currentProfileJson && (
+                    {/* Export Buttons */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-muted-foreground block text-center">Export as</Label>
+                      <div className={`grid gap-2.5 ${currentProfileJson ? 'grid-cols-2' : 'grid-cols-1'}`}>
                         <Button
-                          onClick={handleDownloadJson}
+                          onClick={handleSaveResults}
                           variant="outline"
-                          className="h-12 text-sm font-semibold"
+                          className="h-11 text-sm font-semibold"
+                          title="Save results as image"
                         >
-                          <FileJs size={18} className="mr-1.5" weight="bold" />
-                          JSON
+                          <Image size={18} className="mr-1.5" weight="bold" />
+                          Image
                         </Button>
-                      )}
-                      <Button
-                        onClick={handleReset}
-                        className={`h-12 text-sm font-semibold ${!currentProfileJson ? 'col-span-2' : ''}`}
-                      >
-                        New Profile
-                      </Button>
+                        {currentProfileJson && (
+                          <Button
+                            onClick={handleDownloadJson}
+                            variant="outline"
+                            className="h-11 text-sm font-semibold"
+                          >
+                            <FileJs size={18} className="mr-1.5" weight="bold" />
+                            JSON
+                          </Button>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Action Button */}
+                    <Button
+                      onClick={() => setViewState('history')}
+                      className="w-full h-12 text-sm font-semibold"
+                    >
+                      <Coffee size={18} className="mr-1.5" weight="fill" />
+                      Profile Catalogue
+                    </Button>
                   </>
                 )}
               </Card>
