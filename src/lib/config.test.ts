@@ -20,7 +20,7 @@ describe('config loader', () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('Network error'))
       
       const config = await loadConfig()
-      expect(config.serverUrl).toBe('http://localhost:5000')
+      expect(config.serverUrl).toBe('http://localhost:8000')
     })
 
     it('should return default config when config.json is not found', async () => {
@@ -31,7 +31,7 @@ describe('config loader', () => {
       })
       
       const config = await loadConfig()
-      expect(config.serverUrl).toBe('http://localhost:5000')
+      expect(config.serverUrl).toBe('http://localhost:8000')
     })
 
     it('should load config from config.json when available', async () => {
@@ -62,7 +62,7 @@ describe('config loader', () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('Network error'))
       
       const serverUrl = await getServerUrl()
-      expect(serverUrl).toBe('http://localhost:5000')
+      expect(serverUrl).toBe('http://localhost:8000')
     })
 
     it('should return configured server URL from config.json', async () => {
