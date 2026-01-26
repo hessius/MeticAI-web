@@ -810,6 +810,25 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
   // Open LLM modal to view cached result
   const handleViewLlmAnalysis = () => {
     console.log('[ShotHistoryView] handleViewLlmAnalysis called - opening modal')
+    
+    // If we don't have the result in state but it's cached, load it now
+    if (!llmAnalysisResult && selectedShot) {
+      const cacheKey = getLlmCacheKey(selectedShot.date, selectedShot.filename)
+      const cached = localStorage.getItem(cacheKey)
+      if (cached) {
+        try {
+          const { analysis } = JSON.parse(cached)
+          if (analysis) {
+            console.log('[ShotHistoryView] Loading cached analysis for modal view')
+            setLlmAnalysisResult(analysis)
+            setIsLlmCached(true)
+          }
+        } catch (e) {
+          console.log('[ShotHistoryView] Failed to parse cached analysis:', e)
+        }
+      }
+    }
+    
     setShowLlmModal(true)
   }
   

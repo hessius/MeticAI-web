@@ -39,35 +39,30 @@ interface LlmAnalysisModalProps {
 }
 
 // Section configuration with colors and icons
-const SECTION_CONFIG: Record<string, { icon: React.ReactNode; color: string; bgColor: string; borderColor: string }> = {
+const SECTION_CONFIG: Record<string, { icon: React.ReactNode; color: string; borderColor: string }> = {
   "1. Shot Performance": {
     icon: <Target className="h-5 w-5" />,
     color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-500/10",
     borderColor: "border-blue-500/30"
   },
   "2. Root Cause Analysis": {
     icon: <AlertCircle className="h-5 w-5" />,
     color: "text-amber-600 dark:text-amber-400",
-    bgColor: "bg-amber-500/10",
     borderColor: "border-amber-500/30"
   },
   "3. Setup Recommendations": {
     icon: <Wrench className="h-5 w-5" />,
     color: "text-green-600 dark:text-green-400",
-    bgColor: "bg-green-500/10",
     borderColor: "border-green-500/30"
   },
   "4. Profile Recommendations": {
     icon: <TrendingUp className="h-5 w-5" />,
     color: "text-purple-600 dark:text-purple-400",
-    bgColor: "bg-purple-500/10",
     borderColor: "border-purple-500/30"
   },
   "5. Profile Design Observations": {
     icon: <Lightbulb className="h-5 w-5" />,
     color: "text-cyan-600 dark:text-cyan-400",
-    bgColor: "bg-cyan-500/10",
     borderColor: "border-cyan-500/30"
   }
 };
@@ -147,13 +142,12 @@ function SectionCard({ section }: { section: ParsedSection }) {
   const config = SECTION_CONFIG[section.title] || {
     icon: <Info className="h-5 w-5" />,
     color: "text-gray-600 dark:text-gray-400",
-    bgColor: "bg-gray-500/10",
     borderColor: "border-gray-500/30"
   };
   
   return (
     <Card className={`${config.borderColor} border-2 overflow-hidden`}>
-      <CardHeader className={`${config.bgColor} pb-3`}>
+      <CardHeader className="pb-3 border-b border-border/30">
         <CardTitle className="text-base flex items-center gap-2 flex-wrap">
           <span className={`shrink-0 ${config.color}`}>{config.icon}</span>
           <span className="text-foreground font-semibold">{section.title}</span>
