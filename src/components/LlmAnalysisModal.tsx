@@ -20,7 +20,6 @@ import {
   Wrench,
   Lightbulb,
   TrendingUp,
-  CheckCircle2,
   XCircle,
   AlertCircle,
   ChevronRight
@@ -235,17 +234,6 @@ export function LlmAnalysisModal({
                 )}
               </DialogDescription>
             </div>
-            {onReAnalyze && !isLoading && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={onReAnalyze}
-                className="gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Re-Analyze
-              </Button>
-            )}
           </div>
         </DialogHeader>
         
@@ -310,17 +298,19 @@ export function LlmAnalysisModal({
           )}
         </div>
         
-        {/* Footer */}
-        {!isLoading && analysisResult && (
+        {/* Footer with Re-Analyze button */}
+        {!isLoading && analysisResult && onReAnalyze && (
           <div className="px-6 py-3 border-t bg-muted/30 shrink-0">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-                Analysis complete
-              </div>
-              {isCached && (
-                <span>Cached result • Re-analyze for fresh insights</span>
-              )}
+            <div className="flex items-center justify-center">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onReAnalyze}
+                className="gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Re-Analyze{isCached ? ' for Fresh Insights' : ''}
+              </Button>
             </div>
           </div>
         )}
