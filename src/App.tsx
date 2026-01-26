@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 // Coffee icon is used by HistoryView (child component) and must be imported here
 // to avoid bundling issues when downloading images with domToPng
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, DownloadSimple, Info, QrCode, ClockCounterClockwise, FileJs, Coffee, Image, CaretLeft, Plus } from '@phosphor-icons/react'
+import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, DownloadSimple, Info, QrCode, ClockCounterClockwise, FileJs, Coffee, Image, CaretLeft, Plus, Gear } from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
 import { MarkdownText } from '@/components/MarkdownText'
 import { domToPng } from 'modern-screenshot'
@@ -23,6 +23,7 @@ import { useIsDesktop } from '@/hooks/use-desktop'
 import { MeticAILogo } from '@/components/MeticAILogo'
 import { HistoryView, ProfileDetailView } from '@/components/HistoryView'
 import { HistoryEntry } from '@/hooks/useHistory'
+import { SettingsView } from '@/components/SettingsView'
 
 const LOADING_MESSAGES = [
   "Analyzing coffee beans...",
@@ -53,7 +54,7 @@ interface APIResponse {
   history_id?: string
 }
 
-type ViewState = 'start' | 'form' | 'loading' | 'results' | 'error' | 'history' | 'history-detail'
+type ViewState = 'start' | 'form' | 'loading' | 'results' | 'error' | 'history' | 'history-detail' | 'settings'
 
 function App() {
   const [isInitializing, setIsInitializing] = useState(true)
@@ -509,7 +510,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                 <div className="space-y-3">
                   <Button
                     onClick={() => setViewState('form')}
-                    className="w-full h-14 text-base font-semibold"
+                    className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90"
                   >
                     <Plus size={20} className="mr-2" weight="bold" />
                     Generate New Profile
@@ -517,11 +518,19 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                   
                   <Button
                     onClick={() => setViewState('history')}
-                    variant="outline"
-                    className="w-full h-14 text-base font-semibold border-primary/30 hover:border-primary/50 hover:bg-primary/5"
+                    className="w-full h-14 text-base font-semibold bg-primary/80 hover:bg-primary/70"
                   >
                     <Coffee size={20} className="mr-2" weight="fill" />
                     Profile Catalogue
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setViewState('settings')}
+                    variant="outline"
+                    className="w-full h-14 text-base font-semibold border-border/50 hover:border-border hover:bg-secondary/50"
+                  >
+                    <Gear size={20} className="mr-2" weight="duotone" />
+                    Settings & About
                   </Button>
                 </div>
               </Card>
@@ -712,6 +721,12 @@ Special Notes: For maximum clarity and to really make those delicate floral note
               entry={selectedHistoryEntry}
               onBack={() => setViewState('history')}
               onNewProfile={handleReset}
+            />
+          )}
+
+          {viewState === 'settings' && (
+            <SettingsView
+              onBack={handleBackToStart}
             />
           )}
 
