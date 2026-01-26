@@ -1650,23 +1650,23 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                       const isEqual = Math.abs(diffPercent) < 1
                       
                       return (
-                        <div className="p-3 bg-secondary/30 rounded-xl border border-border/10">
-                          <div className="flex items-center gap-1.5 text-muted-foreground mb-1.5">
-                            <Icon size={14} weight="bold" />
-                            <span className="text-xs font-medium">{label}</span>
+                        <div className="p-2.5 bg-secondary/30 rounded-xl border border-border/10 overflow-hidden">
+                          <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                            <Icon size={12} weight="bold" className="shrink-0" />
+                            <span className="text-[11px] font-medium truncate">{label}</span>
                           </div>
-                          <div className="flex items-end justify-between gap-2">
-                            <div>
-                              <span className="text-lg font-bold text-primary">{a.toFixed(1)}</span>
-                              <span className="text-xs text-muted-foreground mx-1.5">vs</span>
-                              <span className="text-base text-muted-foreground">{b.toFixed(1)}</span>
-                              <span className="text-[10px] text-muted-foreground/60 ml-1">{unit}</span>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-baseline gap-1 flex-wrap">
+                              <span className="text-base font-bold text-primary">{a.toFixed(1)}</span>
+                              <span className="text-[10px] text-muted-foreground">vs</span>
+                              <span className="text-sm text-muted-foreground">{b.toFixed(1)}</span>
+                              <span className="text-[9px] text-muted-foreground/60">{unit}</span>
                             </div>
                             <Badge 
                               variant={isEqual ? "secondary" : isBetter ? "default" : "destructive"}
-                              className="text-xs px-1.5 py-0.5"
+                              className="text-[10px] px-1.5 py-0 h-5 w-fit"
                             >
-                              {isEqual ? <Equals size={10} weight="bold" /> : isPositive ? <ArrowUp size={10} weight="bold" /> : <ArrowDown size={10} weight="bold" />}
+                              {isEqual ? <Equals size={9} weight="bold" /> : isPositive ? <ArrowUp size={9} weight="bold" /> : <ArrowDown size={9} weight="bold" />}
                               {Math.abs(diffPercent).toFixed(0)}%
                             </Badge>
                           </div>
@@ -2093,24 +2093,24 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                               }`}
                             >
                               {/* Stage Header */}
-                              <div className="flex items-start justify-between gap-2 mb-3">
-                                <div className="flex items-center gap-2">
-                                  <span className={`w-3 h-3 rounded-full ${
+                              <div className="flex flex-col gap-2 mb-3">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className={`w-3 h-3 rounded-full shrink-0 ${
                                     !stage.executed ? 'bg-red-500' :
                                     stage.assessment?.status === 'reached_goal' ? 'bg-green-500' :
                                     stage.assessment?.status === 'hit_limit' ? 'bg-amber-500' :
                                     stage.assessment?.status === 'failed' ? 'bg-red-500' :
                                     stage.assessment?.status === 'incomplete' ? 'bg-orange-500' : 'bg-blue-500'
                                   }`} />
-                                  <span className="text-base font-semibold">{stage.stage_name}</span>
-                                  <Badge variant="secondary" className="text-xs capitalize">
+                                  <span className="text-sm font-semibold break-words">{stage.stage_name}</span>
+                                  <Badge variant="secondary" className="text-[10px] capitalize shrink-0">
                                     {stage.stage_type}
                                   </Badge>
                                 </div>
                                 {stage.assessment && (
                                   <Badge 
                                     variant="secondary" 
-                                    className={`text-xs ${
+                                    className={`text-[10px] w-fit shrink-0 ${
                                       stage.assessment.status === 'reached_goal' ? 'bg-green-500/20 text-green-400' :
                                       stage.assessment.status === 'hit_limit' ? 'bg-amber-500/20 text-amber-400' :
                                       stage.assessment.status === 'not_reached' ? 'bg-red-500/20 text-red-400' :
@@ -2235,14 +2235,14 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                       </div>
                       </div>{/* End of analysisCardRef */}
                       
-                      {/* Action buttons */}
-                      <div className="flex justify-center gap-2 pt-2">
+                      {/* Action buttons - stacked vertically for mobile */}
+                      <div className="flex flex-col gap-2 pt-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={handleExportAnalysis}
                           disabled={isExportingAnalysis}
-                          className="gap-1.5"
+                          className="gap-1.5 w-full"
                         >
                           <DownloadSimple size={14} weight="bold" />
                           {isExportingAnalysis ? 'Exporting...' : 'Export as Image'}
@@ -2254,7 +2254,7 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                             variant="default"
                             size="sm"
                             onClick={handleViewLlmAnalysis}
-                            className="gap-1.5 bg-violet-600 hover:bg-violet-700 border-0"
+                            className="gap-1.5 w-full bg-violet-600 hover:bg-violet-700 border-0"
                           >
                             <Brain size={14} weight="fill" />
                             View Expert Analysis (AI)
@@ -2265,7 +2265,7 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                             size="sm"
                             onClick={handleLlmAnalysis}
                             disabled={isLlmAnalyzing}
-                            className="gap-1.5 bg-violet-600 hover:bg-violet-700 border-0"
+                            className="gap-1.5 w-full bg-violet-600 hover:bg-violet-700 border-0"
                           >
                             <Brain size={14} weight="fill" />
                             Get Expert Analysis (AI)
@@ -2320,19 +2320,21 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
             <CaretLeft size={22} weight="bold" />
           </Button>
           <div className="flex items-center gap-2.5 flex-1 min-w-0">
-            <div className="p-1.5 rounded-lg bg-primary/10">
+            <div className="p-1.5 rounded-lg bg-primary/10 shrink-0">
               <ChartLine size={22} className="text-primary" weight="fill" />
             </div>
-            <div>
-              <h2 className="text-lg font-bold tracking-tight truncate">Shot History</h2>
-              <p className="text-xs text-muted-foreground/70 truncate">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold tracking-tight">Shot History</h2>
+                <Badge variant="secondary" className="shrink-0">
+                  {shots.length} shots
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground/70 break-words line-clamp-2">
                 {profileName}
               </p>
             </div>
           </div>
-          <Badge variant="secondary" className="shrink-0">
-            {shots.length} shots
-          </Badge>
         </div>
 
         {error && (

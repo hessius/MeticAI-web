@@ -154,11 +154,11 @@ function SectionCard({ section }: { section: ParsedSection }) {
   return (
     <Card className={`${config.borderColor} border-2 overflow-hidden`}>
       <CardHeader className={`${config.bgColor} pb-3`}>
-        <CardTitle className={`text-lg flex items-center gap-3 ${config.color}`}>
-          {config.icon}
-          <span>{section.title}</span>
+        <CardTitle className="text-base flex items-center gap-2 flex-wrap">
+          <span className={`shrink-0 ${config.color}`}>{config.icon}</span>
+          <span className="text-foreground font-semibold">{section.title}</span>
           {section.assessment && (
-            <Badge className={`${section.assessment.color} text-white ml-auto`}>
+            <Badge className={`${section.assessment.color} text-white shrink-0`}>
               {section.assessment.status}
             </Badge>
           )}
@@ -168,8 +168,8 @@ function SectionCard({ section }: { section: ParsedSection }) {
         {section.subsections.map((subsection, idx) => (
           <div key={idx} className="space-y-2">
             <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              {subsection.title}
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="break-words">{subsection.title}</span>
             </h4>
             <ul className="space-y-1.5 pl-6">
               {subsection.items.map((item, itemIdx) => (

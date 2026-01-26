@@ -850,7 +850,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                           <CheckCircle size={24} weight="fill" className="text-success" />
                         </div>
                         <div className="min-w-0">
-                          <h2 className="text-lg font-bold text-foreground truncate">
+                          <h2 className="text-lg font-bold text-foreground break-words leading-tight">
                             {profileName || 'Profile Generated!'}
                           </h2>
                           <p className="text-xs text-muted-foreground">Profile saved to device</p>
