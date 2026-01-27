@@ -9,6 +9,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
+      // Enable swipe to dismiss in all directions for better mobile UX
+      swipeDirections={['down', 'up', 'left', 'right']}
       toastOptions={{
         style: {
           // Add safe area padding for dynamic island on iOS
