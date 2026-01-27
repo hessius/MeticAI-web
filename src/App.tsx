@@ -20,6 +20,8 @@ import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
 import { QRCodeDialog } from '@/components/QRCodeDialog'
 import { useIsDesktop } from '@/hooks/use-desktop'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { useSwipeNavigation } from '@/hooks/use-swipe-navigation'
 import { MeticAILogo } from '@/components/MeticAILogo'
 import { HistoryView, ProfileDetailView } from '@/components/HistoryView'
 import { HistoryEntry } from '@/hooks/useHistory'
@@ -84,6 +86,35 @@ function App() {
   
   // Desktop detection for QR code feature
   const isDesktop = useIsDesktop()
+  const isMobile = useIsMobile()
+
+  // Swipe navigation for mobile - back navigation via swipe right
+  useSwipeNavigation({
+    onSwipeRight: () => {
+      if (!isMobile) return
+      
+      // Handle back navigation based on current view
+      switch (viewState) {
+        case 'form':
+          handleBackToStart()
+          break
+        case 'results':
+          handleReset()
+          break
+        case 'history-detail':
+          setViewState('history')
+          break
+        case 'history':
+        case 'settings':
+          handleBackToStart()
+          break
+        // Don't handle swipe on start, loading, or error views
+        default:
+          break
+      }
+    },
+    enabled: isMobile && viewState !== 'start' && viewState !== 'loading',
+  })
 
   // Check for existing profiles on mount
   useEffect(() => {
