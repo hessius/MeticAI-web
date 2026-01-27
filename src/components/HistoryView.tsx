@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
 import { 
   Trash, 
   CaretLeft, 
@@ -683,15 +684,23 @@ export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
         throw new Error(typeof error.detail === 'string' ? error.detail : 'Failed to apply image')
       }
       
-      // Close dialog and trigger refetch with new cache buster
+      // Close dialog and update image immediately
+      const newCacheBuster = Date.now()
       setShowPreviewDialog(false)
       setPreviewImage(null)
-      setImageCacheBuster(Date.now())  // Force refresh of profile image
+      setImageCacheBuster(newCacheBuster)
+      // Immediately set the new profile image URL with cache buster
+      setProfileImage(`${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}/image-proxy?t=${newCacheBuster}`)
       setImageUploadSuccess(true)
+      toast.success('Image applied successfully')
       setTimeout(() => setImageUploadSuccess(false), 3000)
     } catch (err) {
       console.error('Failed to apply image:', err)
-      setGenerateError(err instanceof Error ? err.message : 'Failed to apply image')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to apply image'
+      toast.error(errorMessage)
+      // Still close the dialog on error - user can try again
+      setShowPreviewDialog(false)
+      setPreviewImage(null)
     } finally {
       setIsApplyingImage(false)
     }
