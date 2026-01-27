@@ -86,6 +86,9 @@ export function useSwipeNavigation({
     }
 
     // Add event listeners to document for global swipe detection
+    // Note: This hook is designed to be used once at the app level (e.g., in App.tsx)
+    // If using multiple instances, consider implementing a singleton pattern or
+    // attaching listeners to a specific container element instead
     document.addEventListener("touchstart", handleTouchStart, { passive: true })
     document.addEventListener("touchend", handleTouchEnd, { passive: true })
     document.addEventListener("touchcancel", handleTouchCancel, { passive: true })
