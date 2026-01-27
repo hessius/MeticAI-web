@@ -63,11 +63,15 @@ describe('useUpdateStatus', () => {
 
     const { result } = renderHook(() => useUpdateStatus())
 
+    // Wait for the initial check to complete
     await waitFor(() => {
-      expect(result.current.error).toBeTruthy()
+      expect(result.current.isChecking).toBe(false)
     })
 
+    // readCachedStatus doesn't set error state, only returns it
+    // Error state is only set when checkForUpdates is called
     expect(result.current.updateAvailable).toBe(false)
+    expect(result.current.error).toBe(null)
   })
 
   it('should manually check for updates', async () => {

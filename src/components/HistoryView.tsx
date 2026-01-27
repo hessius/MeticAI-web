@@ -6,7 +6,6 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { 
-  ClockCounterClockwise, 
   Trash, 
   CaretLeft, 
   Warning,
@@ -23,7 +22,6 @@ import {
   Info,
   Check,
   XCircle,
-  MagnifyingGlassPlus,
   Plus
 } from '@phosphor-icons/react'
 import { useHistory, HistoryEntry } from '@/hooks/useHistory'
@@ -103,7 +101,7 @@ export function HistoryView({ onBack, onViewProfile, onGenerateNew }: HistoryVie
               newImages[entry.profile_name] = `${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}/image-proxy`
             }
           }
-        } catch (err) {
+        } catch {
           // Silently ignore errors for individual profile fetches
         }
       })
@@ -507,10 +505,9 @@ const IMAGE_STYLES = [
 interface ProfileDetailViewProps {
   entry: HistoryEntry
   onBack: () => void
-  onNewProfile: () => void
 }
 
-export function ProfileDetailView({ entry, onBack, onNewProfile }: ProfileDetailViewProps) {
+export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
   const { downloadJson } = useHistory()
   const [isDownloading, setIsDownloading] = useState(false)
   const [isCapturing, setIsCapturing] = useState(false)
