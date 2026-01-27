@@ -225,12 +225,21 @@ interface StageRange {
   colorIndex: number
 }
 
+// Custom tooltip payload type (extends Recharts default)
+interface TooltipPayloadItem {
+  name: string
+  value: number
+  color: string
+  dataKey: string
+  payload?: ChartDataPoint
+}
+
 // Custom tooltip for the chart
-function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string; dataKey: string }>; label?: number }) {
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipPayloadItem[]; label?: number }) {
   if (!active || !payload || !payload.length) return null
   
   // Find stage from the first payload item if available
-  const stageData = payload[0]?.payload as ChartDataPoint | undefined
+  const stageData = payload[0]?.payload
   const stageName = stageData?.stage
   
   return (
@@ -555,11 +564,11 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
   useEffect(() => {
     if (shotData) {
       // Extract time data from shot data
-      const dataEntries = shotData.data as Array<{
+      const dataEntries = (shotData.data as unknown as Array<{
         shot?: { pressure?: number };
         time?: number;
         profile_time?: number;
-      }> || []
+      }>) || []
       
       if (Array.isArray(dataEntries) && dataEntries.length > 0) {
         // Get the last entry's time
@@ -885,12 +894,12 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
   const getChartData = (data: ShotData): ChartDataPoint[] => {
     // Meticulous shot data structure: array of entries with nested 'shot' object
     // Each entry has: { shot: { pressure, flow, weight, gravimetric_flow, ... }, time: milliseconds, status: stageName, sensors: {...} }
-    const dataEntries = data.data as Array<{
+    const dataEntries = (data.data as unknown as Array<{
       shot?: { pressure?: number; flow?: number; weight?: number; gravimetric_flow?: number };
       time?: number;
       profile_time?: number;
       status?: string;
-    }> || []
+    }>) || []
     
     if (Array.isArray(dataEntries) && dataEntries.length > 0 && dataEntries[0]?.shot) {
       // Meticulous format with nested shot object
