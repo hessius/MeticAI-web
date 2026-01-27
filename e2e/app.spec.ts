@@ -9,7 +9,7 @@ test.describe('MeticAI Web Application E2E Tests', () => {
     
     // Check for the application title
     await expect(page.getByText(/MeticAI/)).toBeVisible()
-    await expect(page.getByText('Meticulous Espresso Profile Generator')).toBeVisible()
+    await expect(page.getByText('Meticulous Espresso AI Profiler')).toBeVisible()
   })
 
   test('should display form elements', async ({ page }) => {
@@ -88,9 +88,9 @@ test.describe('MeticAI Web Application E2E Tests', () => {
     await page.getByText('Chocolate').first().click()
     
     // All should have the primary class (indicating selection)
-    await expect(page.locator('text=Light Body').first()).toHaveClass(/bg-amber/)
-    await expect(page.locator('text=Florals').first()).toHaveClass(/bg-rose/)
-    await expect(page.locator('text=Chocolate').first()).toHaveClass(/bg-rose/)
+    await expect(page.locator('text=Light Body').first()).toHaveClass(/bg-primary/)
+    await expect(page.locator('text=Florals').first()).toHaveClass(/bg-primary/)
+    await expect(page.locator('text=Chocolate').first()).toHaveClass(/bg-primary/)
   })
 
   test('should be able to deselect tags', async ({ page }) => {
@@ -104,11 +104,11 @@ test.describe('MeticAI Web Application E2E Tests', () => {
     
     // Select
     await lightBodyTag.click()
-    await expect(lightBodyTag).toHaveClass(/bg-amber/)
+    await expect(lightBodyTag).toHaveClass(/bg-primary/)
     
     // Deselect
     await lightBodyTag.click()
-    await expect(lightBodyTag).not.toHaveClass(/bg-amber-500\/90/)
+    await expect(lightBodyTag).not.toHaveClass(/bg-primary/)
   })
 
   test('should have responsive design', async ({ page }) => {
