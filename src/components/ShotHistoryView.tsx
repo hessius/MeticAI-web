@@ -12,7 +12,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@/components/ui/select'
 import {
   CaretLeft,
@@ -36,8 +35,7 @@ import {
   X,
   DownloadSimple,
   Info,
-  Brain,
-  SpinnerGap
+  Brain
 } from '@phosphor-icons/react'
 import { domToPng } from 'modern-screenshot'
 import { useShotHistory, ShotInfo, ShotData } from '@/hooks/useShotHistory'

@@ -9,15 +9,13 @@ import {
   X,
   Upload,
   CloudArrowDown,
-  File,
   Coffee,
   SpinnerGap,
   CheckCircle,
   Warning,
   CaretRight,
   Plus,
-  MagicWand,
-  FileJs
+  MagicWand
 } from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
 

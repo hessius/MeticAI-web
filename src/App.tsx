@@ -734,7 +734,6 @@ Special Notes: For maximum clarity and to really make those delicate floral note
             <ProfileDetailView
               entry={selectedHistoryEntry}
               onBack={() => setViewState('history')}
-              onNewProfile={handleReset}
             />
           )}
 

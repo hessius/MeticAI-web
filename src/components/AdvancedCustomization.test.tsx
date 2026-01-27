@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AdvancedCustomization, AdvancedCustomizationOptions } from './AdvancedCustomization'
 
@@ -186,7 +186,7 @@ describe('AdvancedCustomization', () => {
       const user = userEvent.setup()
       const valueWithWaterTemp: AdvancedCustomizationOptions = { waterTemp: 93 }
       
-      const { container } = render(
+      render(
         <AdvancedCustomization value={valueWithWaterTemp} onChange={mockOnChange} />
       )
       
