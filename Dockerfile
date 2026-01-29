@@ -1,17 +1,19 @@
 # Multi-stage build for MeticAI web application
 
-# Stage 1: Build the application
-# Use Node.js instead of Bun for ARM compatibility (Raspberry Pi)
-FROM node:22-slim AS builder
+# Stage 1: Build the application using Node.js (universal ARM compatibility)
+FROM node:20-alpine AS builder
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy package files first for better layer caching
 COPY package.json package-lock.json* ./
 
-# Install dependencies (including devDependencies for build)
-RUN npm ci || npm install
+# Install dependencies
+# First remove bun from package.json since it causes issues on ARM during npm install
+# Then install with legacy peer deps for compatibility
+RUN sed -i '/"bun":/d' package.json && \
+    npm install --legacy-peer-deps
 
 # Copy source code
 COPY . .
