@@ -1,22 +1,23 @@
 # Multi-stage build for MeticAI web application
 
 # Stage 1: Build the application
-FROM oven/bun:1 AS builder
+# Use Node.js instead of Bun for ARM compatibility (Raspberry Pi)
+FROM node:22-slim AS builder
 
 # Set working directory
 WORKDIR /app
 
 # Copy package files
-COPY package.json bun.lockb* ./
+COPY package.json package-lock.json* ./
 
 # Install dependencies (including devDependencies for build)
-RUN bun install
+RUN npm ci || npm install
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN bun run build
+RUN npm run build
 
 # Stage 2: Production server with nginx
 FROM nginx:alpine
