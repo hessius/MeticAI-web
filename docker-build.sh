@@ -66,6 +66,23 @@ run_docker_compose() {
 
 # Build and start Docker containers
 echo "Building Docker image and starting containers..."
+
+# Fix: Ensure config.json exists and is a file (not a directory)
+# Docker creates a directory when mounting a non-existent file, causing errors
+if [ -d "config.json" ]; then
+    echo "Removing config.json directory (should be a file)..."
+    rm -rf config.json
+fi
+
+if [ ! -f "config.json" ]; then
+    echo "Creating default config.json (you may need to update the serverUrl)..."
+    if [ -f "config.example.json" ]; then
+        cp config.example.json config.json
+    else
+        echo '{"serverUrl": "http://localhost:8000"}' > config.json
+    fi
+fi
+
 run_docker_compose up -d --build
 
 echo ""
