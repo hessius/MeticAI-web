@@ -30,6 +30,9 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy example config as a template
 COPY config.example.json /usr/share/nginx/html/config.example.json
 
+# Also copy as config.json as a fallback (will be overwritten by volume mount if configured)
+COPY config.example.json /usr/share/nginx/html/config.json
+
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
