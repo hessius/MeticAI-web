@@ -15,7 +15,9 @@ import {
   Warning,
   CaretRight,
   Plus,
-  MagicWand
+  MagicWand,
+  DownloadSimple,
+  Info
 } from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
 
@@ -29,6 +31,20 @@ interface MachineProfile {
   has_description: boolean
 }
 
+interface BulkImportProgress {
+  type: 'start' | 'progress' | 'imported' | 'failed' | 'complete' | 'error'
+  current?: number
+  total?: number
+  to_import?: number
+  already_imported?: number
+  profile_name?: string
+  message: string
+  imported?: number
+  skipped?: number
+  failed?: number
+  error?: string
+}
+
 interface ProfileImportDialogProps {
   isOpen: boolean
   onClose: () => void
@@ -36,7 +52,7 @@ interface ProfileImportDialogProps {
   onGenerateNew: () => void
 }
 
-type ImportStep = 'choose' | 'file' | 'machine' | 'importing' | 'success' | 'error'
+type ImportStep = 'choose' | 'file' | 'machine' | 'importing' | 'bulk-importing' | 'success' | 'bulk-success' | 'error'
 
 export function ProfileImportDialog({ isOpen, onClose, onImported, onGenerateNew }: ProfileImportDialogProps) {
   const [step, setStep] = useState<ImportStep>('choose')
@@ -46,7 +62,10 @@ export function ProfileImportDialog({ isOpen, onClose, onImported, onGenerateNew
   const [importProgress, setImportProgress] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [importedProfileName, setImportedProfileName] = useState<string | null>(null)
+  const [bulkProgress, setBulkProgress] = useState<BulkImportProgress | null>(null)
+  const [bulkLogs, setBulkLogs] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -56,6 +75,14 @@ export function ProfileImportDialog({ isOpen, onClose, onImported, onGenerateNew
       setSelectedProfile(null)
       setError(null)
       setImportedProfileName(null)
+      setBulkProgress(null)
+      setBulkLogs([])
+    } else {
+      // Cleanup abort controller when dialog closes
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        abortControllerRef.current = null
+      }
     }
   }, [isOpen])
 
@@ -81,6 +108,76 @@ export function ProfileImportDialog({ isOpen, onClose, onImported, onGenerateNew
       setError(err instanceof Error ? err.message : 'Failed to connect to machine')
     } finally {
       setLoadingMachine(false)
+    }
+  }
+
+  const handleBulkImport = async () => {
+    setStep('bulk-importing')
+    setBulkProgress(null)
+    setBulkLogs([])
+    setError(null)
+    
+    try {
+      const serverUrl = await getServerUrl()
+      abortControllerRef.current = new AbortController()
+      
+      const response = await fetch(`${serverUrl}/api/profile/import-all`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: abortControllerRef.current.signal
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to start bulk import')
+      }
+      
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+      
+      if (!reader) {
+        throw new Error('No response stream available')
+      }
+      
+      let buffer = ''
+      
+      while (true) {
+        const { done, value } = await reader.read()
+        
+        if (done) break
+        
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+        
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const progress = JSON.parse(line) as BulkImportProgress
+              setBulkProgress(progress)
+              
+              if (progress.type === 'imported' || progress.type === 'failed' || progress.type === 'progress') {
+                setBulkLogs(prev => [...prev.slice(-4), progress.message])
+              }
+              
+              if (progress.type === 'complete') {
+                setStep('bulk-success')
+              } else if (progress.type === 'error') {
+                setError(progress.message)
+                setStep('error')
+              }
+            } catch {
+              // Skip invalid JSON lines
+            }
+          }
+        }
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        // Import was cancelled
+        return
+      }
+      setError(err instanceof Error ? err.message : 'Bulk import failed')
+      setStep('error')
     }
   }
 
@@ -186,7 +283,7 @@ export function ProfileImportDialog({ isOpen, onClose, onImported, onGenerateNew
   }
 
   const handleClose = () => {
-    if (step === 'success') {
+    if (step === 'success' || step === 'bulk-success') {
       onImported()
     }
     onClose()
@@ -343,13 +440,86 @@ export function ProfileImportDialog({ isOpen, onClose, onImported, onGenerateNew
                   </div>
                 )}
                 
-                <Button
-                  variant="ghost"
-                  onClick={() => setStep('choose')}
-                  className="w-full text-muted-foreground"
-                >
-                  Back
-                </Button>
+                {/* Import All Section */}
+                {machineProfiles.length > 0 && (
+                  <div className="pt-2 border-t border-border/30">
+                    <Alert className="mb-3 bg-blue-500/5 border-blue-500/20">
+                      <Info size={16} className="text-blue-500" />
+                      <AlertDescription className="text-xs text-blue-200/80">
+                        Importing generates AI descriptions for each profile and will consume API tokens.
+                      </AlertDescription>
+                    </Alert>
+                    <Button
+                      onClick={handleBulkImport}
+                      className="w-full bg-primary/90 hover:bg-primary text-primary-foreground"
+                    >
+                      <DownloadSimple size={18} className="mr-2" weight="bold" />
+                      Import All {machineProfiles.length} Profiles
+                    </Button>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Step: Bulk Importing */}
+            {step === 'bulk-importing' && (
+              <motion.div
+                key="bulk-importing"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="py-6 space-y-4"
+              >
+                <div className="text-center">
+                  <SpinnerGap size={40} className="mx-auto animate-spin text-primary mb-3" />
+                  <p className="font-semibold">
+                    {bulkProgress?.type === 'start' 
+                      ? 'Starting import...'
+                      : bulkProgress?.current && bulkProgress?.total
+                        ? `Importing ${bulkProgress.current}/${bulkProgress.total}`
+                        : 'Preparing...'
+                    }
+                  </p>
+                  {bulkProgress?.profile_name && (
+                    <p className="text-sm text-muted-foreground mt-1 truncate px-4">
+                      {bulkProgress.profile_name}
+                    </p>
+                  )}
+                </div>
+                
+                {/* Progress bar */}
+                {bulkProgress?.current && bulkProgress?.total && (
+                  <div className="space-y-1.5">
+                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-primary"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      {Math.round((bulkProgress.current / bulkProgress.total) * 100)}% complete
+                    </p>
+                  </div>
+                )}
+                
+                {/* Activity log */}
+                {bulkLogs.length > 0 && (
+                  <div className="bg-secondary/40 rounded-lg p-3 max-h-24 overflow-y-auto">
+                    <div className="space-y-1">
+                      {bulkLogs.map((log, idx) => (
+                        <p key={idx} className="text-xs text-muted-foreground truncate">
+                          {log}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <p className="text-xs text-center text-muted-foreground/70">
+                  Generating AI descriptions for each profile...
+                </p>
               </motion.div>
             )}
 
@@ -389,6 +559,44 @@ export function ProfileImportDialog({ isOpen, onClose, onImported, onGenerateNew
                   {importedProfileName && (
                     <p className="text-sm text-muted-foreground mt-1">{importedProfileName}</p>
                   )}
+                </div>
+                <Button onClick={handleClose} className="w-full">
+                  View in Catalogue
+                </Button>
+              </motion.div>
+            )}
+
+            {/* Step: Bulk Success */}
+            {step === 'bulk-success' && (
+              <motion.div
+                key="bulk-success"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="py-6 text-center space-y-4"
+              >
+                <div className="w-16 h-16 mx-auto rounded-full bg-green-500/10 flex items-center justify-center">
+                  <CheckCircle size={40} weight="fill" className="text-green-500" />
+                </div>
+                <div>
+                  <p className="font-semibold text-lg">Import Complete!</p>
+                  <div className="flex items-center justify-center gap-4 mt-2 text-sm">
+                    {bulkProgress?.imported !== undefined && bulkProgress.imported > 0 && (
+                      <span className="text-green-500">
+                        {bulkProgress.imported} imported
+                      </span>
+                    )}
+                    {bulkProgress?.skipped !== undefined && bulkProgress.skipped > 0 && (
+                      <span className="text-muted-foreground">
+                        {bulkProgress.skipped} skipped
+                      </span>
+                    )}
+                    {bulkProgress?.failed !== undefined && bulkProgress.failed > 0 && (
+                      <span className="text-destructive">
+                        {bulkProgress.failed} failed
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <Button onClick={handleClose} className="w-full">
                   View in Catalogue

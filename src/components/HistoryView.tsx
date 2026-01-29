@@ -23,7 +23,8 @@ import {
   Info,
   Check,
   XCircle,
-  Plus
+  Plus,
+  CloudArrowDown
 } from '@phosphor-icons/react'
 import { useHistory, HistoryEntry } from '@/hooks/useHistory'
 import { MarkdownText } from '@/components/MarkdownText'
