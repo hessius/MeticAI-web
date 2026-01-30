@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -89,31 +89,33 @@ function App() {
   const isMobile = useIsMobile()
 
   // Swipe navigation for mobile - back navigation via swipe right
+  const handleSwipeRight = useCallback(() => {
+    if (!isMobile) return
+    
+    // Handle back navigation based on current view
+    switch (viewState) {
+      case 'form':
+        handleBackToStart()
+        break
+      case 'results':
+        handleReset()
+        break
+      case 'history-detail':
+        setViewState('history')
+        break
+      case 'history':
+      case 'settings':
+        handleBackToStart()
+        break
+      // Don't handle swipe on start, loading, or error views
+      default:
+        break
+    }
+  }, [isMobile, viewState, handleBackToStart, handleReset, setViewState])
+
   useSwipeNavigation({
-    onSwipeRight: () => {
-      if (!isMobile) return
-      
-      // Handle back navigation based on current view
-      switch (viewState) {
-        case 'form':
-          handleBackToStart()
-          break
-        case 'results':
-          handleReset()
-          break
-        case 'history-detail':
-          setViewState('history')
-          break
-        case 'history':
-        case 'settings':
-          handleBackToStart()
-          break
-        // Don't handle swipe on start, loading, or error views
-        default:
-          break
-      }
-    },
-    enabled: isMobile && viewState !== 'start' && viewState !== 'loading',
+    onSwipeRight: handleSwipeRight,
+    enabled: isMobile && viewState !== 'start' && viewState !== 'loading' && viewState !== 'error',
   })
 
   // Check for existing profiles on mount

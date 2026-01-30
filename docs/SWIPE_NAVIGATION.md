@@ -117,7 +117,7 @@ npm run test:run src/hooks/use-swipe-navigation.test.ts
 **Test on Mobile Devices:**
 1. Open the app on a mobile browser (iOS Safari, Chrome on Android)
 2. Navigate to the form view
-3. Swipe right from the left edge of the screen
+3. Swipe right across the screen
 4. Verify navigation back to start screen
 5. Trigger a toast notification
 6. Swipe the toast in any direction to dismiss

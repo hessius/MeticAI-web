@@ -186,6 +186,70 @@ describe('useSwipeNavigation', () => {
     expect(onSwipeRight).not.toHaveBeenCalled()
   })
 
+  it('should not trigger callback when deltaTime is zero', () => {
+    renderHook(() =>
+      useSwipeNavigation({
+        onSwipeRight,
+        onSwipeLeft,
+        threshold: 50,
+        velocityThreshold: 0.3,
+      })
+    )
+
+    // Start a swipe
+    const touchStart = new TouchEvent('touchstart', {
+      touches: [{ clientX: 50, clientY: 100 } as Touch],
+    })
+    document.dispatchEvent(touchStart)
+
+    // Don't advance time - deltaTime will be 0
+    vi.advanceTimersByTime(0)
+
+    // End the swipe immediately
+    const touchEnd = new TouchEvent('touchend', {
+      changedTouches: [{ clientX: 200, clientY: 100 } as Touch],
+    })
+    document.dispatchEvent(touchEnd)
+
+    expect(onSwipeRight).not.toHaveBeenCalled()
+  })
+
+  it('should clear touch data when multi-finger gesture is detected mid-swipe', () => {
+    renderHook(() =>
+      useSwipeNavigation({
+        onSwipeRight,
+        onSwipeLeft,
+        threshold: 50,
+        velocityThreshold: 0.3,
+      })
+    )
+
+    // Start with single finger
+    const touchStart1 = new TouchEvent('touchstart', {
+      touches: [{ clientX: 50, clientY: 100 } as Touch],
+    })
+    document.dispatchEvent(touchStart1)
+
+    // Add second finger mid-swipe
+    const touchStart2 = new TouchEvent('touchstart', {
+      touches: [
+        { clientX: 60, clientY: 100 } as Touch,
+        { clientX: 100, clientY: 100 } as Touch,
+      ],
+    })
+    document.dispatchEvent(touchStart2)
+
+    vi.advanceTimersByTime(200)
+
+    // End the touch
+    const touchEnd = new TouchEvent('touchend', {
+      changedTouches: [{ clientX: 200, clientY: 100 } as Touch],
+    })
+    document.dispatchEvent(touchEnd)
+
+    expect(onSwipeRight).not.toHaveBeenCalled()
+  })
+
   it('should clean up event listeners on unmount', () => {
     const removeEventListenerSpy = vi.spyOn(document, 'removeEventListener')
 
