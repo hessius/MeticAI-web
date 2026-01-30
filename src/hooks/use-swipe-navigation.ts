@@ -38,7 +38,11 @@ export function useSwipeNavigation({
 
     const handleTouchStart = (e: TouchEvent) => {
       // Only track single-finger touches
-      if (e.touches.length !== 1) return
+      if (e.touches.length !== 1) {
+        // Clear any existing single-touch data to avoid misclassifying multi-touch as a swipe
+        touchDataRef.current = null
+        return
+      }
 
       const touch = e.touches[0]
       touchDataRef.current = {
