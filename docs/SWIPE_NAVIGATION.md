@@ -161,7 +161,7 @@ Potential improvements for future versions:
 **Swipe not working:**
 - Verify you're on a mobile device or using mobile emulation
 - Check that the view supports back navigation
-- Ensure swipe starts from edge and moves >50px horizontally
+- Ensure swipe moves >50px horizontally across the screen
 - Swipe should be quick enough (velocity > 0.3 px/ms)
 
 **Accidental navigation:**
