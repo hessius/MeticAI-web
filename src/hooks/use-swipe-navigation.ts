@@ -62,6 +62,11 @@ export function useSwipeNavigation({
       const deltaY = touch.clientY - startY
       const deltaTime = Date.now() - startTime
 
+      // Guard against zero or negative time differences to avoid division by zero
+      if (deltaTime <= 0) {
+        touchDataRef.current = null
+        return
+      }
       // Calculate velocity (pixels per millisecond)
       const velocity = Math.abs(deltaX) / deltaTime
 
