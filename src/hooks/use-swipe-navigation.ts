@@ -6,12 +6,14 @@ interface SwipeNavigationOptions {
   enabled?: boolean
   threshold?: number // Minimum distance in pixels to trigger swipe
   velocityThreshold?: number // Minimum velocity to trigger swipe
+  preventBrowserNavigation?: boolean // Prevent browser's native back/forward gestures
 }
 
 interface TouchData {
   startX: number
   startY: number
   startTime: number
+  isHorizontalSwipe: boolean | null // null = not determined yet
 }
 
 /**
@@ -23,6 +25,7 @@ interface TouchData {
  * @param options.enabled Whether swipe detection is active (default: true)
  * @param options.threshold Minimum swipe distance in pixels (default: 50)
  * @param options.velocityThreshold Minimum swipe velocity (default: 0.3)
+ * @param options.preventBrowserNavigation Prevent browser's native swipe navigation (default: true)
  */
 export function useSwipeNavigation({
   onSwipeRight,
@@ -30,6 +33,7 @@ export function useSwipeNavigation({
   enabled = true,
   threshold = 50,
   velocityThreshold = 0.3,
+  preventBrowserNavigation = true,
 }: SwipeNavigationOptions) {
   const touchDataRef = useRef<TouchData | null>(null)
 
@@ -49,6 +53,27 @@ export function useSwipeNavigation({
         startX: touch.clientX,
         startY: touch.clientY,
         startTime: Date.now(),
+        isHorizontalSwipe: null,
+      }
+    }
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!touchDataRef.current || e.touches.length !== 1) return
+
+      const touch = e.touches[0]
+      const { startX, startY } = touchDataRef.current
+
+      const deltaX = touch.clientX - startX
+      const deltaY = touch.clientY - startY
+
+      // Determine swipe direction once we have enough movement (10px threshold)
+      if (touchDataRef.current.isHorizontalSwipe === null && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
+        touchDataRef.current.isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY)
+      }
+
+      // If this is a horizontal swipe, prevent browser's native navigation
+      if (preventBrowserNavigation && touchDataRef.current.isHorizontalSwipe) {
+        e.preventDefault()
       }
     }
 
@@ -99,13 +124,16 @@ export function useSwipeNavigation({
     // If using multiple instances, consider implementing a singleton pattern or
     // attaching listeners to a specific container element instead
     document.addEventListener("touchstart", handleTouchStart, { passive: true })
+    // touchmove must be non-passive to allow preventDefault() for blocking browser navigation
+    document.addEventListener("touchmove", handleTouchMove, { passive: false })
     document.addEventListener("touchend", handleTouchEnd, { passive: true })
     document.addEventListener("touchcancel", handleTouchCancel, { passive: true })
 
     return () => {
       document.removeEventListener("touchstart", handleTouchStart)
+      document.removeEventListener("touchmove", handleTouchMove)
       document.removeEventListener("touchend", handleTouchEnd)
       document.removeEventListener("touchcancel", handleTouchCancel)
     }
-  }, [enabled, onSwipeRight, onSwipeLeft, threshold, velocityThreshold])
+  }, [enabled, onSwipeRight, onSwipeLeft, threshold, velocityThreshold, preventBrowserNavigation])
 }

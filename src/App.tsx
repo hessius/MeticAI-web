@@ -88,36 +88,6 @@ function App() {
   const isDesktop = useIsDesktop()
   const isMobile = useIsMobile()
 
-  // Swipe navigation for mobile - back navigation via swipe right
-  const handleSwipeRight = useCallback(() => {
-    if (!isMobile) return
-    
-    // Handle back navigation based on current view
-    switch (viewState) {
-      case 'form':
-        handleBackToStart()
-        break
-      case 'results':
-        handleReset()
-        break
-      case 'history-detail':
-        setViewState('history')
-        break
-      case 'history':
-      case 'settings':
-        handleBackToStart()
-        break
-      // Don't handle swipe on start, loading, or error views
-      default:
-        break
-    }
-  }, [isMobile, viewState, handleBackToStart, handleReset, setViewState])
-
-  useSwipeNavigation({
-    onSwipeRight: handleSwipeRight,
-    enabled: isMobile && viewState !== 'start' && viewState !== 'loading' && viewState !== 'error',
-  })
-
   // Check for existing profiles on mount
   useEffect(() => {
     const checkProfiles = async () => {
@@ -332,6 +302,37 @@ function App() {
     refreshProfileCount()
     setViewState('start')
   }
+
+  // Swipe navigation for mobile - back navigation via swipe right
+  const handleSwipeRight = useCallback(() => {
+    if (!isMobile) return
+    
+    // Handle back navigation based on current view
+    switch (viewState) {
+      case 'form':
+        handleBackToStart()
+        break
+      case 'results':
+        handleReset()
+        break
+      case 'history-detail':
+        setViewState('history')
+        break
+      case 'history':
+      case 'settings':
+        handleBackToStart()
+        break
+      // Don't navigate on start, loading, or error views - but still block browser gesture
+      default:
+        break
+    }
+  }, [isMobile, viewState, handleBackToStart, handleReset, setViewState])
+
+  useSwipeNavigation({
+    onSwipeRight: handleSwipeRight,
+    // Keep enabled on mobile to always block browser's native back gesture
+    enabled: isMobile,
+  })
 
   const handleViewHistoryEntry = (entry: HistoryEntry) => {
     setSelectedHistoryEntry(entry)
