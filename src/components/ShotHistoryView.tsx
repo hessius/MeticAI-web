@@ -1044,7 +1044,7 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
       .sort((a, b) => a.time - b.time)
     
     // Helper function for binary search to find upper bound (first element > time)
-    const findUpperBound = (points: typeof pressurePoints, time: number): number => {
+    const findUpperBound = (points: ProfileTargetPoint[], time: number): number => {
       let left = 0
       let right = points.length
       
