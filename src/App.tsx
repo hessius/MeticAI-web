@@ -56,6 +56,28 @@ interface APIResponse {
 
 type ViewState = 'start' | 'form' | 'loading' | 'results' | 'error' | 'history' | 'history-detail' | 'settings' | 'run-shot'
 
+// Time-based greetings with variants
+const GREETINGS = {
+  morning: ["Good morning!", "Rise and shine!", "Morning, coffee time!", "Top of the morning!"],
+  afternoon: ["Good afternoon!", "Hey there!", "Howdy!", "What's brewing?"],
+  evening: ["Good evening!", "Evening!", "Ready for an espresso?", "Time for coffee!"]
+}
+
+function getTimeBasedGreeting(): string {
+  const hour = new Date().getHours()
+  let greetings: string[]
+  
+  if (hour >= 5 && hour < 12) {
+    greetings = GREETINGS.morning
+  } else if (hour >= 12 && hour < 17) {
+    greetings = GREETINGS.afternoon
+  } else {
+    greetings = GREETINGS.evening
+  }
+  
+  return greetings[Math.floor(Math.random() * greetings.length)]
+}
+
 function App() {
   const [isInitializing, setIsInitializing] = useState(true)
   const [viewState, setViewState] = useState<ViewState>('start')
@@ -522,7 +544,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
             >
               <Card className="p-6 space-y-6">
                 <div className="text-center space-y-2">
-                  <h2 className="text-xl font-bold tracking-tight text-foreground">Welcome!</h2>
+                  <h2 className="text-xl font-bold tracking-tight text-foreground">{getTimeBasedGreeting()}</h2>
                   <p className="text-sm text-muted-foreground">
                     {profileCount && profileCount > 0
                       ? `You have ${profileCount} profile${profileCount !== 1 ? 's' : ''} saved`
@@ -541,7 +563,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                   
                   <Button
                     onClick={() => setViewState('history')}
-                    className="w-full h-14 text-base font-semibold bg-primary/80 hover:bg-primary/70"
+                    className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90"
                   >
                     <Coffee size={20} className="mr-2" weight="fill" />
                     Profile Catalogue
@@ -553,7 +575,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                       setRunShotProfileName(undefined)
                       setViewState('run-shot')
                     }}
-                    className="w-full h-14 text-base font-semibold bg-secondary hover:bg-secondary/80"
+                    className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90"
                   >
                     <Play size={20} className="mr-2" weight="fill" />
                     Run Shot
@@ -561,11 +583,10 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                   
                   <Button
                     onClick={() => setViewState('settings')}
-                    variant="outline"
-                    className="w-full h-14 text-base font-semibold border-border/50 hover:border-border hover:bg-secondary/50"
+                    className="w-full h-14 text-base font-semibold bg-muted hover:bg-muted/80 text-foreground"
                   >
                     <Gear size={20} className="mr-2" weight="duotone" />
-                    Settings & About
+                    Settings
                   </Button>
                 </div>
               </Card>
