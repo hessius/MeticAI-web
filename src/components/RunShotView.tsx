@@ -61,10 +61,10 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
   const [scheduledTime, setScheduledTime] = useState<Date>(addMinutes(new Date(), 30))
   
   const [isRunning, setIsRunning] = useState(false)
-  const [, setIsPreheating] = useState(false)
+  const [isPreheating, setIsPreheating] = useState(false)
   
   const [scheduledShots, setScheduledShots] = useState<ScheduledShot[]>([])
-  const [, setMachineStatus] = useState<string>('unknown')
+  const [machineStatus, setMachineStatus] = useState<string>('unknown')
 
   // Fetch profiles from machine
   useEffect(() => {
@@ -142,10 +142,16 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
         
         if (!preheatResponse.ok) {
           const error = await preheatResponse.json()
+          setIsPreheating(false)
           throw new Error(error.detail || 'Failed to start preheat')
         }
         
         toast.success(`Preheating started! Ready in ${PREHEAT_DURATION_MINUTES} minutes`)
+        
+        // Clear preheating state after duration
+        setTimeout(() => {
+          setIsPreheating(false)
+        }, PREHEAT_DURATION_MINUTES * 60 * 1000)
         
         if (selectedProfile) {
           // Schedule the profile to run after preheat
@@ -189,6 +195,7 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
     } catch (err) {
       console.error('Failed to run shot:', err)
       toast.error(err instanceof Error ? err.message : 'Failed to run shot')
+      setIsPreheating(false)
     } finally {
       setIsRunning(false)
     }
@@ -299,7 +306,40 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
           <CaretLeft size={22} weight="bold" />
         </Button>
         <h2 className="text-xl font-bold">Run Shot</h2>
+        {machineStatus !== 'unknown' && (
+          <div className="ml-auto flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 text-xs">
+            <span className={`w-2 h-2 rounded-full ${
+              machineStatus === 'idle' ? 'bg-green-500' :
+              machineStatus === 'running' ? 'bg-blue-500 animate-pulse' :
+              machineStatus === 'error' ? 'bg-red-500' :
+              'bg-gray-500'
+            }`} />
+            <span className="font-medium capitalize">{machineStatus}</span>
+          </div>
+        )}
       </div>
+
+      {/* Preheating Indicator */}
+      <AnimatePresence>
+        {isPreheating && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4"
+          >
+            <div className="flex items-center gap-3">
+              <Fire size={24} className="text-orange-500 animate-pulse" weight="duotone" />
+              <div className="flex-1">
+                <p className="font-medium text-orange-700 dark:text-orange-400">Preheating in Progress</p>
+                <p className="text-sm text-orange-600/80 dark:text-orange-400/80">
+                  Machine is heating up. Ready in approximately {PREHEAT_DURATION_MINUTES} minutes.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Profile Selection */}
       <Card className="p-6 space-y-4">
