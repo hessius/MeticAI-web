@@ -380,6 +380,8 @@ export function SettingsView({ onBack }: SettingsViewProps) {
         <button
           onClick={() => setChangelogExpanded(!changelogExpanded)}
           className="w-full flex items-center justify-between text-left"
+          aria-expanded={changelogExpanded}
+          aria-controls="changelog-content"
         >
           <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
             <Notebook size={20} />
@@ -395,6 +397,7 @@ export function SettingsView({ onBack }: SettingsViewProps) {
         <AnimatePresence>
           {changelogExpanded && (
             <motion.div
+              id="changelog-content"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
