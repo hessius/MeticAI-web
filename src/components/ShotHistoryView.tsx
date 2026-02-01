@@ -60,7 +60,10 @@ const CHART_COLORS = {
   pressure: '#4ade80',      // Green (muted)
   flow: '#67e8f9',          // Light cyan/blue (muted)
   weight: '#fbbf24',        // Amber/Yellow (muted)
-  gravimetricFlow: '#c2855a' // Brown-orange (muted to fit dark theme)
+  gravimetricFlow: '#c2855a', // Brown-orange (muted to fit dark theme)
+  // Profile target curves (lighter/dashed versions of main colors)
+  targetPressure: '#86efac',  // Lighter green for target pressure
+  targetFlow: '#a5f3fc'       // Lighter cyan for target flow
 }
 
 // Stage colors for background areas (matching tag colors)
@@ -136,11 +139,16 @@ interface StageExecutionData {
   weight_gain: number
   start_weight: number
   end_weight: number
+  start_pressure: number
+  end_pressure: number
   avg_pressure: number
   max_pressure: number
   min_pressure: number
+  start_flow: number
+  end_flow: number
   avg_flow: number
   max_flow: number
+  description?: string
 }
 
 interface StageAssessment {
@@ -200,6 +208,13 @@ interface ProfileInfo {
   stage_count: number
 }
 
+interface ProfileTargetPoint {
+  time: number
+  target_pressure?: number
+  target_flow?: number
+  stage_name: string
+}
+
 interface LocalAnalysisResult {
   shot_summary: ShotSummary
   weight_analysis: WeightAnalysisLocal
@@ -207,6 +222,7 @@ interface LocalAnalysisResult {
   unreached_stages: string[]
   preinfusion_summary: PreinfusionSummary
   profile_info: ProfileInfo
+  profile_target_curves?: ProfileTargetPoint[]
 }
 
 interface ChartDataPoint {
@@ -994,6 +1010,95 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
     return ranges
   }
 
+  // Merge shot chart data with profile target curves for overlay
+  const mergeWithTargetCurves = (
+    chartData: ChartDataPoint[], 
+    targetCurves: ProfileTargetPoint[] | undefined
+  ): (ChartDataPoint & { targetPressure?: number; targetFlow?: number })[] => {
+    if (!targetCurves || targetCurves.length === 0) {
+      return chartData
+    }
+    
+    // Filter and sort target points once for better performance
+    const pressurePoints = targetCurves
+      .filter(c => c.target_pressure !== undefined)
+      .sort((a, b) => a.time - b.time)
+    
+    const flowPoints = targetCurves
+      .filter(c => c.target_flow !== undefined)
+      .sort((a, b) => a.time - b.time)
+    
+    // Helper function for binary search to find upper bound (first element > time)
+    const findUpperBound = (points: ProfileTargetPoint[], time: number): number => {
+      let left = 0
+      let right = points.length
+      
+      while (left < right) {
+        const mid = left + Math.floor((right - left) / 2)
+        if (points[mid].time <= time) {
+          left = mid + 1
+        } else {
+          right = mid
+        }
+      }
+      
+      return left
+    }
+    
+    // Add target values to chart data points using linear interpolation
+    return chartData.map(point => {
+      
+      // Find surrounding target points for interpolation
+      let targetPressure: number | undefined
+      let targetFlow: number | undefined
+      
+      // Find pressure target using binary search for efficiency
+      if (pressurePoints.length > 0) {
+        // Find the index where point.time would be inserted (first point > time)
+        const afterIndex = findUpperBound(pressurePoints, point.time)
+        
+        if (afterIndex === 0) {
+          // All points are after current time
+          targetPressure = pressurePoints[0].target_pressure
+        } else if (afterIndex === pressurePoints.length) {
+          // All points are before current time
+          targetPressure = pressurePoints[pressurePoints.length - 1].target_pressure
+        } else {
+          // We have points before and after
+          const before = pressurePoints[afterIndex - 1]
+          const after = pressurePoints[afterIndex]
+          
+          // Interpolate
+          const t = (point.time - before.time) / (after.time - before.time)
+          targetPressure = before.target_pressure! + t * (after.target_pressure! - before.target_pressure!)
+        }
+      }
+      
+      // Find flow target using binary search for efficiency
+      if (flowPoints.length > 0) {
+        const afterIndex = findUpperBound(flowPoints, point.time)
+        
+        if (afterIndex === 0) {
+          targetFlow = flowPoints[0].target_flow
+        } else if (afterIndex === flowPoints.length) {
+          targetFlow = flowPoints[flowPoints.length - 1].target_flow
+        } else {
+          const before = flowPoints[afterIndex - 1]
+          const after = flowPoints[afterIndex]
+          
+          const t = (point.time - before.time) / (after.time - before.time)
+          targetFlow = before.target_flow! + t * (after.target_flow! - before.target_flow!)
+        }
+      }
+      
+      return {
+        ...point,
+        targetPressure,
+        targetFlow
+      }
+    })
+  }
+
   const formatShotTime = (shot: ShotInfo) => {
     try {
       if (shot.timestamp && (typeof shot.timestamp === 'string' || typeof shot.timestamp === 'number')) {
@@ -1290,9 +1395,22 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                       const hasGravFlow = chartData.some(d => d.gravimetricFlow !== undefined && d.gravimetricFlow > 0)
                       const dataMaxTime = chartData.length > 0 ? chartData[chartData.length - 1].time : 0
                       
+                      // Merge with profile target curves if analysis has been done
+                      const mergedData = mergeWithTargetCurves(chartData, analysisResult?.profile_target_curves)
+                      const hasTargetCurves = analysisResult?.profile_target_curves && analysisResult.profile_target_curves.length > 0
+                      
                       // Calculate fixed max values from full dataset for stable axes
-                      const maxPressure = Math.max(...chartData.map(d => d.pressure || 0), 12)
-                      const maxFlow = Math.max(...chartData.map(d => Math.max(d.flow || 0, d.gravimetricFlow || 0)), 8)
+                      // Include target curve values to ensure they're not clipped
+                      const maxPressure = Math.max(
+                        ...chartData.map(d => d.pressure || 0),
+                        ...(analysisResult?.profile_target_curves?.map(d => d.target_pressure || 0) || []),
+                        12
+                      )
+                      const maxFlow = Math.max(
+                        ...chartData.map(d => Math.max(d.flow || 0, d.gravimetricFlow || 0)),
+                        ...(analysisResult?.profile_target_curves?.map(d => d.target_flow || 0) || []),
+                        8
+                      )
                       const maxLeftAxis = Math.ceil(Math.max(maxPressure, maxFlow) * 1.1)
                       const maxWeight = Math.max(...chartData.map(d => d.weight || 0), 50)
                       const maxRightAxis = Math.ceil(maxWeight * 1.1)
@@ -1301,8 +1419,8 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                       // Only show full data when at start (0) or at end (>= maxTime)
                       const isShowingReplay = currentTime > 0 && currentTime < dataMaxTime
                       const displayData = isShowingReplay
-                        ? chartData.filter(d => d.time <= currentTime)
-                        : chartData
+                        ? mergedData.filter(d => d.time <= currentTime)
+                        : mergedData
                       
                       // Filter stage ranges to only show stages that have started (for progressive reveal)
                       const displayStageRanges = isShowingReplay
@@ -1426,6 +1544,35 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                 name="Grav. Flow (g/s)"
                                 isAnimationActive={false}
                               />
+                            )}
+                            {/* Profile target curves (shown after analysis) */}
+                            {hasTargetCurves && (
+                              <>
+                                <Line
+                                  yAxisId="left"
+                                  type="linear"
+                                  dataKey="targetPressure"
+                                  stroke={CHART_COLORS.targetPressure}
+                                  strokeWidth={1.5}
+                                  dot={false}
+                                  strokeDasharray="6 3"
+                                  name="Target Pressure"
+                                  isAnimationActive={false}
+                                  connectNulls={false}
+                                />
+                                <Line
+                                  yAxisId="left"
+                                  type="linear"
+                                  dataKey="targetFlow"
+                                  stroke={CHART_COLORS.targetFlow}
+                                  strokeWidth={1.5}
+                                  dot={false}
+                                  strokeDasharray="6 3"
+                                  name="Target Flow"
+                                  isAnimationActive={false}
+                                  connectNulls={false}
+                                />
+                              </>
                             )}
                           </LineChart>
                         </ResponsiveContainer>
