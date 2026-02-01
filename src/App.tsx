@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 // Coffee icon is used by HistoryView (child component) and must be imported here
 // to avoid bundling issues when downloading images with domToPng
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, DownloadSimple, Info, QrCode, ClockCounterClockwise, FileJs, Coffee, Image, CaretLeft, Plus, Gear } from '@phosphor-icons/react'
+import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, DownloadSimple, Info, QrCode, ClockCounterClockwise, FileJs, Coffee, Image, CaretLeft, Plus, Gear, Play } from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
 import { MarkdownText } from '@/components/MarkdownText'
 import { domToPng } from 'modern-screenshot'
@@ -26,6 +26,7 @@ import { MeticAILogo } from '@/components/MeticAILogo'
 import { HistoryView, ProfileDetailView } from '@/components/HistoryView'
 import { HistoryEntry } from '@/hooks/useHistory'
 import { SettingsView } from '@/components/SettingsView'
+import { RunShotView } from '@/components/RunShotView'
 
 const LOADING_MESSAGES = [
   "Analyzing coffee beans...",
@@ -56,7 +57,7 @@ interface APIResponse {
   history_id?: string
 }
 
-type ViewState = 'start' | 'form' | 'loading' | 'results' | 'error' | 'history' | 'history-detail' | 'settings'
+type ViewState = 'start' | 'form' | 'loading' | 'results' | 'error' | 'history' | 'history-detail' | 'settings' | 'run-shot'
 
 function App() {
   const [isInitializing, setIsInitializing] = useState(true)
@@ -76,6 +77,8 @@ function App() {
   const [qrDialogOpen, setQrDialogOpen] = useState(false)
   const [selectedHistoryEntry, setSelectedHistoryEntry] = useState<HistoryEntry | null>(null)
   const [currentProfileJson, setCurrentProfileJson] = useState<Record<string, unknown> | null>(null)
+  const [runShotProfileId, setRunShotProfileId] = useState<string | undefined>(undefined)
+  const [runShotProfileName, setRunShotProfileName] = useState<string | undefined>(undefined)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const resultsCardRef = useRef<HTMLDivElement>(null)
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -573,6 +576,18 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                   </Button>
                   
                   <Button
+                    onClick={() => {
+                      setRunShotProfileId(undefined)
+                      setRunShotProfileName(undefined)
+                      setViewState('run-shot')
+                    }}
+                    className="w-full h-14 text-base font-semibold bg-secondary hover:bg-secondary/80"
+                  >
+                    <Play size={20} className="mr-2" weight="fill" />
+                    Run Shot
+                  </Button>
+                  
+                  <Button
                     onClick={() => setViewState('settings')}
                     variant="outline"
                     className="w-full h-14 text-base font-semibold border-border/50 hover:border-border hover:bg-secondary/50"
@@ -774,6 +789,14 @@ Special Notes: For maximum clarity and to really make those delicate floral note
           {viewState === 'settings' && (
             <SettingsView
               onBack={handleBackToStart}
+            />
+          )}
+
+          {viewState === 'run-shot' && (
+            <RunShotView
+              onBack={handleBackToStart}
+              initialProfileId={runShotProfileId}
+              initialProfileName={runShotProfileName}
             />
           )}
 
