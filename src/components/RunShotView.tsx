@@ -99,6 +99,17 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
           const data = await response.json()
           setMachineStatus(data.machine_status?.state || 'unknown')
           setScheduledShots(data.scheduled_shots || [])
+        } else {
+          let errorBody = ''
+          try {
+            errorBody = await response.text()
+          } catch (readErr) {
+            console.error('Failed to read error response body for machine status:', readErr)
+          }
+          console.error(
+            `Non-OK response when fetching machine status: ${response.status} ${response.statusText}`,
+            errorBody
+          )
         }
       } catch (err) {
         console.error('Failed to fetch machine status:', err)
