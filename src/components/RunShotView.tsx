@@ -192,9 +192,13 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
     }
 
     // Validate minimum scheduled time when preheat is enabled
-    if (preheat && scheduledTime < minScheduledTime) {
-      toast.error(`Scheduled time must be at least ${PREHEAT_DURATION_MINUTES} minutes from now when preheat is enabled`)
-      return
+    // Recalculate at validation time to ensure accuracy
+    if (preheat) {
+      const currentMinScheduledTime = addMinutes(new Date(), PREHEAT_DURATION_MINUTES)
+      if (scheduledTime < currentMinScheduledTime) {
+        toast.error(`Scheduled time must be at least ${PREHEAT_DURATION_MINUTES} minutes from now when preheat is enabled`)
+        return
+      }
     }
 
     setIsRunning(true)
