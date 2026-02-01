@@ -473,7 +473,7 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
               Preheat
             </Label>
             <p className="text-xs text-muted-foreground">
-              Heat the machine for {PREHEAT_DURATION_MINUTES} minutes before extraction
+              Preheat machine for {PREHEAT_DURATION_MINUTES} minutes
             </p>
           </div>
           <Switch

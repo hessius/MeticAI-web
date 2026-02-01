@@ -16,8 +16,7 @@ import {
   ArrowClockwise,
   DownloadSimple,
   CaretDown,
-  CaretUp,
-  Notebook
+  CaretUp
 } from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
 import { useUpdateStatus } from '@/hooks/useUpdateStatus'
@@ -73,6 +72,9 @@ export function SettingsView({ onBack }: SettingsViewProps) {
   const [changelogExpanded, setChangelogExpanded] = useState(false)
   const [changelogLoading, setChangelogLoading] = useState(false)
   
+  // About section
+  const [aboutExpanded, setAboutExpanded] = useState(false)
+  
   // Update functionality
   const { updateAvailable, checkForUpdates, isChecking } = useUpdateStatus()
   const { triggerUpdate, isUpdating, updateError } = useUpdateTrigger()
@@ -125,31 +127,38 @@ export function SettingsView({ onBack }: SettingsViewProps) {
     loadVersionInfo()
   }, [])
 
-  // Load release notes when changelog is expanded
+  // Load release notes when changelog is expanded (using server-side cache)
   const loadReleaseNotes = useCallback(async () => {
     if (releaseNotes.length > 0) return // Already loaded
     
     setChangelogLoading(true)
     try {
-      // Fetch releases from GitHub API
-      const response = await fetch(
-        'https://api.github.com/repos/hessius/MeticAI/releases?per_page=10'
-      )
+      // Fetch releases from server (which caches GitHub API responses)
+      const serverUrl = await getServerUrl()
+      const response = await fetch(`${serverUrl}/api/changelog`)
+      
       if (response.ok) {
-        const releases = await response.json()
-        const notes: ReleaseNote[] = releases.map((release: { tag_name: string; published_at: string; body: string }) => ({
-          version: release.tag_name,
-          date: new Date(release.published_at).toLocaleDateString(),
-          body: release.body || 'No release notes available.'
-        }))
-        setReleaseNotes(notes)
+        const data = await response.json()
+        
+        if (data.error && data.releases.length === 0) {
+          setReleaseNotes([
+            {
+              version: 'Error',
+              date: '',
+              body: data.error,
+            },
+          ])
+        } else {
+          const notes: ReleaseNote[] = data.releases.map((release: { version: string; date: string; body: string }) => ({
+            version: release.version,
+            date: release.date ? new Date(release.date).toLocaleDateString() : '',
+            body: release.body || 'No release notes available.'
+          }))
+          setReleaseNotes(notes)
+        }
       } else {
         // Handle non-OK responses explicitly and surface feedback to the user
-        let message = `Failed to load release notes (status ${response.status})`
-        if (response.status === 403 || response.status === 429) {
-          message =
-            'GitHub API rate limit reached while loading release notes. Please try again later or visit the project releases page directly.'
-        }
+        const message = `Failed to load release notes (status ${response.status})`
         setReleaseNotes([
           {
             version: 'Error',
@@ -282,135 +291,19 @@ export function SettingsView({ onBack }: SettingsViewProps) {
         >
           <CaretLeft size={22} weight="bold" />
         </Button>
-        <h2 className="text-xl font-bold">Settings & About</h2>
+        <h2 className="text-xl font-bold">Settings</h2>
       </div>
 
-      {/* About Section */}
-      <Card className="p-6 space-y-4">
-        <h3 className="text-lg font-semibold text-primary">About MeticAI</h3>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          When I got my Meticulous, after a loooong wait, I was overwhelmed with the options — 
-          dialing in was no longer just adjusting grind size, the potential was (and is) basically 
-          limitless — my knowledge and time not so.
-        </p>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          This, "MeticAI", is a growing set of AI tools to enable me, and you, to get the most 
-          out of a Meticulous Espresso machine. Among other things it lets you automatically 
-          create espresso profiles tailored to your preferences and coffee at hand, understand 
-          your espresso profiles and shot data like never before, and ultimately — lets you 
-          unleash your Meticulous.
-        </p>
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => window.open('https://github.com/hessius/MeticAI', '_blank')}
-        >
-          <GithubLogo size={18} className="mr-2" weight="bold" />
-          View on GitHub
-        </Button>
-      </Card>
-
-      {/* Version Info Section */}
-      <Card className="p-6 space-y-4">
-        <h3 className="text-lg font-semibold text-primary">Version Info</h3>
-        
-        <div className="space-y-3">
-          <div className="flex justify-between items-center py-2 border-b border-border/50">
-            <span className="text-sm text-muted-foreground">MeticAI (Backend)</span>
-            <span className="text-sm font-mono">{versionInfo?.meticai || '...'}</span>
-          </div>
-          <div className="flex justify-between items-center py-2 border-b border-border/50">
-            <span className="text-sm text-muted-foreground">MeticAI-web (Frontend)</span>
-            <span className="text-sm font-mono">{versionInfo?.meticaiWeb || '...'}</span>
-          </div>
-          <div className="flex justify-between items-center py-2">
-            <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground">MCP Server</span>
-              <a 
-                href={versionInfo?.mcpRepoUrl || '#'} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-xs text-primary hover:underline"
-              >
-                {versionInfo?.mcpRepoUrl?.replace('https://github.com/', '') || 'manonstreet/meticulous-mcp'}
-              </a>
-            </div>
-            <span className="text-sm font-mono">{versionInfo?.mcpServer || '...'}</span>
-          </div>
-        </div>
-      </Card>
-
-      {/* Updates Section */}
-      <Card className="p-6 space-y-4">
-        <h3 className="text-lg font-semibold text-primary">Updates</h3>
-        
-        {isUpdating ? (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <ArrowClockwise size={18} className="animate-spin text-primary" />
-              <span className="text-sm font-medium">Updating MeticAI...</span>
-            </div>
-            <Progress value={updateProgress} className="h-2" />
-            <p className="text-xs text-muted-foreground">
-              {updateProgress < 30 && 'Starting update...'}
-              {updateProgress >= 30 && updateProgress < 60 && 'Pulling latest updates...'}
-              {updateProgress >= 60 && updateProgress < 80 && 'Rebuilding containers...'}
-              {updateProgress >= 80 && 'Restarting services...'}
-            </p>
-          </div>
-        ) : updateError ? (
-          <Alert variant="destructive">
-            <Warning size={16} weight="fill" />
-            <AlertDescription className="text-sm">
-              Update failed: {updateError}
-            </AlertDescription>
-          </Alert>
-        ) : updateAvailable ? (
-          <Alert className="bg-primary/10 border-primary/30">
-            <DownloadSimple size={16} className="text-primary" />
-            <AlertDescription className="text-sm">
-              A new version of MeticAI is available!
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            You're running the latest version.
-          </p>
-        )}
-        
-        <div className="flex gap-2">
-          <Button
-            onClick={handleUpdate}
-            disabled={isUpdating || !updateAvailable}
-            className="flex-1"
-          >
-            <DownloadSimple size={18} className="mr-2" />
-            {updateAvailable ? 'Update Now' : 'No Updates Available'}
-          </Button>
-          <Button
-            onClick={() => checkForUpdates()}
-            disabled={isChecking || isUpdating}
-            variant="outline"
-            aria-label="Check for updates"
-          >
-            <ArrowClockwise size={18} className={isChecking ? 'animate-spin' : ''} />
-          </Button>
-        </div>
-      </Card>
-
-      {/* Changelog Section */}
+      {/* About Section - Collapsible, collapsed by default */}
       <Card className="p-6 space-y-4">
         <button
-          onClick={() => setChangelogExpanded(!changelogExpanded)}
+          onClick={() => setAboutExpanded(!aboutExpanded)}
           className="w-full flex items-center justify-between text-left"
-          aria-expanded={changelogExpanded}
-          aria-controls="changelog-content"
+          aria-expanded={aboutExpanded}
+          aria-controls="about-content"
         >
-          <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-            <Notebook size={20} />
-            Changelog
-          </h3>
-          {changelogExpanded ? (
+          <h3 className="text-lg font-semibold text-primary">About MeticAI</h3>
+          {aboutExpanded ? (
             <CaretUp size={20} className="text-muted-foreground" />
           ) : (
             <CaretDown size={20} className="text-muted-foreground" />
@@ -418,46 +311,40 @@ export function SettingsView({ onBack }: SettingsViewProps) {
         </button>
         
         <AnimatePresence>
-          {changelogExpanded && (
+          {aboutExpanded && (
             <motion.div
-              id="changelog-content"
+              id="about-content"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
+              className="overflow-hidden space-y-4"
             >
-              {changelogLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <ArrowClockwise size={24} className="animate-spin text-muted-foreground" />
-                </div>
-              ) : releaseNotes.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No release notes available.
-                </p>
-              ) : (
-                <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
-                  {releaseNotes.map((note, index) => (
-                    <div key={note.version} className="space-y-2">
-                      {index > 0 && <div className="border-t border-border/50 pt-4" />}
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sm">{note.version}</span>
-                        <span className="text-xs text-muted-foreground">{note.date}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                        {note.body.length > 300 
-                          ? note.body.substring(0, 300) + '...' 
-                          : note.body}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                When I got my Meticulous, after a loooong wait, I was overwhelmed with the options — 
+                dialing in was no longer just adjusting grind size, the potential was (and is) basically 
+                limitless — my knowledge and time not so.
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                This, "MeticAI", is a growing set of AI tools to enable me, and you, to get the most 
+                out of a Meticulous Espresso machine. Among other things it lets you automatically 
+                create espresso profiles tailored to your preferences and coffee at hand, understand 
+                your espresso profiles and shot data like never before, and ultimately — lets you 
+                unleash your Meticulous.
+              </p>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => window.open('https://github.com/hessius/MeticAI', '_blank')}
+              >
+                <GithubLogo size={18} className="mr-2" weight="bold" />
+                View on GitHub
+              </Button>
             </motion.div>
           )}
         </AnimatePresence>
       </Card>
 
-      {/* Settings Section */}
+      {/* Configuration Section */}
       <Card className="p-6 space-y-5">
         <h3 className="text-lg font-semibold text-primary">Configuration</h3>
         
@@ -583,6 +470,150 @@ export function SettingsView({ onBack }: SettingsViewProps) {
             )}
           </div>
         )}
+      </Card>
+
+      {/* Changelog Section */}
+      <Card className="p-6 space-y-4">
+        <button
+          onClick={() => setChangelogExpanded(!changelogExpanded)}
+          className="w-full flex items-center justify-between text-left"
+          aria-expanded={changelogExpanded}
+          aria-controls="changelog-content"
+        >
+          <h3 className="text-lg font-semibold text-primary">Changelog</h3>
+          {changelogExpanded ? (
+            <CaretUp size={20} className="text-muted-foreground" />
+          ) : (
+            <CaretDown size={20} className="text-muted-foreground" />
+          )}
+        </button>
+        
+        <AnimatePresence>
+          {changelogExpanded && (
+            <motion.div
+              id="changelog-content"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              {changelogLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <ArrowClockwise size={24} className="animate-spin text-muted-foreground" />
+                </div>
+              ) : releaseNotes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No release notes available.
+                </p>
+              ) : (
+                <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
+                  {releaseNotes.map((note, index) => (
+                    <div key={note.version} className="space-y-2">
+                      {index > 0 && <div className="border-t border-border/50 pt-4" />}
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-sm">{note.version}</span>
+                        <span className="text-xs text-muted-foreground">{note.date}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {note.body.length > 300 
+                          ? note.body.substring(0, 300) + '...' 
+                          : note.body}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Card>
+
+      {/* Version Info Section */}
+      <Card className="p-6 space-y-4">
+        <h3 className="text-lg font-semibold text-primary">Version Info</h3>
+        
+        <div className="space-y-3">
+          <div className="flex justify-between items-center py-2 border-b border-border/50">
+            <span className="text-sm text-muted-foreground">MeticAI (Backend)</span>
+            <span className="text-sm font-mono">{versionInfo?.meticai || '...'}</span>
+          </div>
+          <div className="flex justify-between items-center py-2 border-b border-border/50">
+            <span className="text-sm text-muted-foreground">MeticAI-web (Frontend)</span>
+            <span className="text-sm font-mono">{versionInfo?.meticaiWeb || '...'}</span>
+          </div>
+          <div className="flex justify-between items-center py-2">
+            <div className="flex flex-col">
+              <span className="text-sm text-muted-foreground">MCP Server</span>
+              <a 
+                href={versionInfo?.mcpRepoUrl || '#'} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline"
+              >
+                {versionInfo?.mcpRepoUrl?.replace('https://github.com/', '') || 'manonstreet/meticulous-mcp'}
+              </a>
+            </div>
+            <span className="text-sm font-mono">{versionInfo?.mcpServer || '...'}</span>
+          </div>
+        </div>
+      </Card>
+
+      {/* Updates Section */}
+      <Card className="p-6 space-y-4">
+        <h3 className="text-lg font-semibold text-primary">Updates</h3>
+        
+        {isUpdating ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <ArrowClockwise size={18} className="animate-spin text-primary" />
+              <span className="text-sm font-medium">Updating MeticAI...</span>
+            </div>
+            <Progress value={updateProgress} className="h-2" />
+            <p className="text-xs text-muted-foreground">
+              {updateProgress < 30 && 'Starting update...'}
+              {updateProgress >= 30 && updateProgress < 60 && 'Pulling latest updates...'}
+              {updateProgress >= 60 && updateProgress < 80 && 'Rebuilding containers...'}
+              {updateProgress >= 80 && 'Restarting services...'}
+            </p>
+          </div>
+        ) : updateError ? (
+          <Alert variant="destructive">
+            <Warning size={16} weight="fill" />
+            <AlertDescription className="text-sm">
+              Update failed: {updateError}
+            </AlertDescription>
+          </Alert>
+        ) : updateAvailable ? (
+          <Alert className="bg-primary/10 border-primary/30">
+            <DownloadSimple size={16} className="text-primary" />
+            <AlertDescription className="text-sm">
+              A new version of MeticAI is available!
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            You're running the latest version.
+          </p>
+        )}
+        
+        <div className="flex gap-2">
+          <Button
+            onClick={handleUpdate}
+            disabled={isUpdating || !updateAvailable}
+            className="flex-1"
+          >
+            <DownloadSimple size={18} className="mr-2" />
+            {updateAvailable ? 'Update Now' : 'No Updates Available'}
+          </Button>
+          <Button
+            onClick={() => checkForUpdates()}
+            disabled={isChecking || isUpdating}
+            variant="outline"
+            aria-label="Check for updates"
+          >
+            <ArrowClockwise size={18} className={isChecking ? 'animate-spin' : ''} />
+          </Button>
+        </div>
       </Card>
 
       {/* System Section */}
