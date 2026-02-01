@@ -72,10 +72,13 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
       try {
         const serverUrl = await getServerUrl()
         const response = await fetch(`${serverUrl}/api/machine/profiles`)
-        if (response.ok) {
-          const data = await response.json()
-          setProfiles(data.profiles || [])
+        if (!response.ok) {
+          console.error('Failed to fetch profiles: HTTP', response.status)
+          toast.error('Failed to load profiles from machine')
+          return
         }
+        const data = await response.json()
+        setProfiles(data.profiles || [])
       } catch (err) {
         console.error('Failed to fetch profiles:', err)
         toast.error('Failed to load profiles from machine')
