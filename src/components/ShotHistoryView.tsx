@@ -1019,6 +1019,8 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
       return chartData
     }
     
+    // Add target values to chart data points using linear interpolation
+    return chartData.map(point => {
     // Create a map of target values by time for quick lookup
     const targetsByTime = new Map<number, { targetPressure?: number; targetFlow?: number }>()
     
