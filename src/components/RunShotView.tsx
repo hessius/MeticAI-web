@@ -145,10 +145,19 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
               preheat: false // Already preheating
             })
           })
-          
-          if (scheduleResponse.ok) {
-            toast.success(`Profile "${selectedProfile.name}" will run in ${PREHEAT_DURATION_MINUTES} minutes`)
+
+          if (!scheduleResponse.ok) {
+            let errorMessage = 'Failed to schedule profile after preheat'
+            try {
+              const error = await scheduleResponse.json()
+              errorMessage = error?.detail || errorMessage
+            } catch {
+              // Ignore JSON parse errors and fall back to default message
+            }
+            throw new Error(errorMessage)
           }
+
+          toast.success(`Profile "${selectedProfile.name}" will run in ${PREHEAT_DURATION_MINUTES} minutes`)
         }
       } else if (selectedProfile) {
         // Run profile immediately
