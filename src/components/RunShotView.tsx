@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -65,6 +65,18 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
   
   const [scheduledShots, setScheduledShots] = useState<ScheduledShot[]>([])
   const [machineStatus, setMachineStatus] = useState<string>('unknown')
+  
+  // Ref to track preheat timeout for cleanup
+  const preheatTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Cleanup preheat timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (preheatTimeoutRef.current) {
+        clearTimeout(preheatTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // Fetch profiles from machine
   useEffect(() => {
@@ -135,22 +147,34 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
       
       if (preheat) {
         // Start preheat
+        // Clear any existing preheat timeout
+        if (preheatTimeoutRef.current) {
+          clearTimeout(preheatTimeoutRef.current)
+        }
+        
         setIsPreheating(true)
         const preheatResponse = await fetch(`${serverUrl}/api/machine/preheat`, {
           method: 'POST'
         })
         
         if (!preheatResponse.ok) {
-          const error = await preheatResponse.json()
+          let errorMessage = 'Failed to start preheat'
+          try {
+            const error = await preheatResponse.json()
+            errorMessage = error.detail || errorMessage
+          } catch {
+            // Ignore JSON parse errors and fall back to default message
+          }
           setIsPreheating(false)
-          throw new Error(error.detail || 'Failed to start preheat')
+          throw new Error(errorMessage)
         }
         
         toast.success(`Preheating started! Ready in ${PREHEAT_DURATION_MINUTES} minutes`)
         
-        // Clear preheating state after duration
-        setTimeout(() => {
+        // Set timeout to clear preheating state after duration
+        preheatTimeoutRef.current = setTimeout(() => {
           setIsPreheating(false)
+          preheatTimeoutRef.current = null
         }, PREHEAT_DURATION_MINUTES * 60 * 1000)
         
         if (selectedProfile) {
@@ -195,7 +219,13 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
     } catch (err) {
       console.error('Failed to run shot:', err)
       toast.error(err instanceof Error ? err.message : 'Failed to run shot')
+      
+      // Clear preheating state and timeout on error
       setIsPreheating(false)
+      if (preheatTimeoutRef.current) {
+        clearTimeout(preheatTimeoutRef.current)
+        preheatTimeoutRef.current = null
+      }
     } finally {
       setIsRunning(false)
     }
