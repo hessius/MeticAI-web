@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -20,6 +20,8 @@ import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
 import { QRCodeDialog } from '@/components/QRCodeDialog'
 import { useIsDesktop } from '@/hooks/use-desktop'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { useSwipeNavigation } from '@/hooks/use-swipe-navigation'
 import { MeticAILogo } from '@/components/MeticAILogo'
 import { HistoryView, ProfileDetailView } from '@/components/HistoryView'
 import { HistoryEntry } from '@/hooks/useHistory'
@@ -84,6 +86,7 @@ function App() {
   
   // Desktop detection for QR code feature
   const isDesktop = useIsDesktop()
+  const isMobile = useIsMobile()
 
   // Check for existing profiles on mount
   useEffect(() => {
@@ -107,7 +110,7 @@ function App() {
   }, [])
 
   // Update profile count when returning from history view
-  const refreshProfileCount = async () => {
+  const refreshProfileCount = useCallback(async () => {
     try {
       const serverUrl = await getServerUrl()
       const response = await fetch(`${serverUrl}/api/history?limit=1&offset=0`)
@@ -118,7 +121,7 @@ function App() {
     } catch (err) {
       console.error('Failed to refresh profile count:', err)
     }
-  }
+  }, [])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -279,7 +282,7 @@ function App() {
     }
   }
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     // Refresh profile count before switching view
     refreshProfileCount()
     setViewState('form')
@@ -293,12 +296,43 @@ function App() {
     setCurrentMessage(0)
     setCurrentProfileJson(null)
     setSelectedHistoryEntry(null)
-  }
+  }, [refreshProfileCount])
 
-  const handleBackToStart = () => {
+  const handleBackToStart = useCallback(() => {
     refreshProfileCount()
     setViewState('start')
-  }
+  }, [refreshProfileCount])
+
+  // Swipe navigation for mobile - back navigation via swipe right
+  const handleSwipeRight = useCallback(() => {
+    if (!isMobile) return
+    
+    // Handle back navigation based on current view
+    switch (viewState) {
+      case 'form':
+        handleBackToStart()
+        break
+      case 'results':
+        handleReset()
+        break
+      case 'history-detail':
+        setViewState('history')
+        break
+      case 'history':
+      case 'settings':
+        handleBackToStart()
+        break
+      // Don't navigate on start, loading, or error views - but still block browser gesture
+      default:
+        break
+    }
+  }, [isMobile, viewState, handleBackToStart, handleReset, setViewState])
+
+  useSwipeNavigation({
+    onSwipeRight: handleSwipeRight,
+    // Keep enabled on mobile to always block browser's native back gesture
+    enabled: isMobile,
+  })
 
   const handleViewHistoryEntry = (entry: HistoryEntry) => {
     setSelectedHistoryEntry(entry)
