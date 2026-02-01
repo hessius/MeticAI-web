@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -65,11 +65,6 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
   
   const [scheduledShots, setScheduledShots] = useState<ScheduledShot[]>([])
   const [machineStatus, setMachineStatus] = useState<string>('unknown')
-
-  // Calculate minimum scheduled time based on preheat setting
-  const minScheduledTime = useMemo(() => {
-    return preheat ? addMinutes(new Date(), PREHEAT_DURATION_MINUTES) : new Date()
-  }, [preheat])
 
   // Fetch profiles from machine
   useEffect(() => {
@@ -428,7 +423,10 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
                       setScheduledTime(next)
                     }
                   }}
-                  min={format(minScheduledTime, "yyyy-MM-dd'T'HH:mm")}
+                  min={format(
+                    preheat ? addMinutes(new Date(), PREHEAT_DURATION_MINUTES) : new Date(),
+                    "yyyy-MM-dd'T'HH:mm"
+                  )}
                   className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm"
                 />
                 {preheat && (
