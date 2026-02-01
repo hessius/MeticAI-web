@@ -13,9 +13,6 @@ import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, Downl
 import { getServerUrl } from '@/lib/config'
 import { MarkdownText } from '@/components/MarkdownText'
 import { domToPng } from 'modern-screenshot'
-import { UpdateBanner } from '@/components/UpdateBanner'
-import { useUpdateStatus } from '@/hooks/useUpdateStatus'
-import { useUpdateTrigger } from '@/hooks/useUpdateTrigger'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
 import { QRCodeDialog } from '@/components/QRCodeDialog'
@@ -73,7 +70,6 @@ function App() {
   const [errorMessage, setErrorMessage] = useState('')
   const [isCapturing, setIsCapturing] = useState(false)
   const [clickCount, setClickCount] = useState(0)
-  const [bannerDismissed, setBannerDismissed] = useState(false)
   const [qrDialogOpen, setQrDialogOpen] = useState(false)
   const [selectedHistoryEntry, setSelectedHistoryEntry] = useState<HistoryEntry | null>(null)
   const [currentProfileJson, setCurrentProfileJson] = useState<Record<string, unknown> | null>(null)
@@ -82,10 +78,6 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const resultsCardRef = useRef<HTMLDivElement>(null)
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null)
-  
-  // Update functionality
-  const { updateAvailable, checkForUpdates, isChecking } = useUpdateStatus()
-  const { triggerUpdate, isUpdating, updateError } = useUpdateTrigger()
   
   // Desktop detection for QR code feature
   const isDesktop = useIsDesktop()
@@ -465,19 +457,6 @@ Special Notes: For maximum clarity and to really make those delicate floral note
 
   const canSubmit = imageFile || userPrefs.trim().length > 0 || selectedTags.length > 0
 
-  const handleUpdate = async () => {
-    setBannerDismissed(false)
-    toast.info('Starting update process...')
-    await triggerUpdate()
-  }
-
-  const handleDismissBanner = () => {
-    setBannerDismissed(true)
-    toast('Update notification dismissed', {
-      description: 'You can check for updates again later',
-    })
-  }
-
   const getCategoryColor = (category: string) => {
     return CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] || ''
   }
@@ -485,13 +464,6 @@ Special Notes: For maximum clarity and to really make those delicate floral note
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-5 overflow-x-hidden">
       <Toaster richColors position="top-center" />
-      <UpdateBanner
-        updateAvailable={updateAvailable && !bannerDismissed}
-        isUpdating={isUpdating}
-        updateError={updateError}
-        onUpdate={handleUpdate}
-        onDismiss={handleDismissBanner}
-      />
       <div className="w-full max-w-md relative overflow-hidden">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -1121,51 +1093,6 @@ Special Notes: For maximum clarity and to really make those delicate floral note
         </AnimatePresence>
         
         <QRCodeDialog open={qrDialogOpen} onOpenChange={setQrDialogOpen} />
-        
-        {/* Discrete footer with check for updates - only show on home pages */}
-        {(viewState === 'form' || viewState === 'start') && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mt-10 pb-6 flex justify-center"
-          >
-            <Button
-              onClick={async () => {
-                const result = await checkForUpdates()
-                if (result.error) {
-                  toast.error('Check failed', {
-                    description: result.error,
-                  })
-                } else if (result.updateAvailable) {
-                  toast.success('Update available!', {
-                    description: 'A new version is ready to install.',
-                  })
-                } else {
-                  toast.info('You\'re up to date', {
-                    description: 'No updates available.',
-                  })
-                }
-              }}
-              disabled={isChecking}
-              variant="ghost"
-              size="sm"
-              className="text-xs text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-            >
-              {isChecking ? (
-                <>
-                  <ArrowClockwise size={12} className="mr-1.5 animate-spin" />
-                  Checking...
-                </>
-              ) : (
-                <>
-                  <DownloadSimple size={12} className="mr-1.5" />
-                  Check for updates
-                </>
-              )}
-            </Button>
-          </motion.div>
-        )}
       </div>
     </div>
   )

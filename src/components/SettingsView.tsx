@@ -1,12 +1,27 @@
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CaretLeft, GithubLogo, FloppyDisk, Info, CheckCircle, Warning, ArrowsClockwise } from '@phosphor-icons/react'
+import { Progress } from '@/components/ui/progress'
+import { 
+  CaretLeft, 
+  GithubLogo, 
+  FloppyDisk, 
+  CheckCircle, 
+  Warning, 
+  ArrowsClockwise,
+  ArrowClockwise,
+  DownloadSimple,
+  CaretDown,
+  CaretUp,
+  Notebook
+} from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
+import { useUpdateStatus } from '@/hooks/useUpdateStatus'
+import { useUpdateTrigger } from '@/hooks/useUpdateTrigger'
 
 interface SettingsViewProps {
   onBack: () => void
@@ -15,17 +30,32 @@ interface SettingsViewProps {
 interface Settings {
   geminiApiKey: string
   meticulousIp: string
-  serverIp: string
   authorName: string
   geminiApiKeyMasked?: boolean
   geminiApiKeyConfigured?: boolean
 }
 
+interface VersionInfo {
+  meticai: string
+  meticaiWeb: string
+  mcpServer: string
+  mcpRepoUrl: string
+}
+
+interface ReleaseNote {
+  version: string
+  date: string
+  body: string
+}
+
+// Maximum expected update duration (3 minutes)
+const MAX_UPDATE_DURATION = 180000
+const PROGRESS_UPDATE_INTERVAL = 500
+
 export function SettingsView({ onBack }: SettingsViewProps) {
   const [settings, setSettings] = useState<Settings>({
     geminiApiKey: '',
     meticulousIp: '',
-    serverIp: '',
     authorName: ''
   })
   const [isSaving, setIsSaving] = useState(false)
@@ -34,6 +64,19 @@ export function SettingsView({ onBack }: SettingsViewProps) {
   const [restartStatus, setRestartStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  
+  // Version info
+  const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null)
+  
+  // Changelog
+  const [releaseNotes, setReleaseNotes] = useState<ReleaseNote[]>([])
+  const [changelogExpanded, setChangelogExpanded] = useState(false)
+  const [changelogLoading, setChangelogLoading] = useState(false)
+  
+  // Update functionality
+  const { updateAvailable, checkForUpdates, isChecking } = useUpdateStatus()
+  const { triggerUpdate, isUpdating, updateError } = useUpdateTrigger()
+  const [updateProgress, setUpdateProgress] = useState(0)
 
   // Load current settings on mount
   useEffect(() => {
@@ -46,7 +89,6 @@ export function SettingsView({ onBack }: SettingsViewProps) {
           setSettings({
             geminiApiKey: data.geminiApiKey || '',
             meticulousIp: data.meticulousIp || '',
-            serverIp: data.serverIp || '',
             authorName: data.authorName || '',
             geminiApiKeyMasked: data.geminiApiKeyMasked || false,
             geminiApiKeyConfigured: data.geminiApiKeyConfigured || false
@@ -60,6 +102,82 @@ export function SettingsView({ onBack }: SettingsViewProps) {
     }
     loadSettings()
   }, [])
+
+  // Load version info
+  useEffect(() => {
+    const loadVersionInfo = async () => {
+      try {
+        const serverUrl = await getServerUrl()
+        const response = await fetch(`${serverUrl}/api/version`)
+        if (response.ok) {
+          const data = await response.json()
+          setVersionInfo({
+            meticai: data.meticai || 'unknown',
+            meticaiWeb: data.meticai_web || data.meticaiWeb || 'unknown',
+            mcpServer: data.mcp_server || data.mcpServer || 'unknown',
+            mcpRepoUrl: data.mcp_repo_url || 'https://github.com/manonstreet/meticulous-mcp'
+          })
+        }
+      } catch (err) {
+        console.error('Failed to load version info:', err)
+      }
+    }
+    loadVersionInfo()
+  }, [])
+
+  // Load release notes when changelog is expanded
+  const loadReleaseNotes = useCallback(async () => {
+    if (releaseNotes.length > 0) return // Already loaded
+    
+    setChangelogLoading(true)
+    try {
+      // Fetch releases from GitHub API
+      const response = await fetch(
+        'https://api.github.com/repos/hessius/MeticAI/releases?per_page=10'
+      )
+      if (response.ok) {
+        const releases = await response.json()
+        const notes: ReleaseNote[] = releases.map((release: { tag_name: string; published_at: string; body: string }) => ({
+          version: release.tag_name,
+          date: new Date(release.published_at).toLocaleDateString(),
+          body: release.body || 'No release notes available.'
+        }))
+        setReleaseNotes(notes)
+      } else {
+        // Handle non-OK responses explicitly and surface feedback to the user
+        let message = `Failed to load release notes (status ${response.status})`
+        if (response.status === 403 || response.status === 429) {
+          message =
+            'GitHub API rate limit reached while loading release notes. Please try again later or visit the project releases page directly.'
+        }
+        setReleaseNotes([
+          {
+            version: 'Error',
+            date: '',
+            body: message,
+          },
+        ])
+      }
+    } catch (err) {
+      console.error('Failed to load release notes:', err)
+      setReleaseNotes([
+        {
+          version: 'Error',
+          date: '',
+          body:
+            'An unexpected error occurred while loading release notes. Please check your network connection and try again.',
+        },
+      ])
+    } finally {
+      setChangelogLoading(false)
+    }
+  }, [releaseNotes.length])
+
+  useEffect(() => {
+    if (changelogExpanded) {
+      loadReleaseNotes()
+    }
+  }, [changelogExpanded, loadReleaseNotes])
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -94,6 +212,27 @@ export function SettingsView({ onBack }: SettingsViewProps) {
   const handleChange = (field: keyof Settings, value: string) => {
     setSettings(prev => ({ ...prev, [field]: value }))
     setSaveStatus('idle')
+  }
+
+  const handleUpdate = async () => {
+    setUpdateProgress(0)
+    
+    // Start progress animation
+    const startTime = Date.now()
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime
+      const percentage = Math.min((elapsed / MAX_UPDATE_DURATION) * 100, 95)
+      setUpdateProgress(percentage)
+    }, PROGRESS_UPDATE_INTERVAL)
+    
+    let succeeded = false
+    try {
+      await triggerUpdate()
+      succeeded = true
+    } finally {
+      clearInterval(interval)
+      setUpdateProgress(succeeded ? 100 : 0)
+    }
   }
 
   const handleRestart = async () => {
@@ -171,6 +310,153 @@ export function SettingsView({ onBack }: SettingsViewProps) {
         </Button>
       </Card>
 
+      {/* Version Info Section */}
+      <Card className="p-6 space-y-4">
+        <h3 className="text-lg font-semibold text-primary">Version Info</h3>
+        
+        <div className="space-y-3">
+          <div className="flex justify-between items-center py-2 border-b border-border/50">
+            <span className="text-sm text-muted-foreground">MeticAI (Backend)</span>
+            <span className="text-sm font-mono">{versionInfo?.meticai || '...'}</span>
+          </div>
+          <div className="flex justify-between items-center py-2 border-b border-border/50">
+            <span className="text-sm text-muted-foreground">MeticAI-web (Frontend)</span>
+            <span className="text-sm font-mono">{versionInfo?.meticaiWeb || '...'}</span>
+          </div>
+          <div className="flex justify-between items-center py-2">
+            <div className="flex flex-col">
+              <span className="text-sm text-muted-foreground">MCP Server</span>
+              <a 
+                href={versionInfo?.mcpRepoUrl || '#'} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline"
+              >
+                {versionInfo?.mcpRepoUrl?.replace('https://github.com/', '') || 'manonstreet/meticulous-mcp'}
+              </a>
+            </div>
+            <span className="text-sm font-mono">{versionInfo?.mcpServer || '...'}</span>
+          </div>
+        </div>
+      </Card>
+
+      {/* Updates Section */}
+      <Card className="p-6 space-y-4">
+        <h3 className="text-lg font-semibold text-primary">Updates</h3>
+        
+        {isUpdating ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <ArrowClockwise size={18} className="animate-spin text-primary" />
+              <span className="text-sm font-medium">Updating MeticAI...</span>
+            </div>
+            <Progress value={updateProgress} className="h-2" />
+            <p className="text-xs text-muted-foreground">
+              {updateProgress < 30 && 'Starting update...'}
+              {updateProgress >= 30 && updateProgress < 60 && 'Pulling latest updates...'}
+              {updateProgress >= 60 && updateProgress < 80 && 'Rebuilding containers...'}
+              {updateProgress >= 80 && 'Restarting services...'}
+            </p>
+          </div>
+        ) : updateError ? (
+          <Alert variant="destructive">
+            <Warning size={16} weight="fill" />
+            <AlertDescription className="text-sm">
+              Update failed: {updateError}
+            </AlertDescription>
+          </Alert>
+        ) : updateAvailable ? (
+          <Alert className="bg-primary/10 border-primary/30">
+            <DownloadSimple size={16} className="text-primary" />
+            <AlertDescription className="text-sm">
+              A new version of MeticAI is available!
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            You're running the latest version.
+          </p>
+        )}
+        
+        <div className="flex gap-2">
+          <Button
+            onClick={handleUpdate}
+            disabled={isUpdating || !updateAvailable}
+            className="flex-1"
+          >
+            <DownloadSimple size={18} className="mr-2" />
+            {updateAvailable ? 'Update Now' : 'No Updates Available'}
+          </Button>
+          <Button
+            onClick={() => checkForUpdates()}
+            disabled={isChecking || isUpdating}
+            variant="outline"
+            aria-label="Check for updates"
+          >
+            <ArrowClockwise size={18} className={isChecking ? 'animate-spin' : ''} />
+          </Button>
+        </div>
+      </Card>
+
+      {/* Changelog Section */}
+      <Card className="p-6 space-y-4">
+        <button
+          onClick={() => setChangelogExpanded(!changelogExpanded)}
+          className="w-full flex items-center justify-between text-left"
+          aria-expanded={changelogExpanded}
+          aria-controls="changelog-content"
+        >
+          <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+            <Notebook size={20} />
+            Changelog
+          </h3>
+          {changelogExpanded ? (
+            <CaretUp size={20} className="text-muted-foreground" />
+          ) : (
+            <CaretDown size={20} className="text-muted-foreground" />
+          )}
+        </button>
+        
+        <AnimatePresence>
+          {changelogExpanded && (
+            <motion.div
+              id="changelog-content"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              {changelogLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <ArrowClockwise size={24} className="animate-spin text-muted-foreground" />
+                </div>
+              ) : releaseNotes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No release notes available.
+                </p>
+              ) : (
+                <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
+                  {releaseNotes.map((note, index) => (
+                    <div key={note.version} className="space-y-2">
+                      {index > 0 && <div className="border-t border-border/50 pt-4" />}
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-sm">{note.version}</span>
+                        <span className="text-xs text-muted-foreground">{note.date}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {note.body.length > 300 
+                          ? note.body.substring(0, 300) + '...' 
+                          : note.body}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Card>
+
       {/* Settings Section */}
       <Card className="p-6 space-y-5">
         <h3 className="text-lg font-semibold text-primary">Configuration</h3>
@@ -204,7 +490,6 @@ export function SettingsView({ onBack }: SettingsViewProps) {
                   className="pr-10"
                   readOnly={settings.geminiApiKeyMasked && settings.geminiApiKey.startsWith('*')}
                   onClick={() => {
-                    // Clear the masked value when clicking to allow entering a new key
                     if (settings.geminiApiKeyMasked && settings.geminiApiKey.startsWith('*')) {
                       handleChange('geminiApiKey', '')
                     }
@@ -245,23 +530,6 @@ export function SettingsView({ onBack }: SettingsViewProps) {
               </p>
             </div>
 
-            {/* Server IP */}
-            <div className="space-y-2">
-              <Label htmlFor="serverIp" className="text-sm font-medium">
-                Server IP
-              </Label>
-              <Input
-                id="serverIp"
-                type="text"
-                value={settings.serverIp}
-                onChange={(e) => handleChange('serverIp', e.target.value)}
-                placeholder="e.g., 192.168.1.50"
-              />
-              <p className="text-xs text-muted-foreground">
-                The IP address of the server running MeticAI (usually a Raspberry Pi)
-              </p>
-            </div>
-
             {/* Author Name */}
             <div className="space-y-2">
               <Label htmlFor="authorName" className="text-sm font-medium">
@@ -278,14 +546,6 @@ export function SettingsView({ onBack }: SettingsViewProps) {
                 Your name for the author field in generated profile JSON. Defaults to "MeticAI" if left empty.
               </p>
             </div>
-
-            {/* Info Alert */}
-            <Alert className="bg-primary/5 border-primary/20">
-              <Info size={16} className="text-primary" />
-              <AlertDescription className="text-xs">
-                Changes to IP settings require restarting the Docker containers to take effect.
-              </AlertDescription>
-            </Alert>
 
             {/* Save Button */}
             <Button 
@@ -331,7 +591,7 @@ export function SettingsView({ onBack }: SettingsViewProps) {
         
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Restart all MeticAI services. Use this after changing IP settings or if you're experiencing issues.
+            Restart all MeticAI services. Use this if you're experiencing issues.
           </p>
           
           <Button
@@ -370,7 +630,7 @@ export function SettingsView({ onBack }: SettingsViewProps) {
         </div>
       </Card>
 
-      {/* Version Info */}
+      {/* Version Info Footer */}
       <div className="text-center text-xs text-muted-foreground/50 pb-4">
         MeticAI • Built with ❤️ for coffee lovers
       </div>
