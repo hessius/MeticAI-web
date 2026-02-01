@@ -1042,9 +1042,6 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
       let targetPressure: number | undefined
       let targetFlow: number | undefined
       
-      // Get all target times sorted
-      const targetTimes = [...targetsByTime.keys()].sort((a, b) => a - b)
-      
       // Find pressure target
       const pressurePoints = targetCurves.filter(c => c.target_pressure !== undefined)
       if (pressurePoints.length > 0) {
