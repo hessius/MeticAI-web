@@ -451,6 +451,8 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
                       variant="ghost"
                       size="icon"
                       onClick={() => handleCancelScheduled(shot.id)}
+                      aria-label="Cancel scheduled shot"
+                      title="Cancel scheduled shot"
                     >
                       <X size={16} />
                     </Button>
