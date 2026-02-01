@@ -161,7 +161,7 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
           let errorMessage = 'Failed to start preheat'
           try {
             const error = await preheatResponse.json()
-            errorMessage = error.detail || errorMessage
+            errorMessage = error?.detail || errorMessage
           } catch {
             // Ignore JSON parse errors and fall back to default message
           }
@@ -316,6 +316,19 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
     }
   }
 
+  const getMachineStatusIndicatorClass = (status: string) => {
+    switch (status) {
+      case 'idle':
+        return 'bg-green-500'
+      case 'running':
+        return 'bg-blue-500 animate-pulse'
+      case 'error':
+        return 'bg-red-500'
+      default:
+        return 'bg-gray-500'
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -338,12 +351,7 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
         <h2 className="text-xl font-bold">Run Shot</h2>
         {machineStatus !== 'unknown' && (
           <div className="ml-auto flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 text-xs">
-            <span className={`w-2 h-2 rounded-full ${
-              machineStatus === 'idle' ? 'bg-green-500' :
-              machineStatus === 'running' ? 'bg-blue-500 animate-pulse' :
-              machineStatus === 'error' ? 'bg-red-500' :
-              'bg-gray-500'
-            }`} />
+            <span className={`w-2 h-2 rounded-full ${getMachineStatusIndicatorClass(machineStatus)}`} />
             <span className="font-medium capitalize">{machineStatus}</span>
           </div>
         )}
