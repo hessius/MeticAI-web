@@ -1034,45 +1034,57 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
       targetsByTime.set(key, existing)
     }
     
+    // Filter and sort target points once for better performance
+    const pressurePoints = targetCurves
+      .filter(c => c.target_pressure !== undefined)
+      .sort((a, b) => a.time - b.time)
+    
+    const flowPoints = targetCurves
+      .filter(c => c.target_flow !== undefined)
+      .sort((a, b) => a.time - b.time)
+    
     // Add target values to chart data points using linear interpolation
     return chartData.map(point => {
-      const timeKey = Math.round(point.time * 10) / 10
-      
       // Find surrounding target points for interpolation
       let targetPressure: number | undefined
       let targetFlow: number | undefined
       
-      // Find pressure target
-      const pressurePoints = targetCurves.filter(c => c.target_pressure !== undefined)
+      // Find pressure target using binary search for efficiency
       if (pressurePoints.length > 0) {
-        // Find points before and after current time
-        const before = pressurePoints.filter(p => p.time <= point.time).pop()
-        const after = pressurePoints.find(p => p.time > point.time)
+        // Find the index where point.time would be inserted
+        const afterIndex = pressurePoints.findIndex(p => p.time > point.time)
         
-        if (before && after) {
+        if (afterIndex === -1) {
+          // All points are before current time
+          targetPressure = pressurePoints[pressurePoints.length - 1].target_pressure
+        } else if (afterIndex === 0) {
+          // All points are after current time
+          targetPressure = pressurePoints[0].target_pressure
+        } else {
+          // We have points before and after
+          const before = pressurePoints[afterIndex - 1]
+          const after = pressurePoints[afterIndex]
+          
           // Interpolate
           const t = (point.time - before.time) / (after.time - before.time)
           targetPressure = before.target_pressure! + t * (after.target_pressure! - before.target_pressure!)
-        } else if (before) {
-          targetPressure = before.target_pressure
-        } else if (after) {
-          targetPressure = after.target_pressure
         }
       }
       
-      // Find flow target
-      const flowPoints = targetCurves.filter(c => c.target_flow !== undefined)
+      // Find flow target using binary search for efficiency
       if (flowPoints.length > 0) {
-        const before = flowPoints.filter(p => p.time <= point.time).pop()
-        const after = flowPoints.find(p => p.time > point.time)
+        const afterIndex = flowPoints.findIndex(p => p.time > point.time)
         
-        if (before && after) {
+        if (afterIndex === -1) {
+          targetFlow = flowPoints[flowPoints.length - 1].target_flow
+        } else if (afterIndex === 0) {
+          targetFlow = flowPoints[0].target_flow
+        } else {
+          const before = flowPoints[afterIndex - 1]
+          const after = flowPoints[afterIndex]
+          
           const t = (point.time - before.time) / (after.time - before.time)
           targetFlow = before.target_flow! + t * (after.target_flow! - before.target_flow!)
-        } else if (before) {
-          targetFlow = before.target_flow
-        } else if (after) {
-          targetFlow = after.target_flow
         }
       }
       
