@@ -186,8 +186,14 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
         })
         
         if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.detail || 'Failed to run profile')
+          let errorMessage = 'Failed to run profile'
+          try {
+            const error = await response.json()
+            errorMessage = error?.detail || errorMessage
+          } catch {
+            // Ignore JSON parse errors and fall back to default message
+          }
+          throw new Error(errorMessage)
         }
         
         toast.success(`Started "${selectedProfile.name}"!`)
