@@ -1043,6 +1043,23 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
       .filter(c => c.target_flow !== undefined)
       .sort((a, b) => a.time - b.time)
     
+    // Helper function for binary search to find the insertion point
+    const findInsertionIndex = (points: typeof pressurePoints, time: number): number => {
+      let left = 0
+      let right = points.length
+      
+      while (left < right) {
+        const mid = Math.floor((left + right) / 2)
+        if (points[mid].time <= time) {
+          left = mid + 1
+        } else {
+          right = mid
+        }
+      }
+      
+      return left
+    }
+    
     // Add target values to chart data points using linear interpolation
     return chartData.map(point => {
       // Find surrounding target points for interpolation
@@ -1051,15 +1068,15 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
       
       // Find pressure target using binary search for efficiency
       if (pressurePoints.length > 0) {
-        // Find the index where point.time would be inserted
-        const afterIndex = pressurePoints.findIndex(p => p.time > point.time)
+        // Find the index where point.time would be inserted (first point > time)
+        const afterIndex = findInsertionIndex(pressurePoints, point.time)
         
-        if (afterIndex === -1) {
-          // All points are before current time
-          targetPressure = pressurePoints[pressurePoints.length - 1].target_pressure
-        } else if (afterIndex === 0) {
+        if (afterIndex === 0) {
           // All points are after current time
           targetPressure = pressurePoints[0].target_pressure
+        } else if (afterIndex === pressurePoints.length) {
+          // All points are before current time
+          targetPressure = pressurePoints[pressurePoints.length - 1].target_pressure
         } else {
           // We have points before and after
           const before = pressurePoints[afterIndex - 1]
@@ -1073,12 +1090,12 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
       
       // Find flow target using binary search for efficiency
       if (flowPoints.length > 0) {
-        const afterIndex = flowPoints.findIndex(p => p.time > point.time)
+        const afterIndex = findInsertionIndex(flowPoints, point.time)
         
-        if (afterIndex === -1) {
-          targetFlow = flowPoints[flowPoints.length - 1].target_flow
-        } else if (afterIndex === 0) {
+        if (afterIndex === 0) {
           targetFlow = flowPoints[0].target_flow
+        } else if (afterIndex === flowPoints.length) {
+          targetFlow = flowPoints[flowPoints.length - 1].target_flow
         } else {
           const before = flowPoints[afterIndex - 1]
           const after = flowPoints[afterIndex]
