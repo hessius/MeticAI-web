@@ -186,6 +186,15 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
       return
     }
 
+    // Validate minimum scheduled time when preheat is enabled
+    if (preheat) {
+      const minScheduledTime = addMinutes(new Date(), PREHEAT_DURATION_MINUTES)
+      if (scheduledTime < minScheduledTime) {
+        toast.error(`Scheduled time must be at least ${PREHEAT_DURATION_MINUTES} minutes from now when preheat is enabled`)
+        return
+      }
+    }
+
     setIsRunning(true)
     
     try {
@@ -413,7 +422,10 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
                       setScheduledTime(next)
                     }
                   }}
-                  min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
+                  min={format(
+                    preheat ? addMinutes(new Date(), PREHEAT_DURATION_MINUTES) : new Date(),
+                    "yyyy-MM-dd'T'HH:mm"
+                  )}
                   className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm"
                 />
                 {preheat && (
