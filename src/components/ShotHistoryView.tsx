@@ -60,7 +60,10 @@ const CHART_COLORS = {
   pressure: '#4ade80',      // Green (muted)
   flow: '#67e8f9',          // Light cyan/blue (muted)
   weight: '#fbbf24',        // Amber/Yellow (muted)
-  gravimetricFlow: '#c2855a' // Brown-orange (muted to fit dark theme)
+  gravimetricFlow: '#c2855a', // Brown-orange (muted to fit dark theme)
+  // Profile target curves (lighter/dashed versions of main colors)
+  targetPressure: '#86efac',  // Lighter green for target pressure
+  targetFlow: '#a5f3fc'       // Lighter cyan for target flow
 }
 
 // Stage colors for background areas (matching tag colors)
@@ -136,11 +139,16 @@ interface StageExecutionData {
   weight_gain: number
   start_weight: number
   end_weight: number
+  start_pressure: number
+  end_pressure: number
   avg_pressure: number
   max_pressure: number
   min_pressure: number
+  start_flow: number
+  end_flow: number
   avg_flow: number
   max_flow: number
+  description?: string
 }
 
 interface StageAssessment {
@@ -200,6 +208,13 @@ interface ProfileInfo {
   stage_count: number
 }
 
+interface ProfileTargetPoint {
+  time: number
+  target_pressure?: number
+  target_flow?: number
+  stage_name: string
+}
+
 interface LocalAnalysisResult {
   shot_summary: ShotSummary
   weight_analysis: WeightAnalysisLocal
@@ -207,6 +222,7 @@ interface LocalAnalysisResult {
   unreached_stages: string[]
   preinfusion_summary: PreinfusionSummary
   profile_info: ProfileInfo
+  profile_target_curves?: ProfileTargetPoint[]
 }
 
 interface ChartDataPoint {
@@ -994,6 +1010,83 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
     return ranges
   }
 
+  // Merge shot chart data with profile target curves for overlay
+  const mergeWithTargetCurves = (
+    chartData: ChartDataPoint[], 
+    targetCurves: ProfileTargetPoint[] | undefined
+  ): (ChartDataPoint & { targetPressure?: number; targetFlow?: number })[] => {
+    if (!targetCurves || targetCurves.length === 0) {
+      return chartData
+    }
+    
+    // Create a map of target values by time for quick lookup
+    const targetsByTime = new Map<number, { targetPressure?: number; targetFlow?: number }>()
+    
+    for (const curve of targetCurves) {
+      const key = Math.round(curve.time * 10) / 10  // Round to 0.1s
+      const existing = targetsByTime.get(key) || {}
+      if (curve.target_pressure !== undefined) {
+        existing.targetPressure = curve.target_pressure
+      }
+      if (curve.target_flow !== undefined) {
+        existing.targetFlow = curve.target_flow
+      }
+      targetsByTime.set(key, existing)
+    }
+    
+    // Add target values to chart data points using linear interpolation
+    return chartData.map(point => {
+      const timeKey = Math.round(point.time * 10) / 10
+      
+      // Find surrounding target points for interpolation
+      let targetPressure: number | undefined
+      let targetFlow: number | undefined
+      
+      // Get all target times sorted
+      const targetTimes = [...targetsByTime.keys()].sort((a, b) => a - b)
+      
+      // Find pressure target
+      const pressurePoints = targetCurves.filter(c => c.target_pressure !== undefined)
+      if (pressurePoints.length > 0) {
+        // Find points before and after current time
+        const before = pressurePoints.filter(p => p.time <= point.time).pop()
+        const after = pressurePoints.find(p => p.time > point.time)
+        
+        if (before && after) {
+          // Interpolate
+          const t = (point.time - before.time) / (after.time - before.time)
+          targetPressure = before.target_pressure! + t * (after.target_pressure! - before.target_pressure!)
+        } else if (before) {
+          targetPressure = before.target_pressure
+        } else if (after) {
+          targetPressure = after.target_pressure
+        }
+      }
+      
+      // Find flow target
+      const flowPoints = targetCurves.filter(c => c.target_flow !== undefined)
+      if (flowPoints.length > 0) {
+        const before = flowPoints.filter(p => p.time <= point.time).pop()
+        const after = flowPoints.find(p => p.time > point.time)
+        
+        if (before && after) {
+          const t = (point.time - before.time) / (after.time - before.time)
+          targetFlow = before.target_flow! + t * (after.target_flow! - before.target_flow!)
+        } else if (before) {
+          targetFlow = before.target_flow
+        } else if (after) {
+          targetFlow = after.target_flow
+        }
+      }
+      
+      return {
+        ...point,
+        targetPressure,
+        targetFlow
+      }
+    })
+  }
+
   const formatShotTime = (shot: ShotInfo) => {
     try {
       if (shot.timestamp && (typeof shot.timestamp === 'string' || typeof shot.timestamp === 'number')) {
@@ -1290,6 +1383,10 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                       const hasGravFlow = chartData.some(d => d.gravimetricFlow !== undefined && d.gravimetricFlow > 0)
                       const dataMaxTime = chartData.length > 0 ? chartData[chartData.length - 1].time : 0
                       
+                      // Merge with profile target curves if analysis has been done
+                      const mergedData = mergeWithTargetCurves(chartData, analysisResult?.profile_target_curves)
+                      const hasTargetCurves = analysisResult?.profile_target_curves && analysisResult.profile_target_curves.length > 0
+                      
                       // Calculate fixed max values from full dataset for stable axes
                       const maxPressure = Math.max(...chartData.map(d => d.pressure || 0), 12)
                       const maxFlow = Math.max(...chartData.map(d => Math.max(d.flow || 0, d.gravimetricFlow || 0)), 8)
@@ -1301,8 +1398,8 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                       // Only show full data when at start (0) or at end (>= maxTime)
                       const isShowingReplay = currentTime > 0 && currentTime < dataMaxTime
                       const displayData = isShowingReplay
-                        ? chartData.filter(d => d.time <= currentTime)
-                        : chartData
+                        ? mergedData.filter(d => d.time <= currentTime)
+                        : mergedData
                       
                       // Filter stage ranges to only show stages that have started (for progressive reveal)
                       const displayStageRanges = isShowingReplay
@@ -1426,6 +1523,35 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                 name="Grav. Flow (g/s)"
                                 isAnimationActive={false}
                               />
+                            )}
+                            {/* Profile target curves (shown after analysis) */}
+                            {hasTargetCurves && (
+                              <>
+                                <Line
+                                  yAxisId="left"
+                                  type="linear"
+                                  dataKey="targetPressure"
+                                  stroke={CHART_COLORS.targetPressure}
+                                  strokeWidth={1.5}
+                                  dot={false}
+                                  strokeDasharray="6 3"
+                                  name="Target Pressure"
+                                  isAnimationActive={false}
+                                  connectNulls={false}
+                                />
+                                <Line
+                                  yAxisId="left"
+                                  type="linear"
+                                  dataKey="targetFlow"
+                                  stroke={CHART_COLORS.targetFlow}
+                                  strokeWidth={1.5}
+                                  dot={false}
+                                  strokeDasharray="6 3"
+                                  name="Target Flow"
+                                  isAnimationActive={false}
+                                  connectNulls={false}
+                                />
+                              </>
                             )}
                           </LineChart>
                         </ResponsiveContainer>
