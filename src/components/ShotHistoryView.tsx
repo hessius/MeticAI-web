@@ -1068,11 +1068,10 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
           const before = pressurePoints[afterIndex - 1]
           const after = pressurePoints[afterIndex]
           
-          // Interpolate
+          // Interpolate (guard against division by zero)
           const timeDiff = after.time - before.time
           if (timeDiff === 0) {
-            // Points at same time, use the after value
-            targetPressure = after.target_pressure!
+            targetPressure = before.target_pressure!
           } else {
             const t = (point.time - before.time) / timeDiff
             targetPressure = before.target_pressure! + t * (after.target_pressure! - before.target_pressure!)
@@ -1092,10 +1091,10 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
           const before = flowPoints[afterIndex - 1]
           const after = flowPoints[afterIndex]
           
+          // Interpolate (guard against division by zero)
           const timeDiff = after.time - before.time
           if (timeDiff === 0) {
-            // Points at same time, use the after value
-            targetFlow = after.target_flow!
+            targetFlow = before.target_flow!
           } else {
             const t = (point.time - before.time) / timeDiff
             targetFlow = before.target_flow! + t * (after.target_flow! - before.target_flow!)
