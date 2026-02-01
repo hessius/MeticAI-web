@@ -1043,13 +1043,13 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
       .filter(c => c.target_flow !== undefined)
       .sort((a, b) => a.time - b.time)
     
-    // Helper function for binary search to find the insertion point
-    const findInsertionIndex = (points: typeof pressurePoints, time: number): number => {
+    // Helper function for binary search to find upper bound (first element > time)
+    const findUpperBound = (points: typeof pressurePoints, time: number): number => {
       let left = 0
       let right = points.length
       
       while (left < right) {
-        const mid = Math.floor((left + right) / 2)
+        const mid = left + Math.floor((right - left) / 2)
         if (points[mid].time <= time) {
           left = mid + 1
         } else {
@@ -1069,7 +1069,7 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
       // Find pressure target using binary search for efficiency
       if (pressurePoints.length > 0) {
         // Find the index where point.time would be inserted (first point > time)
-        const afterIndex = findInsertionIndex(pressurePoints, point.time)
+        const afterIndex = findUpperBound(pressurePoints, point.time)
         
         if (afterIndex === 0) {
           // All points are after current time
@@ -1090,7 +1090,7 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
       
       // Find flow target using binary search for efficiency
       if (flowPoints.length > 0) {
-        const afterIndex = findInsertionIndex(flowPoints, point.time)
+        const afterIndex = findUpperBound(flowPoints, point.time)
         
         if (afterIndex === 0) {
           targetFlow = flowPoints[0].target_flow
