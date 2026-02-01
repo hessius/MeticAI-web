@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -61,10 +61,22 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
   const [scheduledTime, setScheduledTime] = useState<Date>(addMinutes(new Date(), 30))
   
   const [isRunning, setIsRunning] = useState(false)
-  const [, setIsPreheating] = useState(false)
+  const [isPreheating, setIsPreheating] = useState(false)
   
   const [scheduledShots, setScheduledShots] = useState<ScheduledShot[]>([])
-  const [, setMachineStatus] = useState<string>('unknown')
+  const [machineStatus, setMachineStatus] = useState<string>('unknown')
+  
+  // Ref to track preheat timeout for cleanup
+  const preheatTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Cleanup preheat timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (preheatTimeoutRef.current) {
+        clearTimeout(preheatTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // Fetch profiles from machine
   useEffect(() => {
@@ -135,6 +147,11 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
       
       if (preheat) {
         // Start preheat
+        // Clear any existing preheat timeout
+        if (preheatTimeoutRef.current) {
+          clearTimeout(preheatTimeoutRef.current)
+        }
+        
         setIsPreheating(true)
         const preheatResponse = await fetch(`${serverUrl}/api/machine/preheat`, {
           method: 'POST'
@@ -142,6 +159,35 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
         
         if (!preheatResponse.ok) {
           let errorMessage = 'Failed to start preheat'
+          try {
+            const error = await preheatResponse.json()
+            errorMessage = error?.detail || errorMessage
+          } catch {
+            // Ignore JSON parse errors and fall back to default message
+          }
+          setIsPreheating(false)
+          throw new Error(errorMessage)
+        }
+        
+        toast.success(`Preheating started! Ready in ${PREHEAT_DURATION_MINUTES} minutes`)
+        
+        // Set timeout to clear preheating state after duration
+        preheatTimeoutRef.current = setTimeout(() => {
+          setIsPreheating(false)
+          preheatTimeoutRef.current = null
+        }, PREHEAT_DURATION_MINUTES * 60 * 1000)
+        
+        if (selectedProfile) {
+          // Schedule the profile to run after preheat
+          const shotTime = addMinutes(new Date(), PREHEAT_DURATION_MINUTES)
+          const scheduleResponse = await fetch(`${serverUrl}/api/machine/schedule-shot`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              profile_id: selectedProfile.id,
+              scheduled_time: shotTime.toISOString(),
+              preheat: false // Already preheating
+            })
         try {
           const preheatResponse = await fetch(`${serverUrl}/api/machine/preheat`, {
             method: 'POST'
@@ -205,6 +251,13 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
     } catch (err) {
       console.error('Failed to run shot:', err)
       toast.error(err instanceof Error ? err.message : 'Failed to run shot')
+      
+      // Clear preheating state and timeout on error
+      setIsPreheating(false)
+      if (preheatTimeoutRef.current) {
+        clearTimeout(preheatTimeoutRef.current)
+        preheatTimeoutRef.current = null
+      }
     } finally {
       setIsRunning(false)
     }
@@ -295,6 +348,19 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
     }
   }
 
+  const getMachineStatusIndicatorClass = (status: string) => {
+    switch (status) {
+      case 'idle':
+        return 'bg-green-500'
+      case 'running':
+        return 'bg-blue-500 animate-pulse'
+      case 'error':
+        return 'bg-red-500'
+      default:
+        return 'bg-gray-500'
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -315,7 +381,35 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
           <CaretLeft size={22} weight="bold" />
         </Button>
         <h2 className="text-xl font-bold">Run Shot</h2>
+        {machineStatus !== 'unknown' && (
+          <div className="ml-auto flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 text-xs">
+            <span className={`w-2 h-2 rounded-full ${getMachineStatusIndicatorClass(machineStatus)}`} />
+            <span className="font-medium capitalize">{machineStatus}</span>
+          </div>
+        )}
       </div>
+
+      {/* Preheating Indicator */}
+      <AnimatePresence>
+        {isPreheating && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4"
+          >
+            <div className="flex items-center gap-3">
+              <Fire size={24} className="text-orange-500 animate-pulse" weight="duotone" />
+              <div className="flex-1">
+                <p className="font-medium text-orange-700 dark:text-orange-400">Preheating in Progress</p>
+                <p className="text-sm text-orange-600/80 dark:text-orange-400/80">
+                  Machine is heating up. Ready in approximately {PREHEAT_DURATION_MINUTES} minutes.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Profile Selection */}
       <Card className="p-6 space-y-4">
