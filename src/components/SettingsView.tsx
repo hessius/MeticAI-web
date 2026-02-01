@@ -143,9 +143,31 @@ export function SettingsView({ onBack }: SettingsViewProps) {
           body: release.body || 'No release notes available.'
         }))
         setReleaseNotes(notes)
+      } else {
+        // Handle non-OK responses explicitly and surface feedback to the user
+        let message = `Failed to load release notes (status ${response.status})`
+        if (response.status === 403 || response.status === 429) {
+          message =
+            'GitHub API rate limit reached while loading release notes. Please try again later or visit the project releases page directly.'
+        }
+        setReleaseNotes([
+          {
+            version: 'Error',
+            date: '',
+            body: message,
+          },
+        ])
       }
     } catch (err) {
       console.error('Failed to load release notes:', err)
+      setReleaseNotes([
+        {
+          version: 'Error',
+          date: '',
+          body:
+            'An unexpected error occurred while loading release notes. Please check your network connection and try again.',
+        },
+      ])
     } finally {
       setChangelogLoading(false)
     }
