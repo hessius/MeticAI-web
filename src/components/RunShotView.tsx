@@ -61,10 +61,10 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
   const [scheduledTime, setScheduledTime] = useState<Date>(addMinutes(new Date(), 30))
   
   const [isRunning, setIsRunning] = useState(false)
-  const [isPreheating, setIsPreheating] = useState(false)
+  const [, setIsPreheating] = useState(false)
   
   const [scheduledShots, setScheduledShots] = useState<ScheduledShot[]>([])
-  const [machineStatus, setMachineStatus] = useState<string>('unknown')
+  const [, setMachineStatus] = useState<string>('unknown')
 
   // Fetch profiles from machine
   useEffect(() => {
