@@ -1400,8 +1400,17 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                       const hasTargetCurves = analysisResult?.profile_target_curves && analysisResult.profile_target_curves.length > 0
                       
                       // Calculate fixed max values from full dataset for stable axes
-                      const maxPressure = Math.max(...chartData.map(d => d.pressure || 0), 12)
-                      const maxFlow = Math.max(...chartData.map(d => Math.max(d.flow || 0, d.gravimetricFlow || 0)), 8)
+                      // Include target curve values to ensure they're not clipped
+                      const maxPressure = Math.max(
+                        ...chartData.map(d => d.pressure || 0),
+                        ...(analysisResult?.profile_target_curves?.map(d => d.target_pressure || 0) || []),
+                        12
+                      )
+                      const maxFlow = Math.max(
+                        ...chartData.map(d => Math.max(d.flow || 0, d.gravimetricFlow || 0)),
+                        ...(analysisResult?.profile_target_curves?.map(d => d.target_flow || 0) || []),
+                        8
+                      )
                       const maxLeftAxis = Math.ceil(Math.max(maxPressure, maxFlow) * 1.1)
                       const maxWeight = Math.max(...chartData.map(d => d.weight || 0), 50)
                       const maxRightAxis = Math.ceil(maxWeight * 1.1)
