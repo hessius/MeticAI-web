@@ -295,7 +295,7 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
             <Coffee size={24} className="text-primary" weight="duotone" />
             <div>
               <p className="font-medium">{selectedProfile.name}</p>
-              {selectedProfile.temperature && (
+              {selectedProfile.temperature != null && selectedProfile.final_weight != null && (
                 <p className="text-sm text-muted-foreground">
                   {selectedProfile.temperature}°C • {selectedProfile.final_weight}g
                 </p>
