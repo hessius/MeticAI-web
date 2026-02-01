@@ -188,46 +188,20 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
               scheduled_time: shotTime.toISOString(),
               preheat: false // Already preheating
             })
-        try {
-          const preheatResponse = await fetch(`${serverUrl}/api/machine/preheat`, {
-            method: 'POST'
           })
-          
-          if (!preheatResponse.ok) {
-            const error = await preheatResponse.json()
-            throw new Error(error.detail || 'Failed to start preheat')
-          }
-          
-          toast.success(`Preheating started! Ready in ${PREHEAT_DURATION_MINUTES} minutes`)
-          
-          if (selectedProfile) {
-            // Schedule the profile to run after preheat
-            const shotTime = addMinutes(new Date(), PREHEAT_DURATION_MINUTES)
-            const scheduleResponse = await fetch(`${serverUrl}/api/machine/schedule-shot`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                profile_id: selectedProfile.id,
-                scheduled_time: shotTime.toISOString(),
-                preheat: false // Already preheating
-              })
-            })
 
-            if (!scheduleResponse.ok) {
-              let errorMessage = 'Failed to schedule profile after preheat'
-              try {
-                const error = await scheduleResponse.json()
-                errorMessage = error?.detail || errorMessage
-              } catch {
-                // Ignore JSON parse errors and fall back to default message
-              }
-              throw new Error(errorMessage)
+          if (!scheduleResponse.ok) {
+            let errorMessage = 'Failed to schedule profile after preheat'
+            try {
+              const error = await scheduleResponse.json()
+              errorMessage = error?.detail || errorMessage
+            } catch {
+              // Ignore JSON parse errors and fall back to default message
             }
-
-            toast.success(`Profile "${selectedProfile.name}" will run in ${PREHEAT_DURATION_MINUTES} minutes`)
+            throw new Error(errorMessage)
           }
-        } finally {
-          setIsPreheating(false)
+
+          toast.success(`Profile "${selectedProfile.name}" will run in ${PREHEAT_DURATION_MINUTES} minutes`)
         }
       } else if (selectedProfile) {
         // Run profile immediately
