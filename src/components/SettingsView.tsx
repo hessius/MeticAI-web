@@ -369,6 +369,7 @@ export function SettingsView({ onBack }: SettingsViewProps) {
             onClick={() => checkForUpdates()}
             disabled={isChecking || isUpdating}
             variant="outline"
+            aria-label="Check for updates"
           >
             <ArrowClockwise size={18} className={isChecking ? 'animate-spin' : ''} />
           </Button>
