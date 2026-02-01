@@ -141,8 +141,14 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
         })
         
         if (!preheatResponse.ok) {
-          const error = await preheatResponse.json()
-          throw new Error(error.detail || 'Failed to start preheat')
+          let errorMessage = 'Failed to start preheat'
+          try {
+            const error = await preheatResponse.json()
+            errorMessage = error?.detail || errorMessage
+          } catch {
+            // Ignore JSON parse errors and fall back to default message
+          }
+          throw new Error(errorMessage)
         }
         
         toast.success(`Preheating started! Ready in ${PREHEAT_DURATION_MINUTES} minutes`)
