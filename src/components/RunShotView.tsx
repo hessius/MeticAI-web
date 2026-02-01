@@ -407,7 +407,12 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
                 <input
                   type="datetime-local"
                   value={format(scheduledTime, "yyyy-MM-dd'T'HH:mm")}
-                  onChange={(e) => setScheduledTime(new Date(e.target.value))}
+                  onChange={(e) => {
+                    const next = new Date(e.target.value)
+                    if (!isNaN(next.getTime())) {
+                      setScheduledTime(next)
+                    }
+                  }}
                   min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
                   className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm"
                 />
