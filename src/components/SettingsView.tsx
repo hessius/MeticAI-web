@@ -203,11 +203,13 @@ export function SettingsView({ onBack }: SettingsViewProps) {
       setUpdateProgress(percentage)
     }, PROGRESS_UPDATE_INTERVAL)
     
+    let succeeded = false
     try {
       await triggerUpdate()
+      succeeded = true
     } finally {
       clearInterval(interval)
-      setUpdateProgress(100)
+      setUpdateProgress(succeeded ? 100 : 0)
     }
   }
 
