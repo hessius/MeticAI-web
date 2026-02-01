@@ -110,7 +110,7 @@ function App() {
   }, [])
 
   // Update profile count when returning from history view
-  const refreshProfileCount = async () => {
+  const refreshProfileCount = useCallback(async () => {
     try {
       const serverUrl = await getServerUrl()
       const response = await fetch(`${serverUrl}/api/history?limit=1&offset=0`)
@@ -121,7 +121,7 @@ function App() {
     } catch (err) {
       console.error('Failed to refresh profile count:', err)
     }
-  }
+  }, [])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -282,7 +282,7 @@ function App() {
     }
   }
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     // Refresh profile count before switching view
     refreshProfileCount()
     setViewState('form')
@@ -296,12 +296,12 @@ function App() {
     setCurrentMessage(0)
     setCurrentProfileJson(null)
     setSelectedHistoryEntry(null)
-  }
+  }, [refreshProfileCount])
 
-  const handleBackToStart = () => {
+  const handleBackToStart = useCallback(() => {
     refreshProfileCount()
     setViewState('start')
-  }
+  }, [refreshProfileCount])
 
   // Swipe navigation for mobile - back navigation via swipe right
   const handleSwipeRight = useCallback(() => {
