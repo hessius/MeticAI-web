@@ -9,13 +9,10 @@ import { Badge } from '@/components/ui/badge'
 // Coffee icon is used by HistoryView (child component) and must be imported here
 // to avoid bundling issues when downloading images with domToPng
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, DownloadSimple, Info, QrCode, ClockCounterClockwise, FileJs, Coffee, Image, CaretLeft, Plus, Gear } from '@phosphor-icons/react'
+import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, Info, QrCode, FileJs, Coffee, Image, CaretLeft, Plus, Gear, Play } from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
 import { MarkdownText } from '@/components/MarkdownText'
 import { domToPng } from 'modern-screenshot'
-import { UpdateBanner } from '@/components/UpdateBanner'
-import { useUpdateStatus } from '@/hooks/useUpdateStatus'
-import { useUpdateTrigger } from '@/hooks/useUpdateTrigger'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
 import { QRCodeDialog } from '@/components/QRCodeDialog'
@@ -26,6 +23,7 @@ import { MeticAILogo } from '@/components/MeticAILogo'
 import { HistoryView, ProfileDetailView } from '@/components/HistoryView'
 import { HistoryEntry } from '@/hooks/useHistory'
 import { SettingsView } from '@/components/SettingsView'
+import { RunShotView } from '@/components/RunShotView'
 
 const LOADING_MESSAGES = [
   "Analyzing coffee beans...",
@@ -56,7 +54,29 @@ interface APIResponse {
   history_id?: string
 }
 
-type ViewState = 'start' | 'form' | 'loading' | 'results' | 'error' | 'history' | 'history-detail' | 'settings'
+type ViewState = 'start' | 'form' | 'loading' | 'results' | 'error' | 'history' | 'history-detail' | 'settings' | 'run-shot'
+
+// Time-based greetings with variants
+const GREETINGS = {
+  morning: ["Good morning!", "Rise and shine!", "Morning, coffee time!", "Top of the morning!"],
+  afternoon: ["Good afternoon!", "Hey there!", "Howdy!", "What's brewing?"],
+  evening: ["Good evening!", "Evening!", "Ready for an espresso?", "Time for coffee!"]
+}
+
+function getTimeBasedGreeting(): string {
+  const hour = new Date().getHours()
+  let greetings: string[]
+  
+  if (hour >= 5 && hour < 12) {
+    greetings = GREETINGS.morning
+  } else if (hour >= 12 && hour < 17) {
+    greetings = GREETINGS.afternoon
+  } else {
+    greetings = GREETINGS.evening
+  }
+  
+  return greetings[Math.floor(Math.random() * greetings.length)]
+}
 
 function App() {
   const [isInitializing, setIsInitializing] = useState(true)
@@ -72,17 +92,14 @@ function App() {
   const [errorMessage, setErrorMessage] = useState('')
   const [isCapturing, setIsCapturing] = useState(false)
   const [clickCount, setClickCount] = useState(0)
-  const [bannerDismissed, setBannerDismissed] = useState(false)
   const [qrDialogOpen, setQrDialogOpen] = useState(false)
   const [selectedHistoryEntry, setSelectedHistoryEntry] = useState<HistoryEntry | null>(null)
   const [currentProfileJson, setCurrentProfileJson] = useState<Record<string, unknown> | null>(null)
+  const [runShotProfileId, setRunShotProfileId] = useState<string | undefined>(undefined)
+  const [runShotProfileName, setRunShotProfileName] = useState<string | undefined>(undefined)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const resultsCardRef = useRef<HTMLDivElement>(null)
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null)
-  
-  // Update functionality
-  const { updateAvailable, checkForUpdates, isChecking } = useUpdateStatus()
-  const { triggerUpdate, isUpdating, updateError } = useUpdateTrigger()
   
   // Desktop detection for QR code feature
   const isDesktop = useIsDesktop()
@@ -462,19 +479,6 @@ Special Notes: For maximum clarity and to really make those delicate floral note
 
   const canSubmit = imageFile || userPrefs.trim().length > 0 || selectedTags.length > 0
 
-  const handleUpdate = async () => {
-    setBannerDismissed(false)
-    toast.info('Starting update process...')
-    await triggerUpdate()
-  }
-
-  const handleDismissBanner = () => {
-    setBannerDismissed(true)
-    toast('Update notification dismissed', {
-      description: 'You can check for updates again later',
-    })
-  }
-
   const getCategoryColor = (category: string) => {
     return CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] || ''
   }
@@ -482,13 +486,6 @@ Special Notes: For maximum clarity and to really make those delicate floral note
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-5 overflow-x-hidden">
       <Toaster richColors position="top-center" />
-      <UpdateBanner
-        updateAvailable={updateAvailable && !bannerDismissed}
-        isUpdating={isUpdating}
-        updateError={updateError}
-        onUpdate={handleUpdate}
-        onDismiss={handleDismissBanner}
-      />
       <div className="w-full max-w-md relative overflow-hidden">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -547,7 +544,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
             >
               <Card className="p-6 space-y-6">
                 <div className="text-center space-y-2">
-                  <h2 className="text-xl font-bold tracking-tight text-foreground">Welcome!</h2>
+                  <h2 className="text-xl font-bold tracking-tight text-foreground">{getTimeBasedGreeting()}</h2>
                   <p className="text-sm text-muted-foreground">
                     {profileCount && profileCount > 0
                       ? `You have ${profileCount} profile${profileCount !== 1 ? 's' : ''} saved`
@@ -566,19 +563,30 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                   
                   <Button
                     onClick={() => setViewState('history')}
-                    className="w-full h-14 text-base font-semibold bg-primary/80 hover:bg-primary/70"
+                    className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90"
                   >
                     <Coffee size={20} className="mr-2" weight="fill" />
                     Profile Catalogue
                   </Button>
                   
                   <Button
+                    onClick={() => {
+                      setRunShotProfileId(undefined)
+                      setRunShotProfileName(undefined)
+                      setViewState('run-shot')
+                    }}
+                    className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90"
+                  >
+                    <Play size={20} className="mr-2" weight="fill" />
+                    Run / Schedule
+                  </Button>
+                  
+                  <Button
                     onClick={() => setViewState('settings')}
-                    variant="outline"
-                    className="w-full h-14 text-base font-semibold border-border/50 hover:border-border hover:bg-secondary/50"
+                    className="w-full h-14 text-base font-semibold bg-muted hover:bg-muted/80 text-foreground"
                   >
                     <Gear size={20} className="mr-2" weight="duotone" />
-                    Settings & About
+                    Settings
                   </Button>
                 </div>
               </Card>
@@ -774,6 +782,14 @@ Special Notes: For maximum clarity and to really make those delicate floral note
           {viewState === 'settings' && (
             <SettingsView
               onBack={handleBackToStart}
+            />
+          )}
+
+          {viewState === 'run-shot' && (
+            <RunShotView
+              onBack={handleBackToStart}
+              initialProfileId={runShotProfileId}
+              initialProfileName={runShotProfileName}
             />
           )}
 
@@ -1098,51 +1114,6 @@ Special Notes: For maximum clarity and to really make those delicate floral note
         </AnimatePresence>
         
         <QRCodeDialog open={qrDialogOpen} onOpenChange={setQrDialogOpen} />
-        
-        {/* Discrete footer with check for updates - only show on home pages */}
-        {(viewState === 'form' || viewState === 'start') && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mt-10 pb-6 flex justify-center"
-          >
-            <Button
-              onClick={async () => {
-                const result = await checkForUpdates()
-                if (result.error) {
-                  toast.error('Check failed', {
-                    description: result.error,
-                  })
-                } else if (result.updateAvailable) {
-                  toast.success('Update available!', {
-                    description: 'A new version is ready to install.',
-                  })
-                } else {
-                  toast.info('You\'re up to date', {
-                    description: 'No updates available.',
-                  })
-                }
-              }}
-              disabled={isChecking}
-              variant="ghost"
-              size="sm"
-              className="text-xs text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-            >
-              {isChecking ? (
-                <>
-                  <ArrowClockwise size={12} className="mr-1.5 animate-spin" />
-                  Checking...
-                </>
-              ) : (
-                <>
-                  <DownloadSimple size={12} className="mr-1.5" />
-                  Check for updates
-                </>
-              )}
-            </Button>
-          </motion.div>
-        )}
       </div>
     </div>
   )

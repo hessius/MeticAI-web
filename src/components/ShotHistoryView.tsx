@@ -52,7 +52,8 @@ import {
   Legend,
   ResponsiveContainer,
   ReferenceArea,
-  ReferenceLine
+  ReferenceLine,
+  Customized
 } from 'recharts'
 
 // Chart colors matching Meticulous app style (muted to fit dark theme)
@@ -60,7 +61,10 @@ const CHART_COLORS = {
   pressure: '#4ade80',      // Green (muted)
   flow: '#67e8f9',          // Light cyan/blue (muted)
   weight: '#fbbf24',        // Amber/Yellow (muted)
-  gravimetricFlow: '#c2855a' // Brown-orange (muted to fit dark theme)
+  gravimetricFlow: '#c2855a', // Brown-orange (muted to fit dark theme)
+  // Profile target curves (lighter/dashed versions of main colors)
+  targetPressure: '#86efac',  // Lighter green for target pressure
+  targetFlow: '#a5f3fc'       // Lighter cyan for target flow
 }
 
 // Stage colors for background areas (matching tag colors)
@@ -136,11 +140,16 @@ interface StageExecutionData {
   weight_gain: number
   start_weight: number
   end_weight: number
+  start_pressure: number
+  end_pressure: number
   avg_pressure: number
   max_pressure: number
   min_pressure: number
+  start_flow: number
+  end_flow: number
   avg_flow: number
   max_flow: number
+  description?: string
 }
 
 interface StageAssessment {
@@ -200,6 +209,13 @@ interface ProfileInfo {
   stage_count: number
 }
 
+interface ProfileTargetPoint {
+  time: number
+  target_pressure?: number
+  target_flow?: number
+  stage_name: string
+}
+
 interface LocalAnalysisResult {
   shot_summary: ShotSummary
   weight_analysis: WeightAnalysisLocal
@@ -207,6 +223,7 @@ interface LocalAnalysisResult {
   unreached_stages: string[]
   preinfusion_summary: PreinfusionSummary
   profile_info: ProfileInfo
+  profile_target_curves?: ProfileTargetPoint[]
 }
 
 interface ChartDataPoint {
@@ -994,6 +1011,106 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
     return ranges
   }
 
+  // Merge shot chart data with profile target curves for overlay
+  const mergeWithTargetCurves = (
+    chartData: ChartDataPoint[], 
+    targetCurves: ProfileTargetPoint[] | undefined
+  ): (ChartDataPoint & { targetPressure?: number; targetFlow?: number })[] => {
+    if (!targetCurves || targetCurves.length === 0) {
+      return chartData
+    }
+    
+    // Filter and sort target points once for better performance
+    const pressurePoints = targetCurves
+      .filter(c => c.target_pressure !== undefined)
+      .sort((a, b) => a.time - b.time)
+    
+    const flowPoints = targetCurves
+      .filter(c => c.target_flow !== undefined)
+      .sort((a, b) => a.time - b.time)
+    
+    // Helper function for binary search to find upper bound (first element > time)
+    const findUpperBound = (points: ProfileTargetPoint[], time: number): number => {
+      let left = 0
+      let right = points.length
+      
+      while (left < right) {
+        const mid = left + Math.floor((right - left) / 2)
+        if (points[mid].time <= time) {
+          left = mid + 1
+        } else {
+          right = mid
+        }
+      }
+      
+      return left
+    }
+    
+    // Add target values to chart data points using linear interpolation
+    return chartData.map(point => {
+      
+      // Find surrounding target points for interpolation
+      let targetPressure: number | undefined
+      let targetFlow: number | undefined
+      
+      // Find pressure target using binary search for efficiency
+      if (pressurePoints.length > 0) {
+        // Find the index where point.time would be inserted (first point > time)
+        const afterIndex = findUpperBound(pressurePoints, point.time)
+        
+        if (afterIndex === 0) {
+          // All points are after current time
+          targetPressure = pressurePoints[0].target_pressure
+        } else if (afterIndex === pressurePoints.length) {
+          // All points are before current time
+          targetPressure = pressurePoints[pressurePoints.length - 1].target_pressure
+        } else {
+          // We have points before and after
+          const before = pressurePoints[afterIndex - 1]
+          const after = pressurePoints[afterIndex]
+          
+          // Interpolate (guard against division by zero)
+          const timeDiff = after.time - before.time
+          if (timeDiff === 0) {
+            targetPressure = before.target_pressure!
+          } else {
+            const t = (point.time - before.time) / timeDiff
+            targetPressure = before.target_pressure! + t * (after.target_pressure! - before.target_pressure!)
+          }
+        }
+      }
+      
+      // Find flow target using binary search for efficiency
+      if (flowPoints.length > 0) {
+        const afterIndex = findUpperBound(flowPoints, point.time)
+        
+        if (afterIndex === 0) {
+          targetFlow = flowPoints[0].target_flow
+        } else if (afterIndex === flowPoints.length) {
+          targetFlow = flowPoints[flowPoints.length - 1].target_flow
+        } else {
+          const before = flowPoints[afterIndex - 1]
+          const after = flowPoints[afterIndex]
+          
+          // Interpolate (guard against division by zero)
+          const timeDiff = after.time - before.time
+          if (timeDiff === 0) {
+            targetFlow = before.target_flow!
+          } else {
+            const t = (point.time - before.time) / timeDiff
+            targetFlow = before.target_flow! + t * (after.target_flow! - before.target_flow!)
+          }
+        }
+      }
+      
+      return {
+        ...point,
+        targetPressure,
+        targetFlow
+      }
+    })
+  }
+
   const formatShotTime = (shot: ShotInfo) => {
     try {
       if (shot.timestamp && (typeof shot.timestamp === 'string' || typeof shot.timestamp === 'number')) {
@@ -1290,9 +1407,22 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                       const hasGravFlow = chartData.some(d => d.gravimetricFlow !== undefined && d.gravimetricFlow > 0)
                       const dataMaxTime = chartData.length > 0 ? chartData[chartData.length - 1].time : 0
                       
+                      // Merge with profile target curves if analysis has been done
+                      const mergedData = mergeWithTargetCurves(chartData, analysisResult?.profile_target_curves)
+                      const hasTargetCurves = analysisResult?.profile_target_curves && analysisResult.profile_target_curves.length > 0
+                      
                       // Calculate fixed max values from full dataset for stable axes
-                      const maxPressure = Math.max(...chartData.map(d => d.pressure || 0), 12)
-                      const maxFlow = Math.max(...chartData.map(d => Math.max(d.flow || 0, d.gravimetricFlow || 0)), 8)
+                      // Include target curve values to ensure they're not clipped
+                      const maxPressure = Math.max(
+                        ...chartData.map(d => d.pressure || 0),
+                        ...(analysisResult?.profile_target_curves?.map(d => d.target_pressure || 0) || []),
+                        12
+                      )
+                      const maxFlow = Math.max(
+                        ...chartData.map(d => Math.max(d.flow || 0, d.gravimetricFlow || 0)),
+                        ...(analysisResult?.profile_target_curves?.map(d => d.target_flow || 0) || []),
+                        8
+                      )
                       const maxLeftAxis = Math.ceil(Math.max(maxPressure, maxFlow) * 1.1)
                       const maxWeight = Math.max(...chartData.map(d => d.weight || 0), 50)
                       const maxRightAxis = Math.ceil(maxWeight * 1.1)
@@ -1301,8 +1431,8 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                       // Only show full data when at start (0) or at end (>= maxTime)
                       const isShowingReplay = currentTime > 0 && currentTime < dataMaxTime
                       const displayData = isShowingReplay
-                        ? chartData.filter(d => d.time <= currentTime)
-                        : chartData
+                        ? mergedData.filter(d => d.time <= currentTime)
+                        : mergedData
                       
                       // Filter stage ranges to only show stages that have started (for progressive reveal)
                       const displayStageRanges = isShowingReplay
@@ -1985,6 +2115,233 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                             <div className="text-lg font-semibold">{analysisResult.shot_summary.max_flow} ml/s</div>
                           </div>
                         </div>
+                        
+                        {/* Profile Target Curves Chart */}
+                        {shotData && (
+                          <div className="mt-4 pt-4 border-t border-primary/10">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs font-medium text-muted-foreground">Shot vs Profile Target</span>
+                              {analysisResult.profile_target_curves && analysisResult.profile_target_curves.length > 0 && (
+                                <Badge variant="outline" className="text-xs bg-primary/10 border-primary/20">
+                                  Target overlay active
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="h-48 w-full">
+                              <ResponsiveContainer width="100%" height="100%">
+                                {(() => {
+                                  const chartData = getChartData(shotData)
+                                  const stageRanges = getStageRanges(chartData)
+                                  const hasTargetCurves = analysisResult.profile_target_curves && analysisResult.profile_target_curves.length > 0
+                                  
+                                  // Get data max time for X axis
+                                  const dataMaxTime = chartData.length > 0 ? chartData[chartData.length - 1].time : 0
+                                  
+                                  // Calculate max values for Y axis
+                                  const maxPressure = Math.max(
+                                    ...chartData.map(d => d.pressure || 0),
+                                    ...(analysisResult.profile_target_curves?.map(d => d.target_pressure || 0) || []),
+                                    10
+                                  )
+                                  const maxFlow = Math.max(
+                                    ...chartData.map(d => d.flow || 0),
+                                    ...(analysisResult.profile_target_curves?.map(d => d.target_flow || 0) || []),
+                                    5
+                                  )
+                                  const maxLeftAxis = Math.ceil(Math.max(maxPressure, maxFlow) * 1.1)
+                                  
+                                  return (
+                                    <LineChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+                                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                                      
+                                      {/* Stage background areas */}
+                                      {stageRanges.map((stage, idx) => (
+                                        <ReferenceArea
+                                          key={idx}
+                                          yAxisId="left"
+                                          x1={stage.startTime}
+                                          x2={stage.endTime}
+                                          fill={STAGE_COLORS[stage.colorIndex]}
+                                          fillOpacity={1}
+                                          stroke={STAGE_BORDER_COLORS[stage.colorIndex]}
+                                          strokeWidth={0}
+                                          ifOverflow="extendDomain"
+                                        />
+                                      ))}
+                                      
+                                      <XAxis 
+                                        dataKey="time" 
+                                        tick={{ fontSize: 10, fill: '#888' }} 
+                                        tickFormatter={(v) => `${Math.round(v)}s`}
+                                        axisLine={{ stroke: '#444' }}
+                                        type="number"
+                                        domain={[0, dataMaxTime]}
+                                      />
+                                      <YAxis 
+                                        yAxisId="left"
+                                        domain={[0, maxLeftAxis]}
+                                        tick={{ fontSize: 10, fill: '#888' }} 
+                                        axisLine={{ stroke: '#444' }}
+                                        tickFormatter={(v) => `${v}`}
+                                        width={25}
+                                      />
+                                      <YAxis 
+                                        yAxisId="right"
+                                        orientation="right"
+                                        domain={[0, Math.ceil(maxFlow * 1.1)]}
+                                        tick={{ fontSize: 10, fill: '#888' }} 
+                                        axisLine={{ stroke: '#444' }}
+                                        width={0}
+                                        hide
+                                      />
+                                      <Tooltip 
+                                        contentStyle={{ 
+                                          backgroundColor: 'rgba(0,0,0,0.85)', 
+                                          border: '1px solid #333',
+                                          borderRadius: '8px',
+                                          fontSize: '11px'
+                                        }}
+                                        formatter={(value: number, name: string) => [
+                                          `${value?.toFixed(1) || '-'}`,
+                                          name
+                                        ]}
+                                        labelFormatter={(label) => `${Number(label).toFixed(1)}s`}
+                                      />
+                                      {/* Actual shot data */}
+                                      <Line
+                                        yAxisId="left"
+                                        type="monotone"
+                                        dataKey="pressure"
+                                        stroke={CHART_COLORS.pressure}
+                                        strokeWidth={2}
+                                        dot={false}
+                                        name="Pressure (bar)"
+                                        isAnimationActive={false}
+                                      />
+                                      <Line
+                                        yAxisId="left"
+                                        type="monotone"
+                                        dataKey="flow"
+                                        stroke={CHART_COLORS.flow}
+                                        strokeWidth={2}
+                                        dot={false}
+                                        name="Flow (ml/s)"
+                                        isAnimationActive={false}
+                                      />
+                                      {/* Profile target curves using Customized SVG */}
+                                      {hasTargetCurves && analysisResult.profile_target_curves && (
+                                        <Customized
+                                          component={({ xAxisMap, yAxisMap }: { xAxisMap?: Record<string, { scale: (v: number) => number }>; yAxisMap?: Record<string, { scale: (v: number) => number }> }) => {
+                                            if (!xAxisMap || !yAxisMap) return null
+                                            const xAxis = Object.values(xAxisMap)[0]
+                                            const yAxis = yAxisMap['left']
+                                            if (!xAxis?.scale || !yAxis?.scale) return null
+                                            
+                                            const curves = analysisResult.profile_target_curves!
+                                            
+                                            const pressurePoints = curves
+                                              .filter(p => p.target_pressure !== undefined)
+                                              .sort((a, b) => a.time - b.time)
+                                            const flowPoints = curves
+                                              .filter(p => p.target_flow !== undefined)
+                                              .sort((a, b) => a.time - b.time)
+                                            
+                                            let pressurePath = ''
+                                            if (pressurePoints.length >= 2) {
+                                              pressurePath = pressurePoints.map((p, i) => {
+                                                const x = xAxis.scale(p.time)
+                                                const y = yAxis.scale(p.target_pressure!)
+                                                return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`
+                                              }).join(' ')
+                                            }
+                                            
+                                            let flowPath = ''
+                                            if (flowPoints.length >= 2) {
+                                              flowPath = flowPoints.map((p, i) => {
+                                                const x = xAxis.scale(p.time)
+                                                const y = yAxis.scale(p.target_flow!)
+                                                return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`
+                                              }).join(' ')
+                                            }
+                                            
+                                            return (
+                                              <g className="target-curves">
+                                                {pressurePath && (
+                                                  <>
+                                                    <path d={pressurePath} fill="none" stroke={CHART_COLORS.targetPressure} strokeWidth={2.5} strokeDasharray="8 4" strokeLinecap="round" />
+                                                    {pressurePoints.map((p, i) => (
+                                                      <circle key={`tp-${i}`} cx={xAxis.scale(p.time)} cy={yAxis.scale(p.target_pressure!)} r={4} fill={CHART_COLORS.targetPressure} />
+                                                    ))}
+                                                  </>
+                                                )}
+                                                {flowPath && (
+                                                  <>
+                                                    <path d={flowPath} fill="none" stroke={CHART_COLORS.targetFlow} strokeWidth={2.5} strokeDasharray="8 4" strokeLinecap="round" />
+                                                    {flowPoints.map((p, i) => (
+                                                      <circle key={`tf-${i}`} cx={xAxis.scale(p.time)} cy={yAxis.scale(p.target_flow!)} r={4} fill={CHART_COLORS.targetFlow} />
+                                                    ))}
+                                                  </>
+                                                )}
+                                              </g>
+                                            )
+                                          }}
+                                        />
+                                      )}
+                                    </LineChart>
+                                  )
+                                })()}
+                              </ResponsiveContainer>
+                            </div>
+                            {/* Legend */}
+                            <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <div className="w-3 h-0.5 rounded" style={{ backgroundColor: CHART_COLORS.pressure }} />
+                                <span>Pressure</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <div className="w-3 h-0.5 rounded" style={{ backgroundColor: CHART_COLORS.flow }} />
+                                <span>Flow</span>
+                              </div>
+                              {analysisResult.profile_target_curves && analysisResult.profile_target_curves.length > 0 && (
+                                <>
+                                  <div className="flex items-center gap-1">
+                                    <div className="w-3 h-0.5 rounded border-dashed" style={{ backgroundColor: CHART_COLORS.targetPressure, borderStyle: 'dashed' }} />
+                                    <span>Target Pressure</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <div className="w-3 h-0.5 rounded" style={{ backgroundColor: CHART_COLORS.targetFlow, borderStyle: 'dashed' }} />
+                                    <span>Target Flow</span>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                            {/* Stage Legend */}
+                            {shotData && (() => {
+                              const chartData = getChartData(shotData)
+                              const stageRanges = getStageRanges(chartData)
+                              if (stageRanges.length === 0) return null
+                              
+                              return (
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                  {stageRanges.map((stage, idx) => (
+                                    <Badge 
+                                      key={idx}
+                                      variant="outline" 
+                                      className="text-[10px] px-1.5 py-0.5 font-medium"
+                                      style={{
+                                        backgroundColor: STAGE_COLORS[stage.colorIndex],
+                                        borderColor: STAGE_BORDER_COLORS[stage.colorIndex],
+                                        color: 'rgba(255,255,255,0.9)'
+                                      }}
+                                    >
+                                      {typeof stage.name === 'string' ? stage.name : String(stage.name || '')}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )
+                            })()}
+                          </div>
+                        )}
                       </div>
                       
                       {/* Unreached Stages Warning */}
@@ -2073,6 +2430,103 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                           )}
                         </div>
                       )}
+                      
+                      {/* Extraction Summary */}
+                      {(() => {
+                        // Get extraction stages (stages not in pre-infusion)
+                        const preinfusionStageNames = new Set(
+                          analysisResult.preinfusion_summary.stages.map(s => s.toLowerCase())
+                        )
+                        const extractionStages = analysisResult.stage_analyses.filter(
+                          s => s.executed && !preinfusionStageNames.has(s.stage_name.toLowerCase())
+                        )
+                        
+                        if (extractionStages.length === 0) return null
+                        
+                        // Calculate extraction metrics
+                        const extractionTime = extractionStages.reduce(
+                          (sum, s) => sum + (s.execution_data?.duration || 0), 0
+                        )
+                        const totalTime = analysisResult.shot_summary.total_time
+                        const extractionPercent = totalTime > 0 ? Math.round((extractionTime / totalTime) * 100) : 0
+                        
+                        // Calculate extraction weight (total - preinfusion weight)
+                        const totalWeight = analysisResult.shot_summary.final_weight
+                        const preinfusionWeight = analysisResult.preinfusion_summary.weight_accumulated || 0
+                        const extractionWeight = totalWeight - preinfusionWeight
+                        
+                        // Check for any limit hits or failed assessments in extraction
+                        const hasIssues = extractionStages.some(
+                          s => s.limit_hit || s.assessment?.status === 'hit_limit' || s.assessment?.status === 'failed'
+                        )
+                        
+                        // Get reached goals
+                        const reachedGoals = extractionStages.filter(
+                          s => s.assessment?.status === 'reached_goal'
+                        )
+                        
+                        return (
+                          <div className={`p-4 rounded-xl border ${
+                            hasIssues
+                              ? 'bg-amber-500/10 border-amber-500/30'
+                              : 'bg-secondary/40 border-border/20'
+                          }`}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Gauge size={16} weight="bold" className="text-green-400" />
+                              <span className="text-sm font-semibold">Extraction</span>
+                              {reachedGoals.length > 0 && (
+                                <Badge variant="outline" className="ml-auto text-xs bg-green-500/20 text-green-400 border-green-500/30">
+                                  {reachedGoals.length} goal{reachedGoals.length !== 1 ? 's' : ''} reached
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-4 text-sm">
+                              <div>
+                                <span className="text-muted-foreground/60">Duration: </span>
+                                <span className="font-medium">{extractionTime.toFixed(1)}s</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground/60">Time %: </span>
+                                <span className="font-medium">{extractionPercent}%</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground/60">Weight: </span>
+                                <span className="font-medium">{extractionWeight.toFixed(1)}g</span>
+                              </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground/60 mt-2">
+                              Stages: {extractionStages.map(s => s.stage_name).join(', ')}
+                            </p>
+                            
+                            {/* Extraction stage summaries */}
+                            {extractionStages.length > 0 && (
+                              <div className="mt-3 pt-3 border-t border-border/20 space-y-2">
+                                {extractionStages.map((stage, idx) => (
+                                  <div key={idx} className="flex items-start gap-2 text-sm">
+                                    <span className={`mt-0.5 ${
+                                      stage.assessment?.status === 'reached_goal' ? 'text-green-400' :
+                                      stage.assessment?.status === 'hit_limit' || stage.limit_hit ? 'text-amber-400' :
+                                      'text-muted-foreground'
+                                    }`}>
+                                      {stage.assessment?.status === 'reached_goal' ? '✓' :
+                                       stage.assessment?.status === 'hit_limit' || stage.limit_hit ? '⚠' : '•'}
+                                    </span>
+                                    <div className="flex-1">
+                                      <span className="font-medium">{stage.stage_name}</span>
+                                      <span className="text-muted-foreground/60 ml-2">
+                                        {stage.execution_data?.duration?.toFixed(1)}s
+                                      </span>
+                                      {stage.assessment?.message && (
+                                        <p className="text-xs text-muted-foreground/60">{stage.assessment.message}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })()}
                       
                       {/* Stage-by-Stage Analysis */}
                       <div className="p-4 bg-secondary/40 rounded-xl border border-border/20">

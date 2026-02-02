@@ -89,25 +89,29 @@ export function HistoryView({ onBack, onViewProfile, onGenerateNew }: HistoryVie
       const serverUrl = await getServerUrl()
       const newImages: Record<string, string> = {}
       
-      // Fetch images in parallel (limit to avoid overwhelming the server)
-      const fetchPromises = entries.slice(0, 20).map(async (entry) => {
-        try {
-          const response = await fetch(
-            `${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}`
-          )
-          if (response.ok) {
-            const data = await response.json()
-            if (data.profile?.image) {
-              // Use the proxy endpoint to get the actual image
-              newImages[entry.profile_name] = `${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}/image-proxy`
+      // Fetch images in batches to avoid overwhelming the server
+      const batchSize = 10
+      for (let i = 0; i < entries.length; i += batchSize) {
+        const batch = entries.slice(i, i + batchSize)
+        const fetchPromises = batch.map(async (entry) => {
+          try {
+            const response = await fetch(
+              `${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}`
+            )
+            if (response.ok) {
+              const data = await response.json()
+              if (data.profile?.image) {
+                // Use the proxy endpoint to get the actual image
+                newImages[entry.profile_name] = `${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}/image-proxy`
+              }
             }
+          } catch {
+            // Silently ignore errors for individual profile fetches
           }
-        } catch {
-          // Silently ignore errors for individual profile fetches
-        }
-      })
-      
-      await Promise.allSettled(fetchPromises)
+        })
+        
+        await Promise.allSettled(fetchPromises)
+      }
       setProfileImages(prev => ({ ...prev, ...newImages }))
     }
     
