@@ -2151,7 +2151,7 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                   const maxLeftAxis = Math.ceil(Math.max(maxPressure, maxFlow) * 1.1)
                                   
                                   return (
-                                    <LineChart data={chartData} margin={{ top: 5, right: 0, left: -10, bottom: 5 }}>
+                                    <LineChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
                                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                                       
                                       {/* Stage background areas */}
@@ -2183,6 +2183,7 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                         tick={{ fontSize: 10, fill: '#888' }} 
                                         axisLine={{ stroke: '#444' }}
                                         tickFormatter={(v) => `${v}`}
+                                        width={25}
                                       />
                                       <YAxis 
                                         yAxisId="right"
@@ -2190,6 +2191,7 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                         domain={[0, Math.ceil(maxFlow * 1.1)]}
                                         tick={{ fontSize: 10, fill: '#888' }} 
                                         axisLine={{ stroke: '#444' }}
+                                        width={0}
                                         hide
                                       />
                                       <Tooltip 
