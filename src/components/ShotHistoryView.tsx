@@ -2143,6 +2143,154 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                             <div className="text-lg font-semibold">{analysisResult.shot_summary.max_flow} ml/s</div>
                           </div>
                         </div>
+                        
+                        {/* Profile Target Curves Chart */}
+                        {shotData && (
+                          <div className="mt-4 pt-4 border-t border-primary/10">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs font-medium text-muted-foreground">Shot vs Profile Target</span>
+                              {analysisResult.profile_target_curves && analysisResult.profile_target_curves.length > 0 && (
+                                <Badge variant="outline" className="text-xs bg-primary/10 border-primary/20">
+                                  Target overlay active
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="h-48 w-full">
+                              <ResponsiveContainer width="100%" height="100%">
+                                {(() => {
+                                  const chartData = getChartData(shotData)
+                                  const mergedData = mergeWithTargetCurves(chartData, analysisResult.profile_target_curves)
+                                  const hasTargetCurves = analysisResult.profile_target_curves && analysisResult.profile_target_curves.length > 0
+                                  
+                                  // Calculate max values for Y axis
+                                  const maxPressure = Math.max(
+                                    ...chartData.map(d => d.pressure || 0),
+                                    ...(analysisResult.profile_target_curves?.map(d => d.target_pressure || 0) || []),
+                                    10
+                                  )
+                                  const maxFlow = Math.max(
+                                    ...chartData.map(d => d.flow || 0),
+                                    ...(analysisResult.profile_target_curves?.map(d => d.target_flow || 0) || []),
+                                    5
+                                  )
+                                  
+                                  return (
+                                    <LineChart data={mergedData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
+                                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                                      <XAxis 
+                                        dataKey="time" 
+                                        tick={{ fontSize: 10, fill: '#888' }} 
+                                        tickFormatter={(v) => `${Math.round(v)}s`}
+                                        axisLine={{ stroke: '#444' }}
+                                      />
+                                      <YAxis 
+                                        yAxisId="left"
+                                        domain={[0, Math.ceil(maxPressure * 1.1)]}
+                                        tick={{ fontSize: 10, fill: '#888' }} 
+                                        axisLine={{ stroke: '#444' }}
+                                        tickFormatter={(v) => `${v}`}
+                                      />
+                                      <YAxis 
+                                        yAxisId="right"
+                                        orientation="right"
+                                        domain={[0, Math.ceil(maxFlow * 1.1)]}
+                                        tick={{ fontSize: 10, fill: '#888' }} 
+                                        axisLine={{ stroke: '#444' }}
+                                        hide
+                                      />
+                                      <Tooltip 
+                                        contentStyle={{ 
+                                          backgroundColor: 'rgba(0,0,0,0.85)', 
+                                          border: '1px solid #333',
+                                          borderRadius: '8px',
+                                          fontSize: '11px'
+                                        }}
+                                        formatter={(value: number, name: string) => [
+                                          `${value?.toFixed(1) || '-'}`,
+                                          name
+                                        ]}
+                                        labelFormatter={(label) => `${Number(label).toFixed(1)}s`}
+                                      />
+                                      {/* Actual shot data */}
+                                      <Line
+                                        yAxisId="left"
+                                        type="monotone"
+                                        dataKey="pressure"
+                                        stroke={CHART_COLORS.pressure}
+                                        strokeWidth={2}
+                                        dot={false}
+                                        name="Pressure (bar)"
+                                        isAnimationActive={false}
+                                      />
+                                      <Line
+                                        yAxisId="right"
+                                        type="monotone"
+                                        dataKey="flow"
+                                        stroke={CHART_COLORS.flow}
+                                        strokeWidth={2}
+                                        dot={false}
+                                        name="Flow (ml/s)"
+                                        isAnimationActive={false}
+                                      />
+                                      {/* Profile target curves */}
+                                      {hasTargetCurves && (
+                                        <>
+                                          <Line
+                                            yAxisId="left"
+                                            type="linear"
+                                            dataKey="targetPressure"
+                                            stroke={CHART_COLORS.targetPressure}
+                                            strokeWidth={2}
+                                            dot={false}
+                                            strokeDasharray="6 3"
+                                            name="Target Pressure"
+                                            isAnimationActive={false}
+                                            connectNulls={false}
+                                          />
+                                          <Line
+                                            yAxisId="right"
+                                            type="linear"
+                                            dataKey="targetFlow"
+                                            stroke={CHART_COLORS.targetFlow}
+                                            strokeWidth={2}
+                                            dot={false}
+                                            strokeDasharray="6 3"
+                                            name="Target Flow"
+                                            isAnimationActive={false}
+                                            connectNulls={false}
+                                          />
+                                        </>
+                                      )}
+                                    </LineChart>
+                                  )
+                                })()}
+                              </ResponsiveContainer>
+                            </div>
+                            {/* Legend */}
+                            <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <div className="w-3 h-0.5 rounded" style={{ backgroundColor: CHART_COLORS.pressure }} />
+                                <span>Pressure</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <div className="w-3 h-0.5 rounded" style={{ backgroundColor: CHART_COLORS.flow }} />
+                                <span>Flow</span>
+                              </div>
+                              {analysisResult.profile_target_curves && analysisResult.profile_target_curves.length > 0 && (
+                                <>
+                                  <div className="flex items-center gap-1">
+                                    <div className="w-3 h-0.5 rounded border-dashed" style={{ backgroundColor: CHART_COLORS.targetPressure, borderStyle: 'dashed' }} />
+                                    <span>Target Pressure</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <div className="w-3 h-0.5 rounded" style={{ backgroundColor: CHART_COLORS.targetFlow, borderStyle: 'dashed' }} />
+                                    <span>Target Flow</span>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                       
                       {/* Unreached Stages Warning */}
