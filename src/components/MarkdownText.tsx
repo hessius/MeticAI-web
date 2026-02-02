@@ -10,20 +10,118 @@ export function MarkdownText({ children, text, className = '' }: MarkdownTextPro
   const content = text ?? children ?? ''
   
   const renderMarkdown = (textContent: string): React.ReactNode[] => {
-    // Split by newlines first to preserve line breaks
     const lines = textContent.split('\n')
     const result: React.ReactNode[] = []
+    let inCodeBlock = false
+    let codeBlockLines: string[] = []
+    let codeBlockKey = 0
     
     lines.forEach((line, lineIndex) => {
-      // Process inline markdown within each line
-      const processedLine = processInlineMarkdown(line, lineIndex)
-      result.push(...processedLine)
-      
-      // Add line break after each line except the last
-      if (lineIndex < lines.length - 1) {
-        result.push(<br key={`br-${lineIndex}`} />)
+      // Handle code block start/end
+      if (line.trim().startsWith('```')) {
+        if (inCodeBlock) {
+          // End of code block
+          result.push(
+            <pre key={`codeblock-${codeBlockKey++}`} className="bg-muted/50 rounded-md p-2 my-2 text-xs font-mono overflow-x-auto">
+              <code>{codeBlockLines.join('\n')}</code>
+            </pre>
+          )
+          codeBlockLines = []
+          inCodeBlock = false
+        } else {
+          // Start of code block
+          inCodeBlock = true
+        }
+        return
       }
+      
+      if (inCodeBlock) {
+        codeBlockLines.push(line)
+        return
+      }
+      
+      // Skip empty lines but add some spacing
+      if (line.trim() === '') {
+        result.push(<div key={`space-${lineIndex}`} className="h-2" />)
+        return
+      }
+      
+      // Handle horizontal rules
+      if (line.trim() === '---' || line.trim() === '***') {
+        result.push(<hr key={`hr-${lineIndex}`} className="my-3 border-border/50" />)
+        return
+      }
+      
+      // Handle headers
+      if (line.startsWith('### ')) {
+        result.push(
+          <h4 key={`h3-${lineIndex}`} className="text-sm font-semibold mt-3 mb-1">
+            {processInlineMarkdown(line.substring(4), lineIndex)}
+          </h4>
+        )
+        return
+      }
+      
+      if (line.startsWith('## ')) {
+        result.push(
+          <h3 key={`h2-${lineIndex}`} className="text-base font-bold mt-2 mb-1">
+            {processInlineMarkdown(line.substring(3), lineIndex)}
+          </h3>
+        )
+        return
+      }
+      
+      if (line.startsWith('# ')) {
+        result.push(
+          <h2 key={`h1-${lineIndex}`} className="text-lg font-bold mt-2 mb-1">
+            {processInlineMarkdown(line.substring(2), lineIndex)}
+          </h2>
+        )
+        return
+      }
+      
+      // Handle list items
+      if (line.trimStart().startsWith('- ') || line.trimStart().startsWith('* ')) {
+        const indent = line.length - line.trimStart().length
+        const listContent = line.trimStart().substring(2)
+        result.push(
+          <div key={`li-${lineIndex}`} className="flex items-start gap-2" style={{ paddingLeft: `${indent * 8}px` }}>
+            <span className="text-muted-foreground">•</span>
+            <span>{processInlineMarkdown(listContent, lineIndex)}</span>
+          </div>
+        )
+        return
+      }
+      
+      // Handle numbered list items
+      const numberedMatch = line.trimStart().match(/^(\d+)\.\s+(.*)$/)
+      if (numberedMatch) {
+        const indent = line.length - line.trimStart().length
+        result.push(
+          <div key={`oli-${lineIndex}`} className="flex items-start gap-2" style={{ paddingLeft: `${indent * 8}px` }}>
+            <span className="text-muted-foreground min-w-[1.5em]">{numberedMatch[1]}.</span>
+            <span>{processInlineMarkdown(numberedMatch[2], lineIndex)}</span>
+          </div>
+        )
+        return
+      }
+      
+      // Regular paragraph
+      result.push(
+        <p key={`p-${lineIndex}`} className="leading-relaxed">
+          {processInlineMarkdown(line, lineIndex)}
+        </p>
+      )
     })
+    
+    // Handle unclosed code block
+    if (inCodeBlock && codeBlockLines.length > 0) {
+      result.push(
+        <pre key={`codeblock-${codeBlockKey}`} className="bg-muted/50 rounded-md p-2 my-2 text-xs font-mono overflow-x-auto">
+          <code>{codeBlockLines.join('\n')}</code>
+        </pre>
+      )
+    }
     
     return result
   }
@@ -32,43 +130,56 @@ export function MarkdownText({ children, text, className = '' }: MarkdownTextPro
     const parts: React.ReactNode[] = []
     let key = 0
 
-    // Combined regex for bold, italic, and code
-    const inlineRegex = /(\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)/g
+    // Combined regex for links, bold, italic, and code
+    const inlineRegex = /(\[([^\]]+)\]\(([^)]+)\)|\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)/g
     let lastIndex = 0
     let match
 
     while ((match = inlineRegex.exec(text)) !== null) {
       // Add text before the match
       if (match.index > lastIndex) {
-        parts.push(text.substring(lastIndex, match.index))
+        parts.push(<span key={`t-${lineIndex}-${key++}`}>{text.substring(lastIndex, match.index)}</span>)
       }
 
-      if (match[2]) {
+      if (match[2] && match[3]) {
+        // [link text](url)
+        parts.push(
+          <a 
+            key={`a-${lineIndex}-${key++}`} 
+            href={match[3]} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            {match[2]}
+          </a>
+        )
+      } else if (match[4]) {
         // ***bold italic***
         parts.push(
           <strong key={`bi-${lineIndex}-${key++}`} className="font-semibold italic">
-            {match[2]}
+            {match[4]}
           </strong>
         )
-      } else if (match[3]) {
+      } else if (match[5]) {
         // **bold**
         parts.push(
           <strong key={`b-${lineIndex}-${key++}`} className="font-semibold">
-            {match[3]}
+            {match[5]}
           </strong>
         )
-      } else if (match[4]) {
+      } else if (match[6]) {
         // *italic*
         parts.push(
           <em key={`i-${lineIndex}-${key++}`} className="italic">
-            {match[4]}
+            {match[6]}
           </em>
         )
-      } else if (match[5]) {
+      } else if (match[7]) {
         // `code`
         parts.push(
-          <code key={`c-${lineIndex}-${key++}`} className="bg-muted px-1 py-0.5 rounded text-sm font-mono">
-            {match[5]}
+          <code key={`c-${lineIndex}-${key++}`} className="bg-muted px-1 py-0.5 rounded text-xs font-mono">
+            {match[7]}
           </code>
         )
       }
@@ -78,16 +189,16 @@ export function MarkdownText({ children, text, className = '' }: MarkdownTextPro
 
     // Add remaining text
     if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex))
+      parts.push(<span key={`t-${lineIndex}-${key++}`}>{text.substring(lastIndex)}</span>)
     }
 
     // If no matches found, return original text
-    return parts.length > 0 ? parts : [text]
+    return parts.length > 0 ? parts : [<span key={`t-${lineIndex}-0`}>{text}</span>]
   }
 
   return (
-    <span className={className}>
+    <div className={`space-y-1 ${className}`}>
       {renderMarkdown(content)}
-    </span>
+    </div>
   )
 }

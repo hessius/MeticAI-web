@@ -82,6 +82,9 @@ export function SettingsView({ onBack }: SettingsViewProps) {
   const { updateAvailable, checkForUpdates, isChecking } = useUpdateStatus()
   const { triggerUpdate, isUpdating, updateError } = useUpdateTrigger()
   const [updateProgress, setUpdateProgress] = useState(0)
+  
+  // Watcher status
+  const [watcherStatus, setWatcherStatus] = useState<{ running: boolean; message: string } | null>(null)
 
   // Load current settings on mount
   useEffect(() => {
@@ -105,7 +108,22 @@ export function SettingsView({ onBack }: SettingsViewProps) {
         setIsLoading(false)
       }
     }
+    
+    const loadWatcherStatus = async () => {
+      try {
+        const serverUrl = await getServerUrl()
+        const response = await fetch(`${serverUrl}/api/watcher-status`)
+        if (response.ok) {
+          const data = await response.json()
+          setWatcherStatus(data)
+        }
+      } catch (err) {
+        console.error('Failed to load watcher status:', err)
+      }
+    }
+    
     loadSettings()
+    loadWatcherStatus()
   }, [])
 
   // Load version info
@@ -546,12 +564,7 @@ export function SettingsView({ onBack }: SettingsViewProps) {
           </div>
           <div className="flex justify-between items-center py-2 border-b border-border/50">
             <span className="text-sm text-muted-foreground">MeticAI-web (Frontend)</span>
-            <div className="text-right">
-              <span className="text-sm font-mono">{versionInfo?.meticaiWeb || '...'}</span>
-              {versionInfo?.meticaiWebCommit && (
-                <span className="text-xs text-muted-foreground/60 ml-1">({versionInfo.meticaiWebCommit})</span>
-              )}
-            </div>
+            <span className="text-sm font-mono">{versionInfo?.meticaiWeb || '...'}</span>
           </div>
           <div className="flex justify-between items-center py-2">
             <div className="flex flex-col">
@@ -638,6 +651,29 @@ export function SettingsView({ onBack }: SettingsViewProps) {
         <h3 className="text-lg font-semibold text-primary">System</h3>
         
         <div className="space-y-3">
+          {/* Watcher Status */}
+          {watcherStatus && (
+            <div className="flex items-center justify-between py-2 border-b border-border/50">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${watcherStatus.running ? 'bg-green-500' : 'bg-red-500'}`} />
+                <span className="text-sm text-muted-foreground">Background Watcher</span>
+              </div>
+              <span className={`text-xs ${watcherStatus.running ? 'text-green-600' : 'text-red-600'}`}>
+                {watcherStatus.running ? 'Running' : 'Not Running'}
+              </span>
+            </div>
+          )}
+          
+          {!watcherStatus?.running && watcherStatus && (
+            <Alert className="bg-yellow-500/10 border-yellow-500/20">
+              <Warning size={16} className="text-yellow-600" weight="fill" />
+              <AlertDescription className="text-sm text-yellow-700">
+                The background watcher is not running. Restart and update buttons may not work.
+                Run <code className="bg-muted px-1 rounded">./rebuild-watcher.sh --install</code> on the host.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <p className="text-sm text-muted-foreground">
             Restart all MeticAI services. Use this if you're experiencing issues.
           </p>
