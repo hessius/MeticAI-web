@@ -1557,98 +1557,6 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                 isAnimationActive={false}
                               />
                             )}
-                            {/* Profile target curves using Customized SVG for reliable rendering */}
-                            {hasTargetCurves && analysisResult?.profile_target_curves && (
-                              <Customized
-                                component={({ xAxisMap, yAxisMap }: { xAxisMap?: Record<string, { scale: (v: number) => number }>; yAxisMap?: Record<string, { scale: (v: number) => number }> }) => {
-                                  if (!xAxisMap || !yAxisMap) return null
-                                  const xAxis = Object.values(xAxisMap)[0]
-                                  const yAxis = yAxisMap['left']
-                                  if (!xAxis?.scale || !yAxis?.scale) return null
-                                  
-                                  const curves = analysisResult.profile_target_curves!
-                                  
-                                  // Separate pressure and flow points
-                                  const pressurePoints = curves
-                                    .filter(p => p.target_pressure !== undefined)
-                                    .sort((a, b) => a.time - b.time)
-                                  const flowPoints = curves
-                                    .filter(p => p.target_flow !== undefined)
-                                    .sort((a, b) => a.time - b.time)
-                                  
-                                  // Build SVG path for pressure
-                                  let pressurePath = ''
-                                  if (pressurePoints.length >= 2) {
-                                    pressurePath = pressurePoints.map((p, i) => {
-                                      const x = xAxis.scale(p.time)
-                                      const y = yAxis.scale(p.target_pressure!)
-                                      return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`
-                                    }).join(' ')
-                                  }
-                                  
-                                  // Build SVG path for flow
-                                  let flowPath = ''
-                                  if (flowPoints.length >= 2) {
-                                    flowPath = flowPoints.map((p, i) => {
-                                      const x = xAxis.scale(p.time)
-                                      const y = yAxis.scale(p.target_flow!)
-                                      return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`
-                                    }).join(' ')
-                                  }
-                                  
-                                  return (
-                                    <g className="target-curves">
-                                      {/* Target Pressure Line */}
-                                      {pressurePath && (
-                                        <>
-                                          <path
-                                            d={pressurePath}
-                                            fill="none"
-                                            stroke={CHART_COLORS.targetPressure}
-                                            strokeWidth={2.5}
-                                            strokeDasharray="8 4"
-                                            strokeLinecap="round"
-                                          />
-                                          {/* Dots at each point */}
-                                          {pressurePoints.map((p, i) => (
-                                            <circle
-                                              key={`tp-${i}`}
-                                              cx={xAxis.scale(p.time)}
-                                              cy={yAxis.scale(p.target_pressure!)}
-                                              r={4}
-                                              fill={CHART_COLORS.targetPressure}
-                                            />
-                                          ))}
-                                        </>
-                                      )}
-                                      {/* Target Flow Line */}
-                                      {flowPath && (
-                                        <>
-                                          <path
-                                            d={flowPath}
-                                            fill="none"
-                                            stroke={CHART_COLORS.targetFlow}
-                                            strokeWidth={2.5}
-                                            strokeDasharray="8 4"
-                                            strokeLinecap="round"
-                                          />
-                                          {/* Dots at each point */}
-                                          {flowPoints.map((p, i) => (
-                                            <circle
-                                              key={`tf-${i}`}
-                                              cx={xAxis.scale(p.time)}
-                                              cy={yAxis.scale(p.target_flow!)}
-                                              r={4}
-                                              fill={CHART_COLORS.targetFlow}
-                                            />
-                                          ))}
-                                        </>
-                                      )}
-                                    </g>
-                                  )
-                                }}
-                              />
-                            )}
                           </LineChart>
                         </ResponsiveContainer>
                       )
@@ -2243,7 +2151,7 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                   const maxLeftAxis = Math.ceil(Math.max(maxPressure, maxFlow) * 1.1)
                                   
                                   return (
-                                    <LineChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+                                    <LineChart data={chartData} margin={{ top: 5, right: 0, left: -10, bottom: 5 }}>
                                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                                       
                                       {/* Stage background areas */}
