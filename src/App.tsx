@@ -578,7 +578,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                     className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90"
                   >
                     <Play size={20} className="mr-2" weight="fill" />
-                    Run Shot
+                    Run / Schedule
                   </Button>
                   
                   <Button
