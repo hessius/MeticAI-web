@@ -2159,6 +2159,7 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                               <ResponsiveContainer width="100%" height="100%">
                                 {(() => {
                                   const chartData = getChartData(shotData)
+                                  const stageRanges = getStageRanges(chartData)
                                   const mergedData = mergeWithTargetCurves(chartData, analysisResult.profile_target_curves)
                                   const hasTargetCurves = analysisResult.profile_target_curves && analysisResult.profile_target_curves.length > 0
                                   
@@ -2177,11 +2178,28 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                   return (
                                     <LineChart data={mergedData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
                                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                                      
+                                      {/* Stage background areas */}
+                                      {stageRanges.map((stage, idx) => (
+                                        <ReferenceArea
+                                          key={idx}
+                                          yAxisId="left"
+                                          x1={stage.startTime}
+                                          x2={stage.endTime}
+                                          fill={STAGE_COLORS[stage.colorIndex]}
+                                          fillOpacity={1}
+                                          stroke={STAGE_BORDER_COLORS[stage.colorIndex]}
+                                          strokeWidth={0}
+                                          ifOverflow="extendDomain"
+                                        />
+                                      ))}
+                                      
                                       <XAxis 
                                         dataKey="time" 
                                         tick={{ fontSize: 10, fill: '#888' }} 
                                         tickFormatter={(v) => `${Math.round(v)}s`}
                                         axisLine={{ stroke: '#444' }}
+                                        type="number"
                                       />
                                       <YAxis 
                                         yAxisId="left"
@@ -2240,21 +2258,21 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                             type="linear"
                                             dataKey="targetPressure"
                                             stroke={CHART_COLORS.targetPressure}
-                                            strokeWidth={2}
+                                            strokeWidth={2.5}
                                             dot={false}
-                                            strokeDasharray="6 3"
+                                            strokeDasharray="8 4"
                                             name="Target Pressure"
                                             isAnimationActive={false}
                                             connectNulls={false}
                                           />
                                           <Line
-                                            yAxisId="right"
+                                            yAxisId="left"
                                             type="linear"
                                             dataKey="targetFlow"
                                             stroke={CHART_COLORS.targetFlow}
-                                            strokeWidth={2}
+                                            strokeWidth={2.5}
                                             dot={false}
-                                            strokeDasharray="6 3"
+                                            strokeDasharray="8 4"
                                             name="Target Flow"
                                             isAnimationActive={false}
                                             connectNulls={false}
@@ -2289,6 +2307,31 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                 </>
                               )}
                             </div>
+                            {/* Stage Legend */}
+                            {shotData && (() => {
+                              const chartData = getChartData(shotData)
+                              const stageRanges = getStageRanges(chartData)
+                              if (stageRanges.length === 0) return null
+                              
+                              return (
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                  {stageRanges.map((stage, idx) => (
+                                    <Badge 
+                                      key={idx}
+                                      variant="outline" 
+                                      className="text-[10px] px-1.5 py-0.5 font-medium"
+                                      style={{
+                                        backgroundColor: STAGE_COLORS[stage.colorIndex],
+                                        borderColor: STAGE_BORDER_COLORS[stage.colorIndex],
+                                        color: 'rgba(255,255,255,0.9)'
+                                      }}
+                                    >
+                                      {typeof stage.name === 'string' ? stage.name : String(stage.name || '')}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )
+                            })()}
                           </div>
                         )}
                       </div>
