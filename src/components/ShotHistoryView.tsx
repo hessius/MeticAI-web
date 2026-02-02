@@ -52,7 +52,8 @@ import {
   Legend,
   ResponsiveContainer,
   ReferenceArea,
-  ReferenceLine
+  ReferenceLine,
+  Customized
 } from 'recharts'
 
 // Chart colors matching Meticulous app style (muted to fit dark theme)
@@ -1556,67 +1557,97 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                 isAnimationActive={false}
                               />
                             )}
-                            {/* Profile target curves (shown after analysis) - rendered as separate path segments */}
+                            {/* Profile target curves using Customized SVG for reliable rendering */}
                             {hasTargetCurves && analysisResult?.profile_target_curves && (
-                              <>
-                                {/* Target Pressure - render as SVG path manually for precise control */}
-                                {(() => {
-                                  const pressurePoints = analysisResult.profile_target_curves
+                              <Customized
+                                component={({ xAxisMap, yAxisMap }: { xAxisMap?: Record<string, { scale: (v: number) => number }>; yAxisMap?: Record<string, { scale: (v: number) => number }> }) => {
+                                  if (!xAxisMap || !yAxisMap) return null
+                                  const xAxis = Object.values(xAxisMap)[0]
+                                  const yAxis = yAxisMap['left']
+                                  if (!xAxis?.scale || !yAxis?.scale) return null
+                                  
+                                  const curves = analysisResult.profile_target_curves!
+                                  
+                                  // Separate pressure and flow points
+                                  const pressurePoints = curves
                                     .filter(p => p.target_pressure !== undefined)
                                     .sort((a, b) => a.time - b.time)
-                                  if (pressurePoints.length < 2) return null
-                                  
-                                  // Create simple line data for pressure targets
-                                  const pressureData = pressurePoints.map(p => ({
-                                    time: p.time,
-                                    value: p.target_pressure
-                                  }))
-                                  
-                                  return (
-                                    <Line
-                                      yAxisId="left"
-                                      data={pressureData}
-                                      type="linear"
-                                      dataKey="value"
-                                      stroke={CHART_COLORS.targetPressure}
-                                      strokeWidth={2.5}
-                                      dot={{ r: 3, fill: CHART_COLORS.targetPressure }}
-                                      strokeDasharray="8 4"
-                                      name="Target Pressure"
-                                      isAnimationActive={false}
-                                      legendType="none"
-                                    />
-                                  )
-                                })()}
-                                {/* Target Flow */}
-                                {(() => {
-                                  const flowPoints = analysisResult.profile_target_curves
+                                  const flowPoints = curves
                                     .filter(p => p.target_flow !== undefined)
                                     .sort((a, b) => a.time - b.time)
-                                  if (flowPoints.length < 2) return null
                                   
-                                  const flowData = flowPoints.map(p => ({
-                                    time: p.time,
-                                    value: p.target_flow
-                                  }))
+                                  // Build SVG path for pressure
+                                  let pressurePath = ''
+                                  if (pressurePoints.length >= 2) {
+                                    pressurePath = pressurePoints.map((p, i) => {
+                                      const x = xAxis.scale(p.time)
+                                      const y = yAxis.scale(p.target_pressure!)
+                                      return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`
+                                    }).join(' ')
+                                  }
+                                  
+                                  // Build SVG path for flow
+                                  let flowPath = ''
+                                  if (flowPoints.length >= 2) {
+                                    flowPath = flowPoints.map((p, i) => {
+                                      const x = xAxis.scale(p.time)
+                                      const y = yAxis.scale(p.target_flow!)
+                                      return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`
+                                    }).join(' ')
+                                  }
                                   
                                   return (
-                                    <Line
-                                      yAxisId="left"
-                                      data={flowData}
-                                      type="linear"
-                                      dataKey="value"
-                                      stroke={CHART_COLORS.targetFlow}
-                                      strokeWidth={2.5}
-                                      dot={{ r: 3, fill: CHART_COLORS.targetFlow }}
-                                      strokeDasharray="8 4"
-                                      name="Target Flow"
-                                      isAnimationActive={false}
-                                      legendType="none"
-                                    />
+                                    <g className="target-curves">
+                                      {/* Target Pressure Line */}
+                                      {pressurePath && (
+                                        <>
+                                          <path
+                                            d={pressurePath}
+                                            fill="none"
+                                            stroke={CHART_COLORS.targetPressure}
+                                            strokeWidth={2.5}
+                                            strokeDasharray="8 4"
+                                            strokeLinecap="round"
+                                          />
+                                          {/* Dots at each point */}
+                                          {pressurePoints.map((p, i) => (
+                                            <circle
+                                              key={`tp-${i}`}
+                                              cx={xAxis.scale(p.time)}
+                                              cy={yAxis.scale(p.target_pressure!)}
+                                              r={4}
+                                              fill={CHART_COLORS.targetPressure}
+                                            />
+                                          ))}
+                                        </>
+                                      )}
+                                      {/* Target Flow Line */}
+                                      {flowPath && (
+                                        <>
+                                          <path
+                                            d={flowPath}
+                                            fill="none"
+                                            stroke={CHART_COLORS.targetFlow}
+                                            strokeWidth={2.5}
+                                            strokeDasharray="8 4"
+                                            strokeLinecap="round"
+                                          />
+                                          {/* Dots at each point */}
+                                          {flowPoints.map((p, i) => (
+                                            <circle
+                                              key={`tf-${i}`}
+                                              cx={xAxis.scale(p.time)}
+                                              cy={yAxis.scale(p.target_flow!)}
+                                              r={4}
+                                              fill={CHART_COLORS.targetFlow}
+                                            />
+                                          ))}
+                                        </>
+                                      )}
+                                    </g>
                                   )
-                                })()}
-                              </>
+                                }}
+                              />
                             )}
                           </LineChart>
                         </ResponsiveContainer>
@@ -2193,8 +2224,10 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                 {(() => {
                                   const chartData = getChartData(shotData)
                                   const stageRanges = getStageRanges(chartData)
-                                  const mergedData = mergeWithTargetCurves(chartData, analysisResult.profile_target_curves)
                                   const hasTargetCurves = analysisResult.profile_target_curves && analysisResult.profile_target_curves.length > 0
+                                  
+                                  // Get data max time for X axis
+                                  const dataMaxTime = chartData.length > 0 ? chartData[chartData.length - 1].time : 0
                                   
                                   // Calculate max values for Y axis
                                   const maxPressure = Math.max(
@@ -2207,9 +2240,10 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                     ...(analysisResult.profile_target_curves?.map(d => d.target_flow || 0) || []),
                                     5
                                   )
+                                  const maxLeftAxis = Math.ceil(Math.max(maxPressure, maxFlow) * 1.1)
                                   
                                   return (
-                                    <LineChart data={mergedData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
+                                    <LineChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
                                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                                       
                                       {/* Stage background areas */}
@@ -2233,10 +2267,11 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                         tickFormatter={(v) => `${Math.round(v)}s`}
                                         axisLine={{ stroke: '#444' }}
                                         type="number"
+                                        domain={[0, dataMaxTime]}
                                       />
                                       <YAxis 
                                         yAxisId="left"
-                                        domain={[0, Math.ceil(maxPressure * 1.1)]}
+                                        domain={[0, maxLeftAxis]}
                                         tick={{ fontSize: 10, fill: '#888' }} 
                                         axisLine={{ stroke: '#444' }}
                                         tickFormatter={(v) => `${v}`}
@@ -2274,7 +2309,7 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                         isAnimationActive={false}
                                       />
                                       <Line
-                                        yAxisId="right"
+                                        yAxisId="left"
                                         type="monotone"
                                         dataKey="flow"
                                         stroke={CHART_COLORS.flow}
@@ -2283,34 +2318,64 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                         name="Flow (ml/s)"
                                         isAnimationActive={false}
                                       />
-                                      {/* Profile target curves */}
-                                      {hasTargetCurves && (
-                                        <>
-                                          <Line
-                                            yAxisId="left"
-                                            type="linear"
-                                            dataKey="targetPressure"
-                                            stroke={CHART_COLORS.targetPressure}
-                                            strokeWidth={2.5}
-                                            dot={false}
-                                            strokeDasharray="8 4"
-                                            name="Target Pressure"
-                                            isAnimationActive={false}
-                                            connectNulls={false}
-                                          />
-                                          <Line
-                                            yAxisId="left"
-                                            type="linear"
-                                            dataKey="targetFlow"
-                                            stroke={CHART_COLORS.targetFlow}
-                                            strokeWidth={2.5}
-                                            dot={false}
-                                            strokeDasharray="8 4"
-                                            name="Target Flow"
-                                            isAnimationActive={false}
-                                            connectNulls={false}
-                                          />
-                                        </>
+                                      {/* Profile target curves using Customized SVG */}
+                                      {hasTargetCurves && analysisResult.profile_target_curves && (
+                                        <Customized
+                                          component={({ xAxisMap, yAxisMap }: { xAxisMap?: Record<string, { scale: (v: number) => number }>; yAxisMap?: Record<string, { scale: (v: number) => number }> }) => {
+                                            if (!xAxisMap || !yAxisMap) return null
+                                            const xAxis = Object.values(xAxisMap)[0]
+                                            const yAxis = yAxisMap['left']
+                                            if (!xAxis?.scale || !yAxis?.scale) return null
+                                            
+                                            const curves = analysisResult.profile_target_curves!
+                                            
+                                            const pressurePoints = curves
+                                              .filter(p => p.target_pressure !== undefined)
+                                              .sort((a, b) => a.time - b.time)
+                                            const flowPoints = curves
+                                              .filter(p => p.target_flow !== undefined)
+                                              .sort((a, b) => a.time - b.time)
+                                            
+                                            let pressurePath = ''
+                                            if (pressurePoints.length >= 2) {
+                                              pressurePath = pressurePoints.map((p, i) => {
+                                                const x = xAxis.scale(p.time)
+                                                const y = yAxis.scale(p.target_pressure!)
+                                                return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`
+                                              }).join(' ')
+                                            }
+                                            
+                                            let flowPath = ''
+                                            if (flowPoints.length >= 2) {
+                                              flowPath = flowPoints.map((p, i) => {
+                                                const x = xAxis.scale(p.time)
+                                                const y = yAxis.scale(p.target_flow!)
+                                                return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`
+                                              }).join(' ')
+                                            }
+                                            
+                                            return (
+                                              <g className="target-curves">
+                                                {pressurePath && (
+                                                  <>
+                                                    <path d={pressurePath} fill="none" stroke={CHART_COLORS.targetPressure} strokeWidth={2.5} strokeDasharray="8 4" strokeLinecap="round" />
+                                                    {pressurePoints.map((p, i) => (
+                                                      <circle key={`tp-${i}`} cx={xAxis.scale(p.time)} cy={yAxis.scale(p.target_pressure!)} r={4} fill={CHART_COLORS.targetPressure} />
+                                                    ))}
+                                                  </>
+                                                )}
+                                                {flowPath && (
+                                                  <>
+                                                    <path d={flowPath} fill="none" stroke={CHART_COLORS.targetFlow} strokeWidth={2.5} strokeDasharray="8 4" strokeLinecap="round" />
+                                                    {flowPoints.map((p, i) => (
+                                                      <circle key={`tf-${i}`} cx={xAxis.scale(p.time)} cy={yAxis.scale(p.target_flow!)} r={4} fill={CHART_COLORS.targetFlow} />
+                                                    ))}
+                                                  </>
+                                                )}
+                                              </g>
+                                            )
+                                          }}
+                                        />
                                       )}
                                     </LineChart>
                                   )
@@ -2455,6 +2520,103 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                           )}
                         </div>
                       )}
+                      
+                      {/* Extraction Summary */}
+                      {(() => {
+                        // Get extraction stages (stages not in pre-infusion)
+                        const preinfusionStageNames = new Set(
+                          analysisResult.preinfusion_summary.stages.map(s => s.toLowerCase())
+                        )
+                        const extractionStages = analysisResult.stage_analyses.filter(
+                          s => s.executed && !preinfusionStageNames.has(s.stage_name.toLowerCase())
+                        )
+                        
+                        if (extractionStages.length === 0) return null
+                        
+                        // Calculate extraction metrics
+                        const extractionTime = extractionStages.reduce(
+                          (sum, s) => sum + (s.execution_data?.duration || 0), 0
+                        )
+                        const totalTime = analysisResult.shot_summary.total_time
+                        const extractionPercent = totalTime > 0 ? Math.round((extractionTime / totalTime) * 100) : 0
+                        
+                        // Calculate extraction weight (total - preinfusion weight)
+                        const totalWeight = analysisResult.shot_summary.final_weight
+                        const preinfusionWeight = analysisResult.preinfusion_summary.weight_accumulated || 0
+                        const extractionWeight = totalWeight - preinfusionWeight
+                        
+                        // Check for any limit hits or failed assessments in extraction
+                        const hasIssues = extractionStages.some(
+                          s => s.limit_hit || s.assessment?.status === 'hit_limit' || s.assessment?.status === 'failed'
+                        )
+                        
+                        // Get reached goals
+                        const reachedGoals = extractionStages.filter(
+                          s => s.assessment?.status === 'reached_goal'
+                        )
+                        
+                        return (
+                          <div className={`p-4 rounded-xl border ${
+                            hasIssues
+                              ? 'bg-amber-500/10 border-amber-500/30'
+                              : 'bg-secondary/40 border-border/20'
+                          }`}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Gauge size={16} weight="bold" className="text-green-400" />
+                              <span className="text-sm font-semibold">Extraction</span>
+                              {reachedGoals.length > 0 && (
+                                <Badge variant="outline" className="ml-auto text-xs bg-green-500/20 text-green-400 border-green-500/30">
+                                  {reachedGoals.length} goal{reachedGoals.length !== 1 ? 's' : ''} reached
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-4 text-sm">
+                              <div>
+                                <span className="text-muted-foreground/60">Duration: </span>
+                                <span className="font-medium">{extractionTime.toFixed(1)}s</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground/60">Time %: </span>
+                                <span className="font-medium">{extractionPercent}%</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground/60">Weight: </span>
+                                <span className="font-medium">{extractionWeight.toFixed(1)}g</span>
+                              </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground/60 mt-2">
+                              Stages: {extractionStages.map(s => s.stage_name).join(', ')}
+                            </p>
+                            
+                            {/* Extraction stage summaries */}
+                            {extractionStages.length > 0 && (
+                              <div className="mt-3 pt-3 border-t border-border/20 space-y-2">
+                                {extractionStages.map((stage, idx) => (
+                                  <div key={idx} className="flex items-start gap-2 text-sm">
+                                    <span className={`mt-0.5 ${
+                                      stage.assessment?.status === 'reached_goal' ? 'text-green-400' :
+                                      stage.assessment?.status === 'hit_limit' || stage.limit_hit ? 'text-amber-400' :
+                                      'text-muted-foreground'
+                                    }`}>
+                                      {stage.assessment?.status === 'reached_goal' ? '✓' :
+                                       stage.assessment?.status === 'hit_limit' || stage.limit_hit ? '⚠' : '•'}
+                                    </span>
+                                    <div className="flex-1">
+                                      <span className="font-medium">{stage.stage_name}</span>
+                                      <span className="text-muted-foreground/60 ml-2">
+                                        {stage.execution_data?.duration?.toFixed(1)}s
+                                      </span>
+                                      {stage.assessment?.message && (
+                                        <p className="text-xs text-muted-foreground/60">{stage.assessment.message}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })()}
                       
                       {/* Stage-by-Stage Analysis */}
                       <div className="p-4 bg-secondary/40 rounded-xl border border-border/20">
