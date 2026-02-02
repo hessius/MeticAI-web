@@ -1556,33 +1556,66 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                                 isAnimationActive={false}
                               />
                             )}
-                            {/* Profile target curves (shown after analysis) */}
-                            {hasTargetCurves && (
+                            {/* Profile target curves (shown after analysis) - rendered as separate path segments */}
+                            {hasTargetCurves && analysisResult?.profile_target_curves && (
                               <>
-                                <Line
-                                  yAxisId="left"
-                                  type="linear"
-                                  dataKey="targetPressure"
-                                  stroke={CHART_COLORS.targetPressure}
-                                  strokeWidth={1.5}
-                                  dot={false}
-                                  strokeDasharray="6 3"
-                                  name="Target Pressure"
-                                  isAnimationActive={false}
-                                  connectNulls={false}
-                                />
-                                <Line
-                                  yAxisId="left"
-                                  type="linear"
-                                  dataKey="targetFlow"
-                                  stroke={CHART_COLORS.targetFlow}
-                                  strokeWidth={1.5}
-                                  dot={false}
-                                  strokeDasharray="6 3"
-                                  name="Target Flow"
-                                  isAnimationActive={false}
-                                  connectNulls={false}
-                                />
+                                {/* Target Pressure - render as SVG path manually for precise control */}
+                                {(() => {
+                                  const pressurePoints = analysisResult.profile_target_curves
+                                    .filter(p => p.target_pressure !== undefined)
+                                    .sort((a, b) => a.time - b.time)
+                                  if (pressurePoints.length < 2) return null
+                                  
+                                  // Create simple line data for pressure targets
+                                  const pressureData = pressurePoints.map(p => ({
+                                    time: p.time,
+                                    value: p.target_pressure
+                                  }))
+                                  
+                                  return (
+                                    <Line
+                                      yAxisId="left"
+                                      data={pressureData}
+                                      type="linear"
+                                      dataKey="value"
+                                      stroke={CHART_COLORS.targetPressure}
+                                      strokeWidth={2.5}
+                                      dot={{ r: 3, fill: CHART_COLORS.targetPressure }}
+                                      strokeDasharray="8 4"
+                                      name="Target Pressure"
+                                      isAnimationActive={false}
+                                      legendType="none"
+                                    />
+                                  )
+                                })()}
+                                {/* Target Flow */}
+                                {(() => {
+                                  const flowPoints = analysisResult.profile_target_curves
+                                    .filter(p => p.target_flow !== undefined)
+                                    .sort((a, b) => a.time - b.time)
+                                  if (flowPoints.length < 2) return null
+                                  
+                                  const flowData = flowPoints.map(p => ({
+                                    time: p.time,
+                                    value: p.target_flow
+                                  }))
+                                  
+                                  return (
+                                    <Line
+                                      yAxisId="left"
+                                      data={flowData}
+                                      type="linear"
+                                      dataKey="value"
+                                      stroke={CHART_COLORS.targetFlow}
+                                      strokeWidth={2.5}
+                                      dot={{ r: 3, fill: CHART_COLORS.targetFlow }}
+                                      strokeDasharray="8 4"
+                                      name="Target Flow"
+                                      isAnimationActive={false}
+                                      legendType="none"
+                                    />
+                                  )
+                                })()}
                               </>
                             )}
                           </LineChart>
