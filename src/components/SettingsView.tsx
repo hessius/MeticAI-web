@@ -21,6 +21,7 @@ import {
 import { getServerUrl } from '@/lib/config'
 import { useUpdateStatus } from '@/hooks/useUpdateStatus'
 import { useUpdateTrigger } from '@/hooks/useUpdateTrigger'
+import { MarkdownText } from '@/components/MarkdownText'
 
 interface SettingsViewProps {
   onBack: () => void
@@ -37,7 +38,9 @@ interface Settings {
 interface VersionInfo {
   meticai: string
   meticaiWeb: string
+  meticaiWebCommit?: string
   mcpServer: string
+  mcpCommit?: string
   mcpRepoUrl: string
 }
 
@@ -116,7 +119,9 @@ export function SettingsView({ onBack }: SettingsViewProps) {
           setVersionInfo({
             meticai: data.meticai || 'unknown',
             meticaiWeb: data.meticai_web || data.meticaiWeb || 'unknown',
+            meticaiWebCommit: data.meticai_web_commit || undefined,
             mcpServer: data.mcp_server || data.mcpServer || 'unknown',
+            mcpCommit: data.mcp_commit || undefined,
             mcpRepoUrl: data.mcp_repo_url || 'https://github.com/manonstreet/meticulous-mcp'
           })
         }
@@ -514,11 +519,13 @@ export function SettingsView({ onBack }: SettingsViewProps) {
                         <span className="font-semibold text-sm">{note.version}</span>
                         <span className="text-xs text-muted-foreground">{note.date}</span>
                       </div>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                        {note.body.length > 300 
-                          ? note.body.substring(0, 300) + '...' 
-                          : note.body}
-                      </p>
+                      <div className="text-sm text-muted-foreground">
+                        <MarkdownText>
+                          {note.body.length > 500 
+                            ? note.body.substring(0, 500) + '...' 
+                            : note.body}
+                        </MarkdownText>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -539,7 +546,12 @@ export function SettingsView({ onBack }: SettingsViewProps) {
           </div>
           <div className="flex justify-between items-center py-2 border-b border-border/50">
             <span className="text-sm text-muted-foreground">MeticAI-web (Frontend)</span>
-            <span className="text-sm font-mono">{versionInfo?.meticaiWeb || '...'}</span>
+            <div className="text-right">
+              <span className="text-sm font-mono">{versionInfo?.meticaiWeb || '...'}</span>
+              {versionInfo?.meticaiWebCommit && (
+                <span className="text-xs text-muted-foreground/60 ml-1">({versionInfo.meticaiWebCommit})</span>
+              )}
+            </div>
           </div>
           <div className="flex justify-between items-center py-2">
             <div className="flex flex-col">
@@ -553,7 +565,12 @@ export function SettingsView({ onBack }: SettingsViewProps) {
                 {versionInfo?.mcpRepoUrl?.replace('https://github.com/', '') || 'manonstreet/meticulous-mcp'}
               </a>
             </div>
-            <span className="text-sm font-mono">{versionInfo?.mcpServer || '...'}</span>
+            <div className="text-right">
+              <span className="text-sm font-mono">{versionInfo?.mcpServer || '...'}</span>
+              {versionInfo?.mcpCommit && versionInfo.mcpServer !== versionInfo.mcpCommit && (
+                <span className="text-xs text-muted-foreground/60 ml-1">({versionInfo.mcpCommit})</span>
+              )}
+            </div>
           </div>
         </div>
       </Card>
