@@ -23,7 +23,8 @@ import {
   Info,
   Check,
   XCircle,
-  Plus
+  Plus,
+  Play
 } from '@phosphor-icons/react'
 import { useHistory, HistoryEntry } from '@/hooks/useHistory'
 import { MarkdownText } from '@/components/MarkdownText'
@@ -510,9 +511,10 @@ const IMAGE_STYLES = [
 interface ProfileDetailViewProps {
   entry: HistoryEntry
   onBack: () => void
+  onRunProfile?: (profileId: string, profileName: string) => void
 }
 
-export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
+export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetailViewProps) {
   const { downloadJson } = useHistory()
   const [isDownloading, setIsDownloading] = useState(false)
   const [isCapturing, setIsCapturing] = useState(false)
@@ -537,6 +539,33 @@ export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
   const [showLightbox, setShowLightbox] = useState(false)
   const resultsCardRef = useRef<HTMLDivElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  
+  // Machine profile ID for run/schedule functionality
+  const [machineProfileId, setMachineProfileId] = useState<string | null>(null)
+
+  // Fetch machine profile ID by name
+  useEffect(() => {
+    const fetchMachineProfileId = async () => {
+      if (!onRunProfile) return // Skip if callback not provided
+      try {
+        const serverUrl = await getServerUrl()
+        const response = await fetch(`${serverUrl}/api/machine/profiles`)
+        if (response.ok) {
+          const data = await response.json()
+          const profiles = data.profiles || []
+          const matchingProfile = profiles.find((p: { id: string; name: string }) => 
+            p.name === entry.profile_name
+          )
+          if (matchingProfile) {
+            setMachineProfileId(matchingProfile.id)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch machine profile ID:', err)
+      }
+    }
+    fetchMachineProfileId()
+  }, [entry.profile_name, onRunProfile])
 
   // Fetch profile image on mount
   useEffect(() => {
@@ -954,10 +983,22 @@ export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
 
         {!isCapturing && (
           <div className="space-y-2.5">
+            {/* Run / Schedule Button */}
+            {onRunProfile && machineProfileId && (
+              <Button
+                onClick={() => onRunProfile(machineProfileId, entry.profile_name)}
+                className="w-full h-12 text-sm font-semibold bg-success hover:bg-success/90"
+              >
+                <Play size={18} className="mr-2" weight="fill" />
+                Run / Schedule Shot
+              </Button>
+            )}
+            
             {/* Shot History Button */}
             <Button
               onClick={() => setShowShotHistory(true)}
               className="w-full h-12 text-sm font-semibold"
+              variant={onRunProfile && machineProfileId ? "outline" : "default"}
             >
               <ChartLine size={18} className="mr-2" weight="bold" />
               Shot History & Analysis

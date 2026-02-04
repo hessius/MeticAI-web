@@ -95,6 +95,7 @@ function App() {
   const [qrDialogOpen, setQrDialogOpen] = useState(false)
   const [selectedHistoryEntry, setSelectedHistoryEntry] = useState<HistoryEntry | null>(null)
   const [currentProfileJson, setCurrentProfileJson] = useState<Record<string, unknown> | null>(null)
+  const [createdProfileId, setCreatedProfileId] = useState<string | null>(null)
   const [runShotProfileId, setRunShotProfileId] = useState<string | undefined>(undefined)
   const [runShotProfileName, setRunShotProfileName] = useState<string | undefined>(undefined)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -285,7 +286,28 @@ function App() {
         return null
       }
       
-      setCurrentProfileJson(extractProfileJson(data.reply))
+      const profileJson = extractProfileJson(data.reply)
+      setCurrentProfileJson(profileJson)
+      
+      // Fetch the machine profile ID for the created profile
+      const profileName = profileJson?.name as string | undefined
+      if (profileName) {
+        try {
+          const profilesResponse = await fetch(`${serverUrl}/api/machine/profiles`)
+          if (profilesResponse.ok) {
+            const profilesData = await profilesResponse.json()
+            const matchingProfile = (profilesData.profiles || []).find(
+              (p: { id: string; name: string }) => p.name === profileName
+            )
+            if (matchingProfile) {
+              setCreatedProfileId(matchingProfile.id)
+            }
+          }
+        } catch (profileErr) {
+          console.error('Failed to fetch profile ID:', profileErr)
+        }
+      }
+      
       setViewState('results')
     } catch (error) {
       clearInterval(messageInterval)
@@ -312,6 +334,7 @@ function App() {
     setErrorMessage('')
     setCurrentMessage(0)
     setCurrentProfileJson(null)
+    setCreatedProfileId(null)
     setSelectedHistoryEntry(null)
   }, [refreshProfileCount])
 
@@ -776,6 +799,11 @@ Special Notes: For maximum clarity and to really make those delicate floral note
             <ProfileDetailView
               entry={selectedHistoryEntry}
               onBack={() => setViewState('history')}
+              onRunProfile={(profileId, profileName) => {
+                setRunShotProfileId(profileId)
+                setRunShotProfileName(profileName)
+                setViewState('run-shot')
+              }}
             />
           )}
 
@@ -1029,6 +1057,21 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                       </AlertDescription>
                     </Alert>
 
+                    {/* Run / Schedule Button */}
+                    {createdProfileId && currentProfileJson?.name && (
+                      <Button
+                        onClick={() => {
+                          setRunShotProfileId(createdProfileId)
+                          setRunShotProfileName(currentProfileJson.name as string)
+                          setViewState('run-shot')
+                        }}
+                        className="w-full h-12 text-sm font-semibold bg-success hover:bg-success/90"
+                      >
+                        <Play size={18} className="mr-1.5" weight="fill" />
+                        Run / Schedule Shot
+                      </Button>
+                    )}
+
                     {/* Export Buttons */}
                     <div className="space-y-1.5">
                       <Label className="text-xs font-medium text-muted-foreground block text-center">Export as</Label>
@@ -1058,6 +1101,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                     {/* Action Button */}
                     <Button
                       onClick={() => setViewState('history')}
+                      variant={createdProfileId ? "outline" : "default"}
                       className="w-full h-12 text-sm font-semibold"
                     >
                       <Coffee size={18} className="mr-1.5" weight="fill" />
