@@ -182,7 +182,27 @@ describe('ProfileBreakdown', () => {
       render(<ProfileBreakdown profile={profile} />)
       
       expect(screen.getByText(/Max:/)).toBeInTheDocument()
-      expect(screen.getByText(/pressure ≤ 3 bar/)).toBeInTheDocument()
+      expect(screen.getByText(/pressure ≤ 3\.0 bar/)).toBeInTheDocument()
+    })
+
+    it('should resolve variable references in limits', () => {
+      const profile: ProfileData = {
+        variables: [
+          { name: 'Peak Pressure', key: 'peak_pressure', type: 'pressure', value: 8 }
+        ],
+        stages: [
+          {
+            name: 'Variable Limit Stage',
+            type: 'flow',
+            dynamics: { points: [[0, 2]], over: 'time' },
+            limits: [{ type: 'pressure', value: '$peak_pressure' }]
+          }
+        ]
+      }
+      render(<ProfileBreakdown profile={profile} />)
+      
+      // Should resolve $peak_pressure to 8.0, not show the variable name
+      expect(screen.getByText(/pressure ≤ 8\.0 bar/)).toBeInTheDocument()
     })
 
     it('should handle multiple stages', () => {

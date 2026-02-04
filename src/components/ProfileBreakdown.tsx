@@ -26,7 +26,7 @@ interface StageDynamics {
 
 interface StageLimit {
   type: string
-  value: number
+  value: number | string
 }
 
 interface ExitTrigger {
@@ -317,12 +317,20 @@ function formatExitTriggers(triggers?: ExitTrigger[]): string | null {
   }).join(', ')
 }
 
-function formatLimits(limits?: StageLimit[]): string | null {
+function formatLimits(limits?: StageLimit[], variables?: ProfileVariable[]): string | null {
   if (!limits || limits.length === 0) return null
   
   return limits.map(l => {
     const unit = getTypeUnit(l.type)
-    return `${l.type} ≤ ${l.value}${unit ? ` ${unit}` : ''}`
+    // Resolve variable references
+    let displayValue: string
+    if (typeof l.value === 'string' && l.value.startsWith('$')) {
+      const resolved = resolveValue(l.value, variables)
+      displayValue = resolved !== null ? resolved.toFixed(1) : l.value
+    } else {
+      displayValue = typeof l.value === 'number' ? l.value.toFixed(1) : String(l.value)
+    }
+    return `${l.type} ≤ ${displayValue}${unit ? ` ${unit}` : ''}`
   }).join(', ')
 }
 
@@ -414,7 +422,7 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
             <div className="space-y-2">
               {profile.stages!.map((stage, idx) => {
                 const exitInfo = formatExitTriggers(stage.exit_triggers)
-                const limitsInfo = formatLimits(stage.limits)
+                const limitsInfo = formatLimits(stage.limits, profile.variables)
                 // Normalize dynamics - handles both nested and flattened formats
                 const normalizedDynamics = getNormalizedDynamics(stage)
                 const dynamicsDesc = describeDynamics(normalizedDynamics, stage.type, profile.variables)
