@@ -8,7 +8,8 @@ import {
   ListNumbers,
   Timer,
   Drop,
-  Gauge
+  Gauge,
+  Info
 } from '@phosphor-icons/react'
 
 interface ProfileVariable {
@@ -385,30 +386,80 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
         )}
         
         {/* Variables */}
-        {hasVariables && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Sliders size={14} weight="bold" className="text-muted-foreground" />
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Variables</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {profile.variables!.map((variable, idx) => (
-                <div 
-                  key={idx}
-                  className={`px-2.5 py-1.5 rounded-lg border text-xs ${getTypeColor(variable.type)}`}
-                >
-                  <span className="font-medium">{variable.name}</span>
-                  <span className="opacity-70 ml-1.5">
-                    {variable.value}
-                    {variable.type === 'pressure' && ' bar'}
-                    {variable.type === 'flow' && ' ml/s'}
-                    {variable.type === 'time' && 's'}
-                  </span>
+        {hasVariables && (() => {
+          // Separate info variables (key starts with info_) from adjustable variables
+          const infoVars = profile.variables!.filter(v => v.key.startsWith('info_'))
+          const adjustableVars = profile.variables!.filter(v => !v.key.startsWith('info_'))
+          
+          return (
+            <div className="space-y-3">
+              {/* Info Variables - display as tips/recommendations */}
+              {infoVars.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Info size={14} weight="bold" className="text-blue-400" />
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Preparation</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {infoVars.map((variable, idx) => {
+                      // Format the display value based on the info type
+                      let displayValue = ''
+                      if (variable.key === 'info_dose') {
+                        displayValue = `${variable.value}g`
+                      } else if (variable.key === 'info_dilute') {
+                        displayValue = `${variable.value}ml`
+                      } else if (variable.key === 'info_grind') {
+                        displayValue = `~${variable.value}`
+                      } else if (variable.key === 'info_filter' || variable.value === 1 || variable.value === 0) {
+                        displayValue = '' // Boolean-style info, name says it all
+                      } else {
+                        displayValue = String(variable.value)
+                      }
+                      
+                      return (
+                        <div 
+                          key={idx}
+                          className="px-2.5 py-1.5 rounded-lg border text-xs bg-blue-500/10 text-blue-300 border-blue-500/30"
+                        >
+                          <span className="font-medium">{variable.name}</span>
+                          {displayValue && (
+                            <span className="opacity-80 ml-1.5">{displayValue}</span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
-              ))}
+              )}
+              
+              {/* Adjustable Variables */}
+              {adjustableVars.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Sliders size={14} weight="bold" className="text-muted-foreground" />
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Adjustable Variables</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {adjustableVars.map((variable, idx) => (
+                      <div 
+                        key={idx}
+                        className={`px-2.5 py-1.5 rounded-lg border text-xs ${getTypeColor(variable.type)}`}
+                      >
+                        <span className="font-medium">{variable.name}</span>
+                        <span className="opacity-70 ml-1.5">
+                          {variable.value}
+                          {variable.type === 'pressure' && ' bar'}
+                          {variable.type === 'flow' && ' ml/s'}
+                          {variable.type === 'time' && 's'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )
+        })()}
         
         {/* Stages */}
         {hasStages && (
