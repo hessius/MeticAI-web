@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, Info, QrCode, FileJs, Coffee, Image, CaretLeft, Plus, Gear, Play } from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
-import { MarkdownText } from '@/components/MarkdownText'
+import { MarkdownText, cleanProfileName } from '@/components/MarkdownText'
 import { domToPng } from 'modern-screenshot'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
@@ -387,9 +387,9 @@ function App() {
       return
     }
 
-    const profileName = selectedHistoryEntry?.profile_name || 
+    const profileName = cleanProfileName(selectedHistoryEntry?.profile_name || 
       apiResponse?.reply.match(/Profile Created:\s*(.+?)(?:\n|$)/i)?.[1]?.trim() || 
-      'profile'
+      'profile')
     
     const safeName = profileName
       .toLowerCase()
@@ -416,7 +416,7 @@ function App() {
     try {
       // Extract profile name from the reply
       const profileNameMatch = apiResponse.reply.match(/Profile Created:\s*(.+?)(?:\n|$)/i)
-      const profileName = profileNameMatch ? profileNameMatch[1].trim() : 'espresso-profile'
+      const profileName = cleanProfileName(profileNameMatch ? profileNameMatch[1].trim() : 'espresso-profile')
       const safeFilename = profileName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
       
       // Enable capturing mode to show header and hide buttons
@@ -902,7 +902,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
               <Card className={`p-6 ${isCapturing ? 'space-y-4' : 'space-y-5'}`}>
                 {(() => {
                   const profileNameMatch = apiResponse.reply.match(/Profile Created:\s*(.+?)(?:\n|$)/i)
-                  const profileName = profileNameMatch?.[1]?.trim()
+                  const profileName = cleanProfileName(profileNameMatch?.[1]?.trim() || '')
                   
                   if (isCapturing && profileName) {
                     return (

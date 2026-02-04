@@ -28,7 +28,7 @@ import {
 } from '@phosphor-icons/react'
 import { useHistory, HistoryEntry } from '@/hooks/useHistory'
 import { useProfileImageCache } from '@/hooks/useProfileImageCache'
-import { MarkdownText } from '@/components/MarkdownText'
+import { MarkdownText, cleanProfileName } from '@/components/MarkdownText'
 import { formatDistanceToNow } from 'date-fns'
 import { domToPng } from 'modern-screenshot'
 import { MeticAILogo } from '@/components/MeticAILogo'
@@ -375,7 +375,7 @@ export function HistoryView({ onBack, onViewProfile, onGenerateNew }: HistoryVie
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                            {entry.profile_name}
+                            {cleanProfileName(entry.profile_name)}
                           </h3>
                           <p className="text-xs text-muted-foreground/70 mt-1">
                             {formatDate(entry.created_at)}
@@ -871,7 +871,7 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
               </Button>
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-bold text-foreground truncate">
-                  {entry.profile_name}
+                  {cleanProfileName(entry.profile_name)}
                 </h2>
                 <p className="text-xs text-muted-foreground/70">
                   {(() => {
@@ -910,7 +910,7 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
           )}
           {isCapturing && (
             <div className="text-success w-full">
-              <h2 className="text-2xl font-bold break-words">{entry.profile_name}</h2>
+              <h2 className="text-2xl font-bold break-words">{cleanProfileName(entry.profile_name)}</h2>
             </div>
           )}
 
@@ -1194,7 +1194,7 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
                   className="w-full h-auto object-contain"
                 />
               </div>
-              <p className="text-center text-white/80 mt-4 text-sm font-medium">{entry.profile_name}</p>
+              <p className="text-center text-white/80 mt-4 text-sm font-medium">{cleanProfileName(entry.profile_name)}</p>
             </motion.div>
           </motion.div>
         )}

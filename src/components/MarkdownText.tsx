@@ -6,8 +6,42 @@ interface MarkdownTextProps {
   className?: string
 }
 
+/**
+ * Clean malformed markdown patterns that the LLM sometimes outputs:
+ * - "** text" (space after opening **)
+ * - "**" alone on a line
+ * - "###" alone on a line  
+ * - Leading/trailing ** on profile names
+ */
+export function cleanMalformedMarkdown(text: string): string {
+  return text
+    // Remove lines that are just ** or ### (with optional whitespace)
+    .replace(/^\s*\*\*\s*$/gm, '')
+    .replace(/^\s*###\s*$/gm, '')
+    // Fix "** text" pattern at start of line -> just "text"
+    .replace(/^\*\*\s+(?!\*)/gm, '')
+    // Fix "text **" pattern at end of line -> just "text"
+    .replace(/(?<!\*)\s+\*\*$/gm, '')
+    // Clean up multiple blank lines that result from removals
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+/**
+ * Clean a profile name by removing any stray markdown formatting
+ */
+export function cleanProfileName(name: string): string {
+  return name
+    // Remove leading/trailing ** or *
+    .replace(/^\*+\s*/, '')
+    .replace(/\s*\*+$/, '')
+    // Remove any remaining ** pairs (malformed bold)
+    .replace(/\*\*/g, '')
+    .trim()
+}
+
 export function MarkdownText({ children, text, className = '' }: MarkdownTextProps) {
-  const content = text ?? children ?? ''
+  const content = cleanMalformedMarkdown(text ?? children ?? '')
   
   const renderMarkdown = (textContent: string): React.ReactNode[] => {
     const lines = textContent.split('\n')
