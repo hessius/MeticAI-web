@@ -47,9 +47,12 @@ import {
 function extractDescription(reply: string): string | null {
   if (!reply) return null
   
-  const descMatch = reply.match(/Description:\s*([\s\S]*?)(?:Preparation:|Why This Works:|Special Notes:|PROFILE JSON|```|$)/i)
+  // Handle both "Description:" and "**Description:**" formats
+  const descMatch = reply.match(/\*?\*?Description:\*?\*?\s*([\s\S]*?)(?:\*?\*?Preparation:|\*?\*?Why This Works:|\*?\*?Special Notes:|PROFILE JSON|```|$)/i)
   if (descMatch && descMatch[1]) {
-    const desc = descMatch[1].trim()
+    let desc = descMatch[1].trim()
+    // Clean up any leading/trailing ** artifacts
+    desc = desc.replace(/^\*+\s*/, '').replace(/\s*\*+$/, '')
     // Clean up any trailing headers or code blocks
     return desc.replace(/```[\s\S]*$/g, '').trim() || null
   }
@@ -790,7 +793,8 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
     const remainingText = text
     
     sectionHeaders.forEach((header, index) => {
-      const headerPattern = new RegExp(`${header}:\\s*`, 'i')
+      // Handle both "Header:" and "**Header:**" formats
+      const headerPattern = new RegExp(`\\*?\\*?${header}:\\*?\\*?\\s*`, 'i')
       const match = remainingText.match(headerPattern)
       
       if (match && match.index !== undefined) {
@@ -798,7 +802,8 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
         
         let endIndex = remainingText.length
         for (let i = index + 1; i < sectionHeaders.length; i++) {
-          const nextHeaderPattern = new RegExp(`${sectionHeaders[i]}:`, 'i')
+          // Handle both "Header:" and "**Header:**" formats
+          const nextHeaderPattern = new RegExp(`\\*?\\*?${sectionHeaders[i]}:`, 'i')
           const nextMatch = remainingText.match(nextHeaderPattern)
           if (nextMatch && nextMatch.index !== undefined) {
             endIndex = nextMatch.index
@@ -806,7 +811,10 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
           }
         }
         
-        const content = remainingText.substring(startIndex, endIndex).trim()
+        let content = remainingText.substring(startIndex, endIndex).trim()
+        // Clean any remaining ** artifacts at start/end of content
+        content = content.replace(/^\*+\s*/, '').replace(/\s*\*+$/, '')
+        
         // Stop at "PROFILE JSON" section
         const jsonSectionIndex = content.indexOf('PROFILE JSON')
         let finalContent = jsonSectionIndex > 0 

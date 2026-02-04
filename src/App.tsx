@@ -969,11 +969,12 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                         'Special Notes'
                       ]
                       
-                      // Split by section headers
+                      // Split by section headers (handles both "Header:" and "**Header:**" formats)
                       const remainingText = text
                       
                       sectionHeaders.forEach((header, index) => {
-                        const headerPattern = new RegExp(`${header}:\\s*`, 'i')
+                        // Match both "Header:" and "**Header:**" patterns
+                        const headerPattern = new RegExp(`\\*?\\*?${header}:\\*?\\*?\\s*`, 'i')
                         const match = remainingText.match(headerPattern)
                         
                         if (match && match.index !== undefined) {
@@ -982,7 +983,8 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                           // Find the next section header or end of text
                           let endIndex = remainingText.length
                           for (let i = index + 1; i < sectionHeaders.length; i++) {
-                            const nextHeaderPattern = new RegExp(`${sectionHeaders[i]}:`, 'i')
+                            // Match both "Header:" and "**Header:**" patterns
+                            const nextHeaderPattern = new RegExp(`\\*?\\*?${sectionHeaders[i]}:`, 'i')
                             const nextMatch = remainingText.match(nextHeaderPattern)
                             if (nextMatch && nextMatch.index !== undefined) {
                               endIndex = nextMatch.index
@@ -991,6 +993,9 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                           }
                           
                           let content = remainingText.substring(startIndex, endIndex).trim()
+                          
+                          // Clean any remaining ** artifacts at start/end of content
+                          content = content.replace(/^\*+\s*/, '').replace(/\s*\*+$/, '')
                           
                           // Stop at PROFILE JSON section to hide JSON output
                           const jsonSectionIndex = content.indexOf('PROFILE JSON')
