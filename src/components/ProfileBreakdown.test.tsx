@@ -74,8 +74,8 @@ describe('ProfileBreakdown', () => {
       const profile: ProfileData = {
         temperature: 93,
         variables: [
-          { name: '☕ Dose', key: 'info_dose', type: 'power', value: 18 },
-          { name: '💧 Dilute with', key: 'info_dilute', type: 'power', value: 50 },
+          { name: '☕ Dose', key: 'info_dose', type: 'weight', value: 18 },
+          { name: '💧 Add water', key: 'info_dilute', type: 'weight', value: 50 },
           { name: 'Peak Pressure', key: 'peak_pressure', type: 'pressure', value: 9.0 }
         ]
       }
@@ -84,29 +84,32 @@ describe('ProfileBreakdown', () => {
       // Info variables should be in "Preparation" section
       expect(screen.getByText(/Preparation/)).toBeInTheDocument()
       expect(screen.getByText('☕ Dose')).toBeInTheDocument()
-      expect(screen.getByText('18g')).toBeInTheDocument() // Dose shows as grams
-      expect(screen.getByText('💧 Dilute with')).toBeInTheDocument()
-      expect(screen.getByText('50ml')).toBeInTheDocument() // Dilute shows as ml
+      expect(screen.getByText('18g')).toBeInTheDocument() // Dose shows as grams (weight type)
+      expect(screen.getByText('💧 Add water')).toBeInTheDocument()
+      expect(screen.getByText('50g')).toBeInTheDocument() // Weight type shows as grams
       
       // Adjustable variables should be in separate section
       expect(screen.getByText(/Adjustable Variables/)).toBeInTheDocument()
       expect(screen.getByText('Peak Pressure')).toBeInTheDocument()
+      
+      // Should show the Meticulous app tip
+      expect(screen.getByText(/Meticulous app/)).toBeInTheDocument()
     })
 
     it('should render info-only profiles without adjustable section', () => {
       const profile: ProfileData = {
         temperature: 93,
         variables: [
-          { name: '☕ Dose', key: 'info_dose', type: 'power', value: 18 },
-          { name: '🔧 Use Bottom Filter!', key: 'info_filter', type: 'power', value: 1 }
+          { name: '☕ Dose', key: 'info_dose', type: 'weight', value: 18 },
+          { name: '🔧 Use bottom filter', key: 'info_filter', type: 'power', value: 0 }
         ]
       }
       render(<ProfileBreakdown profile={profile} />)
       
       expect(screen.getByText(/Preparation/)).toBeInTheDocument()
       expect(screen.getByText('☕ Dose')).toBeInTheDocument()
-      expect(screen.getByText('🔧 Use Bottom Filter!')).toBeInTheDocument()
-      // Boolean-style info should not show a value
+      expect(screen.getByText('🔧 Use bottom filter')).toBeInTheDocument()
+      // Power type with value 0 should not show a value (label-only)
       expect(screen.queryByText(/Adjustable Variables/)).not.toBeInTheDocument()
     })
 

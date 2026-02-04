@@ -402,16 +402,20 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {infoVars.map((variable, idx) => {
-                      // Format the display value based on the info type
+                      // Format the display value based on the variable type and key
                       let displayValue = ''
-                      if (variable.key === 'info_dose') {
+                      if (variable.type === 'weight') {
+                        // Weight type displays as grams
                         displayValue = `${variable.value}g`
-                      } else if (variable.key === 'info_dilute') {
-                        displayValue = `${variable.value}ml`
-                      } else if (variable.key === 'info_grind') {
-                        displayValue = `~${variable.value}`
-                      } else if (variable.key === 'info_filter' || variable.value === 1 || variable.value === 0) {
-                        displayValue = '' // Boolean-style info, name says it all
+                      } else if (variable.type === 'flow') {
+                        displayValue = `${variable.value} ml/s`
+                      } else if (variable.type === 'pressure') {
+                        displayValue = `${variable.value} bar`
+                      } else if (variable.type === 'time') {
+                        displayValue = `${variable.value}s`
+                      } else if (variable.type === 'power' && variable.value === 0) {
+                        // Power with 0 value = label-only, no value to show
+                        displayValue = ''
                       } else {
                         displayValue = String(variable.value)
                       }
@@ -429,6 +433,9 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
                       )
                     })}
                   </div>
+                  <p className="text-[10px] text-muted-foreground/60 italic">
+                    💡 Also visible in the Meticulous app under Profile Settings → Variables
+                  </p>
                 </div>
               )}
               
