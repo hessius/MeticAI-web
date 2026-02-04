@@ -492,12 +492,18 @@ Special Notes: For maximum clarity and to really make those delicate floral note
     setClickCount(newCount)
     
     if (newCount === 5) {
+      // Secret dev feature: 5 rapid clicks loads test results
       loadMockResults()
       setClickCount(0)
     } else {
+      // Set a timer - if no more clicks, go home after 300ms
       clickTimerRef.current = setTimeout(() => {
+        // Single tap: go home (only if not on start already)
+        if (viewState !== 'start') {
+          handleReset()
+        }
         setClickCount(0)
-      }, 1000)
+      }, 300)
     }
   }
 
@@ -520,9 +526,9 @@ Special Notes: For maximum clarity and to really make those delicate floral note
           <div className="flex items-center justify-center gap-3 mb-3 relative">
             <MeticAILogo size={44} variant="white" />
             <h1 
-              className="text-4xl font-bold tracking-tight"
+              className="text-4xl font-bold tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
               onClick={handleTitleClick}
-              title="Click 5 times to load test results"
+              title="Tap to go home"
             >
               Metic<span className="text-primary">AI</span>
             </h1>

@@ -12,6 +12,18 @@ import {
   Info
 } from '@phosphor-icons/react'
 
+// Distinct colors for variables - designed to be easily distinguishable
+const VARIABLE_COLORS = [
+  { bg: 'bg-violet-500/20', text: 'text-violet-400', border: 'border-violet-500/40', dot: 'bg-violet-400' },
+  { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/40', dot: 'bg-emerald-400' },
+  { bg: 'bg-rose-500/20', text: 'text-rose-400', border: 'border-rose-500/40', dot: 'bg-rose-400' },
+  { bg: 'bg-cyan-500/20', text: 'text-cyan-400', border: 'border-cyan-500/40', dot: 'bg-cyan-400' },
+  { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/40', dot: 'bg-orange-400' },
+  { bg: 'bg-pink-500/20', text: 'text-pink-400', border: 'border-pink-500/40', dot: 'bg-pink-400' },
+  { bg: 'bg-teal-500/20', text: 'text-teal-400', border: 'border-teal-500/40', dot: 'bg-teal-400' },
+  { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/40', dot: 'bg-yellow-400' },
+]
+
 interface ProfileVariable {
   name: string
   key: string
@@ -47,6 +59,34 @@ interface ProfileStage {
   exit_triggers?: ExitTrigger[]
   limits?: StageLimit[]
   key?: string
+}
+
+// Find which stages use each variable
+function findVariableUsage(stages: ProfileStage[], variables: ProfileVariable[]): Map<string, string[]> {
+  const usage = new Map<string, string[]>()
+  
+  // Initialize all variables with empty arrays
+  variables.forEach(v => {
+    if (!v.key.startsWith('info_')) {
+      usage.set(v.key, [])
+    }
+  })
+  
+  stages.forEach(stage => {
+    const stageJson = JSON.stringify(stage)
+    variables.forEach(v => {
+      if (v.key.startsWith('info_')) return // Skip info variables
+      
+      // Look for $variable_key pattern in the stage JSON
+      if (stageJson.includes(`"$${v.key}"`) || stageJson.includes(`$${v.key}`)) {
+        const stageList = usage.get(v.key) || []
+        stageList.push(stage.name)
+        usage.set(v.key, stageList)
+      }
+    })
+  })
+  
+  return usage
 }
 
 // Normalize stage dynamics - handles both nested and flattened formats
@@ -391,6 +431,13 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
           const infoVars = profile.variables!.filter(v => v.key.startsWith('info_'))
           const adjustableVars = profile.variables!.filter(v => !v.key.startsWith('info_'))
           
+          // Find which stages use each adjustable variable and assign colors
+          const variableUsage = hasStages ? findVariableUsage(profile.stages!, adjustableVars) : new Map()
+          const variableColorMap = new Map<string, typeof VARIABLE_COLORS[0]>()
+          adjustableVars.forEach((v, idx) => {
+            variableColorMap.set(v.key, VARIABLE_COLORS[idx % VARIABLE_COLORS.length])
+          })
+          
           return (
             <div className="space-y-3">
               {/* Info Variables - display as tips/recommendations */}
@@ -413,9 +460,16 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
                         displayValue = `${variable.value} bar`
                       } else if (variable.type === 'time') {
                         displayValue = `${variable.value}s`
-                      } else if (variable.type === 'power' && variable.value === 0) {
-                        // Power with 0 value = label-only, no value to show
-                        displayValue = ''
+                      } else if (variable.type === 'power') {
+                        // Power type: 100 = true/yes, 0 = false/no
+                        // Show percentage for clarity
+                        if (variable.value === 100) {
+                          displayValue = '✓'
+                        } else if (variable.value === 0) {
+                          displayValue = '' // Label already implies the action, e.g. "Use bottom filter"
+                        } else {
+                          displayValue = `${variable.value}%`
+                        }
                       } else {
                         displayValue = String(variable.value)
                       }
@@ -447,20 +501,33 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Adjustable Variables</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {adjustableVars.map((variable, idx) => (
-                      <div 
-                        key={idx}
-                        className={`px-2.5 py-1.5 rounded-lg border text-xs ${getTypeColor(variable.type)}`}
-                      >
-                        <span className="font-medium">{variable.name}</span>
-                        <span className="opacity-70 ml-1.5">
-                          {variable.value}
-                          {variable.type === 'pressure' && ' bar'}
-                          {variable.type === 'flow' && ' ml/s'}
-                          {variable.type === 'time' && 's'}
-                        </span>
-                      </div>
-                    ))}
+                    {adjustableVars.map((variable, idx) => {
+                      const color = variableColorMap.get(variable.key) || VARIABLE_COLORS[0]
+                      const usedInStages = variableUsage.get(variable.key) || []
+                      
+                      return (
+                        <div 
+                          key={idx}
+                          className={`px-2.5 py-1.5 rounded-lg border text-xs ${color.bg} ${color.text} ${color.border}`}
+                          title={usedInStages.length > 0 ? `Used in: ${usedInStages.join(', ')}` : 'Not used in any stage'}
+                        >
+                          {/* Color dot indicator */}
+                          <span className={`inline-block w-2 h-2 rounded-full ${color.dot} mr-1.5`} />
+                          <span className="font-medium">{variable.name}</span>
+                          <span className="opacity-70 ml-1.5">
+                            {variable.value}
+                            {variable.type === 'pressure' && ' bar'}
+                            {variable.type === 'flow' && ' ml/s'}
+                            {variable.type === 'time' && 's'}
+                          </span>
+                          {usedInStages.length > 0 && (
+                            <span className="ml-1.5 opacity-60 text-[10px]">
+                              → {usedInStages.length} stage{usedInStages.length > 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )}
