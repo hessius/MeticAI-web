@@ -106,6 +106,18 @@ export function MarkdownText({ children, text, className = '' }: MarkdownTextPro
         return
       }
       
+      // Handle **Label:** Value pattern (common in LLM output)
+      const labelMatch = line.match(/^\*\*([^*]+):\*\*\s*(.*)$/)
+      if (labelMatch) {
+        result.push(
+          <p key={`label-${lineIndex}`} className="leading-relaxed">
+            <strong className="font-semibold">{labelMatch[1]}:</strong>
+            {labelMatch[2] && <span> {labelMatch[2]}</span>}
+          </p>
+        )
+        return
+      }
+      
       // Regular paragraph
       result.push(
         <p key={`p-${lineIndex}`} className="leading-relaxed">
