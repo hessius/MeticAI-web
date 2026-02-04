@@ -27,6 +27,7 @@ import {
   Play
 } from '@phosphor-icons/react'
 import { useHistory, HistoryEntry } from '@/hooks/useHistory'
+import { useProfileImageCache } from '@/hooks/useProfileImageCache'
 import { MarkdownText } from '@/components/MarkdownText'
 import { formatDistanceToNow } from 'date-fns'
 import { domToPng } from 'modern-screenshot'
@@ -34,6 +35,7 @@ import { MeticAILogo } from '@/components/MeticAILogo'
 import { ShotHistoryView } from '@/components/ShotHistoryView'
 import { ImageCropDialog } from '@/components/ImageCropDialog'
 import { ProfileImportDialog } from '@/components/ProfileImportDialog'
+import { ProfileBreakdown, ProfileData } from '@/components/ProfileBreakdown'
 import { getServerUrl } from '@/lib/config'
 import { 
   extractTagsFromPreferences, 
@@ -77,47 +79,26 @@ export function HistoryView({ onBack, onViewProfile, onGenerateNew }: HistoryVie
   const [showFilters, setShowFilters] = useState(false)
   const [profileImages, setProfileImages] = useState<Record<string, string>>({})
   const [showImportDialog, setShowImportDialog] = useState(false)
+  
+  // Use cached profile images
+  const { fetchImagesForProfiles } = useProfileImageCache()
 
   useEffect(() => {
     fetchHistory()
   }, [fetchHistory])
 
-  // Fetch profile images for all entries
+  // Fetch profile images for all entries (using cache)
   useEffect(() => {
-    const fetchImages = async () => {
+    const loadImages = async () => {
       if (entries.length === 0) return
       
-      const serverUrl = await getServerUrl()
-      const newImages: Record<string, string> = {}
-      
-      // Fetch images in batches to avoid overwhelming the server
-      const batchSize = 10
-      for (let i = 0; i < entries.length; i += batchSize) {
-        const batch = entries.slice(i, i + batchSize)
-        const fetchPromises = batch.map(async (entry) => {
-          try {
-            const response = await fetch(
-              `${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}`
-            )
-            if (response.ok) {
-              const data = await response.json()
-              if (data.profile?.image) {
-                // Use the proxy endpoint to get the actual image
-                newImages[entry.profile_name] = `${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}/image-proxy`
-              }
-            }
-          } catch {
-            // Silently ignore errors for individual profile fetches
-          }
-        })
-        
-        await Promise.allSettled(fetchPromises)
-      }
-      setProfileImages(prev => ({ ...prev, ...newImages }))
+      const profileNames = entries.map(e => e.profile_name)
+      const images = await fetchImagesForProfiles(profileNames)
+      setProfileImages(images)
     }
     
-    fetchImages()
-  }, [entries])
+    loadImages()
+  }, [entries, fetchImagesForProfiles])
 
   // Get all available tags from entries for filtering
   const availableTags = useMemo(() => {
@@ -516,6 +497,7 @@ interface ProfileDetailViewProps {
 
 export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetailViewProps) {
   const { downloadJson } = useHistory()
+  const { invalidate: invalidateImageCache } = useProfileImageCache()
   const [isDownloading, setIsDownloading] = useState(false)
   const [isCapturing, setIsCapturing] = useState(false)
   const [showShotHistory, setShowShotHistory] = useState(false)
@@ -611,6 +593,9 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
         const error = await response.json().catch(() => ({ message: 'Upload failed' }))
         throw new Error(error.detail?.message || error.message || 'Failed to upload image')
       }
+      
+      // Invalidate the image cache so the catalogue will re-fetch
+      invalidateImageCache(entry.profile_name)
       
       setImageUploadSuccess(true)
       setShowCropDialog(false)
@@ -722,6 +707,8 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
       setShowPreviewDialog(false)
       setPreviewImage(null)
       setImageCacheBuster(newCacheBuster)
+      // Invalidate the image cache so the catalogue will re-fetch
+      invalidateImageCache(entry.profile_name)
       // Immediately set the new profile image URL with cache buster
       setProfileImage(`${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}/image-proxy?t=${newCacheBuster}`)
       setImageUploadSuccess(true)
@@ -981,8 +968,22 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
           )}
         </div>
 
+          {/* Profile Technical Breakdown */}
+          {entry.profile_json && (
+            <ProfileBreakdown profile={entry.profile_json as ProfileData} />
+          )}
+
         {!isCapturing && (
           <div className="space-y-2.5">
+            {/* Shot History Button */}
+            <Button
+              onClick={() => setShowShotHistory(true)}
+              className="w-full h-12 text-sm font-semibold"
+            >
+              <ChartLine size={18} className="mr-2" weight="bold" />
+              Shot History & Analysis
+            </Button>
+            
             {/* Run / Schedule Button */}
             {onRunProfile && machineProfileId && (
               <Button
@@ -993,16 +994,6 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
                 Run / Schedule Shot
               </Button>
             )}
-            
-            {/* Shot History Button */}
-            <Button
-              onClick={() => setShowShotHistory(true)}
-              className="w-full h-12 text-sm font-semibold"
-              variant={onRunProfile && machineProfileId ? "outline" : "default"}
-            >
-              <ChartLine size={18} className="mr-2" weight="bold" />
-              Shot History & Analysis
-            </Button>
             
             {/* Profile Image Upload */}
             <div className="space-y-1.5 mt-4 pt-4 border-t border-border/20">

@@ -21,6 +21,7 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { useSwipeNavigation } from '@/hooks/use-swipe-navigation'
 import { MeticAILogo } from '@/components/MeticAILogo'
 import { HistoryView, ProfileDetailView } from '@/components/HistoryView'
+import { ProfileBreakdown, ProfileData } from '@/components/ProfileBreakdown'
 import { HistoryEntry } from '@/hooks/useHistory'
 import { SettingsView } from '@/components/SettingsView'
 import { RunShotView } from '@/components/RunShotView'
@@ -1044,9 +1045,14 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                           </p>
                         </div>
                       </div>
-                    )
+                    )  
                   })()}
                 </div>
+
+                {/* Profile Technical Breakdown */}
+                {currentProfileJson && (
+                  <ProfileBreakdown profile={currentProfileJson as ProfileData} />
+                )}
 
                 {!isCapturing && (
                   <>
