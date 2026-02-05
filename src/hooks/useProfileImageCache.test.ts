@@ -334,5 +334,24 @@ describe('useProfileImageCache', () => {
       // After fetch completes, isLoading should be false again
       expect(result.current.isLoading).toBe(false)
     })
+
+    it('should reset isLoading to false if an error occurs during fetch', async () => {
+      // Mock a fetch that throws an error after setIsLoading(true) is called
+      mockFetch.mockImplementationOnce(() => {
+        throw new Error('Network error during fetch')
+      })
+      
+      const { result } = renderHook(() => useProfileImageCache())
+      
+      // Before any fetch, isLoading should be false
+      expect(result.current.isLoading).toBe(false)
+      
+      await act(async () => {
+        await result.current.fetchImagesForProfiles(['Test Profile'])
+      })
+      
+      // After error, isLoading should be reset to false
+      expect(result.current.isLoading).toBe(false)
+    })
   })
 })

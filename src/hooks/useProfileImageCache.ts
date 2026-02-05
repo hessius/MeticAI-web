@@ -131,35 +131,39 @@ export function useProfileImageCache() {
       return results
     }
 
-    setIsLoading(true)
-
-    // Fetch uncached images in batches
-    const batchSize = 10
-    for (let i = 0; i < toFetch.length; i += batchSize) {
-      const batch = toFetch.slice(i, i + batchSize)
-      const fetchPromises = batch.map(async (profileName) => {
-        try {
-          const response = await fetch(
-            `${serverUrl}/api/profile/${encodeURIComponent(profileName)}`
-          )
-          if (response.ok) {
-            const data = await response.json()
-            if (data.profile?.image) {
-              const imageUrl = `${serverUrl}/api/profile/${encodeURIComponent(profileName)}/image-proxy`
-              results[profileName] = imageUrl
-              setImageUrlRef.current(profileName, imageUrl)
+    // Only set loading state if we actually need to fetch
+    try {
+      setIsLoading(true)
+      
+      // Fetch uncached images in batches
+      const batchSize = 10
+      for (let i = 0; i < toFetch.length; i += batchSize) {
+        const batch = toFetch.slice(i, i + batchSize)
+        const fetchPromises = batch.map(async (profileName) => {
+          try {
+            const response = await fetch(
+              `${serverUrl}/api/profile/${encodeURIComponent(profileName)}`
+            )
+            if (response.ok) {
+              const data = await response.json()
+              if (data.profile?.image) {
+                const imageUrl = `${serverUrl}/api/profile/${encodeURIComponent(profileName)}/image-proxy`
+                results[profileName] = imageUrl
+                setImageUrlRef.current(profileName, imageUrl)
+              }
             }
+          } catch {
+            // Silently ignore errors for individual profile fetches
           }
-        } catch {
-          // Silently ignore errors for individual profile fetches
-        }
-      })
+        })
 
-      await Promise.allSettled(fetchPromises)
+        await Promise.allSettled(fetchPromises)
+      }
+
+      return results
+    } finally {
+      setIsLoading(false)
     }
-
-    setIsLoading(false)
-    return results
   }, []) // Empty dependency array - uses refs for stable reference
 
   return {
