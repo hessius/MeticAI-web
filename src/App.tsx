@@ -524,14 +524,16 @@ Special Notes: For maximum clarity and to really make those delicate floral note
           className="text-center mb-10"
         >
           <div className="flex items-center justify-center gap-3 mb-3 relative">
-            <MeticAILogo size={44} variant="white" />
-            <h1 
-              className="text-4xl font-bold tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
+            <div 
+              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
               onClick={handleTitleClick}
               title="Tap to go home"
             >
-              Metic<span className="text-primary">AI</span>
-            </h1>
+              <MeticAILogo size={44} variant="white" />
+              <h1 className="text-4xl font-bold tracking-tight">
+                Metic<span className="text-primary">AI</span>
+              </h1>
+            </div>
             {isDesktop && (
               <Button
                 variant="ghost"
