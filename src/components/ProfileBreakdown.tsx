@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -62,24 +63,50 @@ interface ProfileStage {
   key?: string
 }
 
-// Find which stages use each variable
+// Find which stages use each variable using proper recursive traversal
 function findVariableUsage(stages: ProfileStage[], variables: ProfileVariable[]): Map<string, string[]> {
   const usage = new Map<string, string[]>()
   
-  // Initialize all variables with empty arrays
+  // Initialize all adjustable variables with empty arrays
   variables.forEach(v => {
     if (!v.key.startsWith('info_')) {
       usage.set(v.key, [])
     }
   })
   
+  // Recursively find variable references in an object
+  const findVariableRefs = (obj: unknown): Set<string> => {
+    const refs = new Set<string>()
+    
+    if (typeof obj === 'string') {
+      // Match $variable_key pattern - must be exact match with word boundary
+      const matches = obj.match(/\$([a-zA-Z_][a-zA-Z0-9_]*)/g)
+      if (matches) {
+        matches.forEach(match => {
+          const varKey = match.substring(1) // Remove $
+          refs.add(varKey)
+        })
+      }
+    } else if (Array.isArray(obj)) {
+      obj.forEach(item => {
+        findVariableRefs(item).forEach(ref => refs.add(ref))
+      })
+    } else if (obj && typeof obj === 'object') {
+      Object.values(obj).forEach(val => {
+        findVariableRefs(val).forEach(ref => refs.add(ref))
+      })
+    }
+    
+    return refs
+  }
+  
   stages.forEach(stage => {
-    const stageJson = JSON.stringify(stage)
+    const refsInStage = findVariableRefs(stage)
+    
     variables.forEach(v => {
       if (v.key.startsWith('info_')) return // Skip info variables
       
-      // Look for $variable_key pattern in the stage JSON
-      if (stageJson.includes(`"$${v.key}"`) || stageJson.includes(`$${v.key}`)) {
+      if (refsInStage.has(v.key)) {
         const stageList = usage.get(v.key) || []
         stageList.push(stage.name)
         usage.set(v.key, stageList)
@@ -92,8 +119,10 @@ function findVariableUsage(stages: ProfileStage[], variables: ProfileVariable[])
 
 // Check if a string starts with an emoji or symbol
 function startsWithEmoji(str: string): boolean {
-  // Match emojis, symbols, and other non-letter characters at start
-  const emojiRegex = /^[\p{Emoji}\p{Symbol}\p{So}☕🔧💧⚠️🎯✓✗]/u
+  // Match emojis and symbols using Unicode property classes
+  // \p{Emoji} covers most emoji characters
+  // \p{Symbol} and \p{So} cover other symbols
+  const emojiRegex = /^[\p{Emoji}\p{Symbol}\p{So}]/u
   return emojiRegex.test(str)
 }
 
@@ -229,8 +258,6 @@ function analyzePattern(values: (number | null)[]): 'flat' | 'ascending' | 'desc
   if (validValues.length === 0) return 'complex'
   if (validValues.length === 1) return 'flat'
   
-  const first = validValues[0]
-  const last = validValues[validValues.length - 1]
   const min = Math.min(...validValues)
   const max = Math.max(...validValues)
   
@@ -432,6 +459,45 @@ function formatLimits(limits?: StageLimit[], variables?: ProfileVariable[]): str
 }
 
 export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownProps) {
+  // Memoize expensive variable calculations
+  const { adjustableVars, infoVars, variableColorMap, variableUsage, warnings } = useMemo(() => {
+    if (!profile) {
+      return {
+        adjustableVars: [] as ProfileVariable[],
+        infoVars: [] as ProfileVariable[],
+        variableColorMap: new Map<string, typeof VARIABLE_COLORS[0]>(),
+        variableUsage: new Map<string, string[]>(),
+        warnings: [] as ValidationWarning[]
+      }
+    }
+    
+    const hasVars = profile.variables && profile.variables.length > 0
+    const hasStg = profile.stages && profile.stages.length > 0
+    
+    const adjustable = hasVars ? profile.variables!.filter(v => !v.key.startsWith('info_')) : []
+    const info = hasVars ? profile.variables!.filter(v => v.key.startsWith('info_')) : []
+    
+    // Build color map
+    const colorMap = new Map<string, typeof VARIABLE_COLORS[0]>()
+    adjustable.forEach((v, idx) => {
+      colorMap.set(v.key, VARIABLE_COLORS[idx % VARIABLE_COLORS.length])
+    })
+    
+    // Find variable usage
+    const usage = hasStg && hasVars ? findVariableUsage(profile.stages!, adjustable) : new Map<string, string[]>()
+    
+    // Validate variables
+    const warns = hasVars ? validateVariables(profile.variables!, usage) : []
+    
+    return {
+      adjustableVars: adjustable,
+      infoVars: info,
+      variableColorMap: colorMap,
+      variableUsage: usage,
+      warnings: warns
+    }
+  }, [profile])
+  
   if (!profile) return null
   
   const hasBasicInfo = profile.temperature !== undefined || profile.final_weight !== undefined
@@ -439,58 +505,6 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
   const hasStages = profile.stages && profile.stages.length > 0
   
   if (!hasBasicInfo && !hasVariables && !hasStages) return null
-  
-  // Compute variable color map at component level for use in both variables and stages sections
-  const adjustableVars = hasVariables ? profile.variables!.filter(v => !v.key.startsWith('info_')) : []
-  const variableColorMap = new Map<string, typeof VARIABLE_COLORS[0]>()
-  adjustableVars.forEach((v, idx) => {
-    variableColorMap.set(v.key, VARIABLE_COLORS[idx % VARIABLE_COLORS.length])
-  })
-  
-  // Helper to render text with colorized variable references
-  const colorizeVariables = (text: string): React.ReactNode => {
-    if (!text || variableColorMap.size === 0) return text
-    
-    // Find all variable references in the text
-    const parts: React.ReactNode[] = []
-    let lastIndex = 0
-    
-    // Match variable references like $variable_key or resolved values that came from variables
-    adjustableVars.forEach(v => {
-      const varRef = `$${v.key}`
-      const resolvedValue = v.value.toString()
-      
-      // Check for both the variable reference and the resolved value
-      let searchIndex = 0
-      while (searchIndex < text.length) {
-        const refIndex = text.indexOf(varRef, searchIndex)
-        if (refIndex !== -1 && refIndex >= lastIndex) {
-          // Add text before the match
-          if (refIndex > lastIndex) {
-            parts.push(text.slice(lastIndex, refIndex))
-          }
-          // Add colorized variable reference
-          const color = variableColorMap.get(v.key)
-          parts.push(
-            <span key={`${v.key}-${refIndex}`} className={`${color?.text} font-medium`}>
-              {varRef}
-            </span>
-          )
-          lastIndex = refIndex + varRef.length
-          searchIndex = lastIndex
-        } else {
-          break
-        }
-      }
-    })
-    
-    // Add remaining text
-    if (lastIndex < text.length) {
-      parts.push(text.slice(lastIndex))
-    }
-    
-    return parts.length > 0 ? parts : text
-  }
   
   return (
     <motion.div 
@@ -534,129 +548,118 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
         )}
         
         {/* Variables */}
-        {hasVariables && (() => {
-          // Separate info variables (key starts with info_) from adjustable variables
-          const infoVars = profile.variables!.filter(v => v.key.startsWith('info_'))
-          
-          // Find which stages use each adjustable variable (color map already computed above)
-          const variableUsage = hasStages ? findVariableUsage(profile.stages!, adjustableVars) : new Map()
-          
-          // Validate variables
-          const warnings = validateVariables(profile.variables!, variableUsage)
-          
-          return (
-            <div className="space-y-3">
-              {/* Validation Warnings */}
-              {warnings.length > 0 && (
-                <div className="space-y-1.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                  <div className="flex items-center gap-1.5">
-                    <Warning size={14} weight="bold" className="text-amber-400" />
-                    <p className="text-xs font-medium text-amber-400">Variable Issues</p>
-                  </div>
-                  <div className="space-y-1">
-                    {warnings.map((warning, idx) => (
-                      <p key={idx} className="text-[11px] text-amber-300/80">
-                        • {warning.message}
-                      </p>
-                    ))}
-                  </div>
+        {hasVariables && (
+          <div className="space-y-3">
+            {/* Validation Warnings */}
+            {warnings.length > 0 && (
+              <div className="space-y-1.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <div className="flex items-center gap-1.5">
+                  <Warning size={14} weight="bold" className="text-amber-400" />
+                  <p className="text-xs font-medium text-amber-400">Variable Issues</p>
                 </div>
-              )}
-              
-              {/* Info Variables - display as tips/recommendations */}
-              {infoVars.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Info size={14} weight="bold" className="text-blue-400" />
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Preparation</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {infoVars.map((variable, idx) => {
-                      // Format the display value based on the variable type and key
-                      let displayValue = ''
-                      if (variable.type === 'weight') {
-                        // Weight type displays as grams
-                        displayValue = `${variable.value}g`
-                      } else if (variable.type === 'flow') {
-                        displayValue = `${variable.value} ml/s`
-                      } else if (variable.type === 'pressure') {
-                        displayValue = `${variable.value} bar`
-                      } else if (variable.type === 'time') {
-                        displayValue = `${variable.value}s`
-                      } else if (variable.type === 'power') {
-                        // Power type: 100 = true/yes, 0 = false/no
-                        // Show percentage for clarity
-                        if (variable.value === 100) {
-                          displayValue = '✓'
-                        } else if (variable.value === 0) {
-                          displayValue = '' // Label already implies the action, e.g. "Use bottom filter"
-                        } else {
-                          displayValue = `${variable.value}%`
-                        }
+                <div className="space-y-1">
+                  {warnings.map((warning, idx) => (
+                    <p key={idx} className="text-[11px] text-amber-300/80">
+                      • {warning.message}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Info Variables - display as tips/recommendations */}
+            {infoVars.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Info size={14} weight="bold" className="text-blue-400" />
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Preparation</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {infoVars.map((variable, idx) => {
+                    // Format the display value based on the variable type and key
+                    let displayValue = ''
+                    if (variable.type === 'weight') {
+                      // Weight type displays as grams
+                      displayValue = `${variable.value}g`
+                    } else if (variable.type === 'flow') {
+                      displayValue = `${variable.value} ml/s`
+                    } else if (variable.type === 'pressure') {
+                      displayValue = `${variable.value} bar`
+                    } else if (variable.type === 'time') {
+                      displayValue = `${variable.value}s`
+                    } else if (variable.type === 'power') {
+                      // Power type: 100 = true/yes, 0 = false/no
+                      // Show percentage for clarity
+                      if (variable.value === 100) {
+                        displayValue = '✓'
+                      } else if (variable.value === 0) {
+                        displayValue = '' // Label already implies the action, e.g. "Use bottom filter"
                       } else {
-                        displayValue = String(variable.value)
+                        displayValue = `${variable.value}%`
                       }
-                      
-                      return (
-                        <div 
-                          key={idx}
-                          className="px-2.5 py-1.5 rounded-lg border text-xs bg-blue-500/10 text-blue-300 border-blue-500/30"
-                        >
-                          <span className="font-medium">{variable.name}</span>
-                          {displayValue && (
-                            <span className="opacity-80 ml-1.5">{displayValue}</span>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                  <p className="text-[10px] text-muted-foreground/60 italic">
-                    💡 Also visible in the Meticulous app under Profile Settings → Variables
-                  </p>
+                    } else {
+                      displayValue = String(variable.value)
+                    }
+                    
+                    return (
+                      <div 
+                        key={idx}
+                        className="px-2.5 py-1.5 rounded-lg border text-xs bg-blue-500/10 text-blue-300 border-blue-500/30"
+                      >
+                        <span className="font-medium">{variable.name}</span>
+                        {displayValue && (
+                          <span className="opacity-80 ml-1.5">{displayValue}</span>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
-              )}
-              
-              {/* Adjustable Variables */}
-              {adjustableVars.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Sliders size={14} weight="bold" className="text-muted-foreground" />
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Adjustable Variables</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {adjustableVars.map((variable, idx) => {
-                      const color = variableColorMap.get(variable.key) || VARIABLE_COLORS[0]
-                      const usedInStages = variableUsage.get(variable.key) || []
-                      
-                      return (
-                        <div 
-                          key={idx}
-                          className={`px-2.5 py-1.5 rounded-lg border text-xs ${color.bg} ${color.text} ${color.border}`}
-                          title={usedInStages.length > 0 ? `Used in: ${usedInStages.join(', ')}` : 'Not used in any stage'}
-                        >
-                          {/* Color dot indicator */}
-                          <span className={`inline-block w-2 h-2 rounded-full ${color.dot} mr-1.5`} />
-                          <span className="font-medium">{variable.name}</span>
-                          <span className="opacity-70 ml-1.5">
-                            {variable.value}
-                            {variable.type === 'pressure' && ' bar'}
-                            {variable.type === 'flow' && ' ml/s'}
-                            {variable.type === 'time' && 's'}
+                <p className="text-[10px] text-muted-foreground/60 italic">
+                  💡 Also visible in the Meticulous app under Profile Settings → Variables
+                </p>
+              </div>
+            )}
+            
+            {/* Adjustable Variables */}
+            {adjustableVars.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Sliders size={14} weight="bold" className="text-muted-foreground" />
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Adjustable Variables</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {adjustableVars.map((variable, idx) => {
+                    const color = variableColorMap.get(variable.key) || VARIABLE_COLORS[0]
+                    const usedInStages = variableUsage.get(variable.key) || []
+                    
+                    return (
+                      <div 
+                        key={idx}
+                        className={`px-2.5 py-1.5 rounded-lg border text-xs ${color.bg} ${color.text} ${color.border}`}
+                        title={usedInStages.length > 0 ? `Used in: ${usedInStages.join(', ')}` : 'Not used in any stage'}
+                      >
+                        {/* Color dot indicator */}
+                        <span className={`inline-block w-2 h-2 rounded-full ${color.dot} mr-1.5`} />
+                        <span className="font-medium">{variable.name}</span>
+                        <span className="opacity-70 ml-1.5">
+                          {variable.value}
+                          {variable.type === 'pressure' && ' bar'}
+                          {variable.type === 'flow' && ' ml/s'}
+                          {variable.type === 'time' && 's'}
+                        </span>
+                        {usedInStages.length > 0 && (
+                          <span className="ml-1.5 opacity-60 text-[10px]">
+                            → {usedInStages.length} stage{usedInStages.length > 1 ? 's' : ''}
                           </span>
-                          {usedInStages.length > 0 && (
-                            <span className="ml-1.5 opacity-60 text-[10px]">
-                              → {usedInStages.length} stage{usedInStages.length > 1 ? 's' : ''}
-                            </span>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
-              )}
-            </div>
-          )
-        })()}
+              </div>
+            )}
+          </div>
+        )}
         
         {/* Stages */}
         {hasStages && (
@@ -675,11 +678,11 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
                 const normalizedDynamics = getNormalizedDynamics(stage)
                 const dynamicsDesc = describeDynamics(normalizedDynamics, stage.type, profile.variables)
                 
-                // Find which variables are used in this stage
-                const stageJson = JSON.stringify(stage)
-                const usedVars = adjustableVars.filter(v => 
-                  stageJson.includes(`"$${v.key}"`) || stageJson.includes(`$${v.key}`)
-                )
+                // Find which variables are used in this stage using variableUsage map
+                const usedVars = adjustableVars.filter(v => {
+                  const stagesUsingVar = variableUsage.get(v.key) || []
+                  return stagesUsingVar.includes(stage.name)
+                })
                 
                 return (
                   <div 

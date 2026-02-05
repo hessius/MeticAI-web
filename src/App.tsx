@@ -6,9 +6,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-// Coffee icon is used by HistoryView (child component) and must be imported here
-// to avoid bundling issues when downloading images with domToPng
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, Info, QrCode, FileJs, Coffee, Image, CaretLeft, Plus, Gear, Play } from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
 import { MarkdownText, cleanProfileName } from '@/components/MarkdownText'
@@ -323,6 +320,11 @@ function App() {
   }
 
   const handleReset = useCallback(() => {
+    // Clear any pending click timer to prevent stale callbacks
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current)
+      clickTimerRef.current = null
+    }
     // Refresh profile count before switching view
     refreshProfileCount()
     setViewState('form')
@@ -338,6 +340,15 @@ function App() {
     setCreatedProfileId(null)
     setSelectedHistoryEntry(null)
   }, [refreshProfileCount])
+
+  // Cleanup clickTimer on unmount
+  useEffect(() => {
+    return () => {
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current)
+      }
+    }
+  }, [])
 
   const handleBackToStart = useCallback(() => {
     refreshProfileCount()

@@ -468,9 +468,10 @@ export function RunShotView({ onBack, initialProfileId, initialProfileName }: Ru
       case 'weekdays': return 'Weekdays (Mon-Fri)'
       case 'weekends': return 'Weekends (Sat-Sun)'
       case 'interval': return `Every ${schedule.interval_days} day${(schedule.interval_days || 1) > 1 ? 's' : ''}`
-      case 'specific_days': 
+      case 'specific_days': {
         const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
         return (schedule.days_of_week || []).map(d => days[d]).join(', ')
+      }
       default: return schedule.recurrence_type
     }
   }

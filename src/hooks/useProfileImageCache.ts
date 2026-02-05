@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { getServerUrl } from '@/lib/config'
 
 interface CacheEntry {
@@ -102,17 +102,26 @@ export function useProfileImageCache() {
     }
   }, [])
 
+  // Use refs to avoid recreating fetchImagesForProfiles when cache changes
+  // This prevents infinite loops in useEffect dependencies
+  const cacheRef = useRef(cache)
+  cacheRef.current = cache
+  const setImageUrlRef = useRef(setImageUrl)
+  setImageUrlRef.current = setImageUrl
+
   // Fetch images for multiple profiles, using cache where available
+  // This callback is stable (no dependencies that change with cache)
   const fetchImagesForProfiles = useCallback(async (profileNames: string[]): Promise<Record<string, string>> => {
     const serverUrl = await getServerUrl()
     const results: Record<string, string> = {}
     const toFetch: string[] = []
+    const currentCache = cacheRef.current
 
     // Check cache first
     for (const name of profileNames) {
-      const cached = getImageUrl(name)
-      if (cached) {
-        results[name] = cached
+      const entry = currentCache[name]
+      if (entry && Date.now() - entry.timestamp < CACHE_TTL_MS) {
+        results[name] = entry.url
       } else {
         toFetch.push(name)
       }
@@ -138,7 +147,7 @@ export function useProfileImageCache() {
             if (data.profile?.image) {
               const imageUrl = `${serverUrl}/api/profile/${encodeURIComponent(profileName)}/image-proxy`
               results[profileName] = imageUrl
-              setImageUrl(profileName, imageUrl)
+              setImageUrlRef.current(profileName, imageUrl)
             }
           }
         } catch {
@@ -151,7 +160,7 @@ export function useProfileImageCache() {
 
     setIsLoading(false)
     return results
-  }, [getImageUrl, setImageUrl])
+  }, []) // Empty dependency array - uses refs for stable reference
 
   return {
     cache,
