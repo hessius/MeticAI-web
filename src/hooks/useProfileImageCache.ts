@@ -112,28 +112,28 @@ export function useProfileImageCache() {
   // Fetch images for multiple profiles, using cache where available
   // This callback is stable (no dependencies that change with cache)
   const fetchImagesForProfiles = useCallback(async (profileNames: string[]): Promise<Record<string, string>> => {
+    const serverUrl = await getServerUrl()
+    const results: Record<string, string> = {}
+    const toFetch: string[] = []
+    const currentCache = cacheRef.current
+
+    // Check cache first
+    for (const name of profileNames) {
+      const entry = currentCache[name]
+      if (entry && Date.now() - entry.timestamp < CACHE_TTL_MS) {
+        results[name] = entry.url
+      } else {
+        toFetch.push(name)
+      }
+    }
+
+    if (toFetch.length === 0) {
+      return results
+    }
+
+    // Only set loading state if we actually need to fetch
+    setIsLoading(true)
     try {
-      const serverUrl = await getServerUrl()
-      const results: Record<string, string> = {}
-      const toFetch: string[] = []
-      const currentCache = cacheRef.current
-
-      // Check cache first
-      for (const name of profileNames) {
-        const entry = currentCache[name]
-        if (entry && Date.now() - entry.timestamp < CACHE_TTL_MS) {
-          results[name] = entry.url
-        } else {
-          toFetch.push(name)
-        }
-      }
-
-      if (toFetch.length === 0) {
-        return results
-      }
-
-      setIsLoading(true)
-
       // Fetch uncached images in batches
       const batchSize = 10
       for (let i = 0; i < toFetch.length; i += batchSize) {
