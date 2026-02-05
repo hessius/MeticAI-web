@@ -287,22 +287,41 @@ function App() {
       const profileJson = extractProfileJson(data.reply)
       setCurrentProfileJson(profileJson)
       
-      // Fetch the machine profile ID for the created profile
+      // Fetch the machine profile ID for the created profile, with a small retry to
+      // handle delays between creation and appearance in /api/machine/profiles
       const profileName = profileJson?.name as string | undefined
       if (profileName) {
-        try {
-          const profilesResponse = await fetch(`${serverUrl}/api/machine/profiles`)
-          if (profilesResponse.ok) {
-            const profilesData = await profilesResponse.json()
-            const matchingProfile = (profilesData.profiles || []).find(
-              (p: { id: string; name: string }) => p.name === profileName
-            )
-            if (matchingProfile) {
-              setCreatedProfileId(matchingProfile.id)
+        const maxAttempts = 5
+        const delayMs = 500
+        const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+        let foundProfileId: string | null = null
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          try {
+            const profilesResponse = await fetch(`${serverUrl}/api/machine/profiles`)
+            if (profilesResponse.ok) {
+              const profilesData = await profilesResponse.json()
+              const matchingProfile = (profilesData.profiles || []).find(
+                (p: { id: string; name: string }) => p.name === profileName
+              )
+              if (matchingProfile) {
+                foundProfileId = matchingProfile.id
+                setCreatedProfileId(matchingProfile.id)
+                break
+              }
+            } else {
+              console.warn(
+                `Attempt ${attempt} to fetch profiles failed with status ${profilesResponse.status}`
+              )
             }
+          } catch (profileErr) {
+            console.error(`Failed to fetch profile ID on attempt ${attempt}:`, profileErr)
           }
-        } catch (profileErr) {
-          console.error('Failed to fetch profile ID:', profileErr)
+
+          if (!foundProfileId && attempt < maxAttempts) {
+            await delay(delayMs)
+          }
         }
       }
       
