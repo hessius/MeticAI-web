@@ -498,9 +498,9 @@ Special Notes: For maximum clarity and to really make those delicate floral note
     } else {
       // Set a timer - if no more clicks, go home after 300ms
       clickTimerRef.current = setTimeout(() => {
-        // Single tap: go home (only if not on start already)
+        // Single tap: go to start screen (only if not on start already)
         if (viewState !== 'start') {
-          handleReset()
+          handleBackToStart()
         }
         setClickCount(0)
       }, 300)
