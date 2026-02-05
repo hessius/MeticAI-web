@@ -334,5 +334,26 @@ describe('useProfileImageCache', () => {
       // After fetch completes, isLoading should be false again
       expect(result.current.isLoading).toBe(false)
     })
+
+    it('should reset isLoading to false if getServerUrl throws an error', async () => {
+      const { getServerUrl } = await import('@/lib/config')
+      vi.mocked(getServerUrl).mockRejectedValueOnce(new Error('Server URL config error'))
+      
+      const { result } = renderHook(() => useProfileImageCache())
+      
+      // Before any fetch, isLoading should be false
+      expect(result.current.isLoading).toBe(false)
+      
+      await act(async () => {
+        try {
+          await result.current.fetchImagesForProfiles(['Test Profile'])
+        } catch {
+          // Expected to throw
+        }
+      })
+      
+      // After error, isLoading should be reset to false
+      expect(result.current.isLoading).toBe(false)
+    })
   })
 })
