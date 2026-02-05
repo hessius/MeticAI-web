@@ -440,6 +440,58 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
   
   if (!hasBasicInfo && !hasVariables && !hasStages) return null
   
+  // Compute variable color map at component level for use in both variables and stages sections
+  const adjustableVars = hasVariables ? profile.variables!.filter(v => !v.key.startsWith('info_')) : []
+  const variableColorMap = new Map<string, typeof VARIABLE_COLORS[0]>()
+  adjustableVars.forEach((v, idx) => {
+    variableColorMap.set(v.key, VARIABLE_COLORS[idx % VARIABLE_COLORS.length])
+  })
+  
+  // Helper to render text with colorized variable references
+  const colorizeVariables = (text: string): React.ReactNode => {
+    if (!text || variableColorMap.size === 0) return text
+    
+    // Find all variable references in the text
+    const parts: React.ReactNode[] = []
+    let lastIndex = 0
+    
+    // Match variable references like $variable_key or resolved values that came from variables
+    adjustableVars.forEach(v => {
+      const varRef = `$${v.key}`
+      const resolvedValue = v.value.toString()
+      
+      // Check for both the variable reference and the resolved value
+      let searchIndex = 0
+      while (searchIndex < text.length) {
+        const refIndex = text.indexOf(varRef, searchIndex)
+        if (refIndex !== -1 && refIndex >= lastIndex) {
+          // Add text before the match
+          if (refIndex > lastIndex) {
+            parts.push(text.slice(lastIndex, refIndex))
+          }
+          // Add colorized variable reference
+          const color = variableColorMap.get(v.key)
+          parts.push(
+            <span key={`${v.key}-${refIndex}`} className={`${color?.text} font-medium`}>
+              {varRef}
+            </span>
+          )
+          lastIndex = refIndex + varRef.length
+          searchIndex = lastIndex
+        } else {
+          break
+        }
+      }
+    })
+    
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex))
+    }
+    
+    return parts.length > 0 ? parts : text
+  }
+  
   return (
     <motion.div 
       initial={{ opacity: 0, y: 8 }}
@@ -485,14 +537,9 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
         {hasVariables && (() => {
           // Separate info variables (key starts with info_) from adjustable variables
           const infoVars = profile.variables!.filter(v => v.key.startsWith('info_'))
-          const adjustableVars = profile.variables!.filter(v => !v.key.startsWith('info_'))
           
-          // Find which stages use each adjustable variable and assign colors
+          // Find which stages use each adjustable variable (color map already computed above)
           const variableUsage = hasStages ? findVariableUsage(profile.stages!, adjustableVars) : new Map()
-          const variableColorMap = new Map<string, typeof VARIABLE_COLORS[0]>()
-          adjustableVars.forEach((v, idx) => {
-            variableColorMap.set(v.key, VARIABLE_COLORS[idx % VARIABLE_COLORS.length])
-          })
           
           // Validate variables
           const warnings = validateVariables(profile.variables!, variableUsage)
@@ -628,6 +675,12 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
                 const normalizedDynamics = getNormalizedDynamics(stage)
                 const dynamicsDesc = describeDynamics(normalizedDynamics, stage.type, profile.variables)
                 
+                // Find which variables are used in this stage
+                const stageJson = JSON.stringify(stage)
+                const usedVars = adjustableVars.filter(v => 
+                  stageJson.includes(`"$${v.key}"`) || stageJson.includes(`$${v.key}`)
+                )
+                
                 return (
                   <div 
                     key={idx}
@@ -638,18 +691,48 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
                         {getTypeIcon(stage.type)}
                         <span className="text-sm font-medium truncate">{stage.name}</span>
                       </div>
-                      <Badge 
-                        variant="outline" 
-                        className={`text-[10px] px-1.5 py-0 shrink-0 ${getTypeColor(stage.type)}`}
-                      >
-                        {stage.type}
-                      </Badge>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Show colored variable badges used in this stage */}
+                        {usedVars.map(v => {
+                          const color = variableColorMap.get(v.key)
+                          return (
+                            <span 
+                              key={v.key}
+                              className={`w-2 h-2 rounded-full ${color?.dot}`}
+                              title={`Uses ${v.name}`}
+                            />
+                          )
+                        })}
+                        <Badge 
+                          variant="outline" 
+                          className={`text-[10px] px-1.5 py-0 ${getTypeColor(stage.type)}`}
+                        >
+                          {stage.type}
+                        </Badge>
+                      </div>
                     </div>
                     
                     {/* Dynamics Summary - the main info about what this stage does */}
                     <p className="text-xs text-foreground/90">
                       {dynamicsDesc.summary}
                     </p>
+                    
+                    {/* Show which variables are used, with their colors */}
+                    {usedVars.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {usedVars.map(v => {
+                          const color = variableColorMap.get(v.key)
+                          return (
+                            <span 
+                              key={v.key} 
+                              className={`text-[10px] px-1.5 py-0.5 rounded ${color?.bg} ${color?.text} border ${color?.border}`}
+                            >
+                              ${v.key} = {v.value}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    )}
                     
                     {/* Additional details */}
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">

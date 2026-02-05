@@ -1007,6 +1007,9 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                           // Clean any remaining ** artifacts at start/end of content
                           content = content.replace(/^\*+\s*/, '').replace(/\s*\*+$/, '')
                           
+                          // Remove trailing --- (format delimiter) from Special Notes
+                          content = content.replace(/\n*---\s*$/g, '').trim()
+                          
                           // Stop at PROFILE JSON section to hide JSON output
                           const jsonSectionIndex = content.indexOf('PROFILE JSON')
                           if (jsonSectionIndex > 0) {
