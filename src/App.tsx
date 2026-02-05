@@ -425,6 +425,8 @@ function App() {
       // Wait for DOM to update
       await new Promise(resolve => setTimeout(resolve, 100))
       
+      // TODO: Known issue - image export has alignment offset
+      // See: https://github.com/hessius/meticai-web/issues/TBD
       const dataUrl = await domToPng(resultsCardRef.current, {
         scale: 2,
         backgroundColor: '#09090b',
@@ -895,7 +897,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                 damping: 25
               }}
             >
-              <div ref={resultsCardRef} className={isCapturing ? 'w-[400px]' : ''}>
+              <div ref={resultsCardRef} className={isCapturing ? 'w-[400px] mx-auto' : ''}>
                 {isCapturing && (
                   <div className="text-center mb-6">
                     <div className="flex items-center justify-center gap-3 mb-2">
