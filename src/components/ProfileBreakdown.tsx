@@ -9,7 +9,8 @@ import {
   Timer,
   Drop,
   Gauge,
-  Info
+  Info,
+  Warning
 } from '@phosphor-icons/react'
 
 // Distinct colors for variables - designed to be easily distinguishable
@@ -87,6 +88,61 @@ function findVariableUsage(stages: ProfileStage[], variables: ProfileVariable[])
   })
   
   return usage
+}
+
+// Check if a string starts with an emoji or symbol
+function startsWithEmoji(str: string): boolean {
+  // Match emojis, symbols, and other non-letter characters at start
+  const emojiRegex = /^[\p{Emoji}\p{Symbol}\p{So}☕🔧💧⚠️🎯✓✗]/u
+  return emojiRegex.test(str)
+}
+
+// Validate variable naming conventions
+interface ValidationWarning {
+  type: 'info-missing-emoji' | 'adjustable-has-emoji' | 'adjustable-unused'
+  variableName: string
+  message: string
+}
+
+function validateVariables(
+  variables: ProfileVariable[], 
+  variableUsage: Map<string, string[]>
+): ValidationWarning[] {
+  const warnings: ValidationWarning[] = []
+  
+  variables.forEach(v => {
+    const isInfo = v.key.startsWith('info_')
+    const hasEmoji = startsWithEmoji(v.name)
+    
+    if (isInfo && !hasEmoji) {
+      warnings.push({
+        type: 'info-missing-emoji',
+        variableName: v.name,
+        message: `Info variable "${v.name}" should start with an emoji`
+      })
+    }
+    
+    if (!isInfo && hasEmoji) {
+      warnings.push({
+        type: 'adjustable-has-emoji',
+        variableName: v.name,
+        message: `Adjustable variable "${v.name}" should not start with an emoji`
+      })
+    }
+    
+    if (!isInfo) {
+      const usedIn = variableUsage.get(v.key) || []
+      if (usedIn.length === 0) {
+        warnings.push({
+          type: 'adjustable-unused',
+          variableName: v.name,
+          message: `Variable "${v.name}" is defined but not used in any stage`
+        })
+      }
+    }
+  })
+  
+  return warnings
 }
 
 // Normalize stage dynamics - handles both nested and flattened formats
@@ -438,8 +494,28 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
             variableColorMap.set(v.key, VARIABLE_COLORS[idx % VARIABLE_COLORS.length])
           })
           
+          // Validate variables
+          const warnings = validateVariables(profile.variables!, variableUsage)
+          
           return (
             <div className="space-y-3">
+              {/* Validation Warnings */}
+              {warnings.length > 0 && (
+                <div className="space-y-1.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                  <div className="flex items-center gap-1.5">
+                    <Warning size={14} weight="bold" className="text-amber-400" />
+                    <p className="text-xs font-medium text-amber-400">Variable Issues</p>
+                  </div>
+                  <div className="space-y-1">
+                    {warnings.map((warning, idx) => (
+                      <p key={idx} className="text-[11px] text-amber-300/80">
+                        • {warning.message}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               {/* Info Variables - display as tips/recommendations */}
               {infoVars.length > 0 && (
                 <div className="space-y-2">

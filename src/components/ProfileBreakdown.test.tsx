@@ -390,4 +390,68 @@ describe('ProfileBreakdown', () => {
       expect(container.firstChild).toHaveClass('custom-class')
     })
   })
+
+  describe('variable validation', () => {
+    it('should show warning when info variable lacks emoji', () => {
+      const profile: ProfileData = {
+        temperature: 93,
+        variables: [
+          { name: 'Dose', key: 'info_dose', type: 'weight', value: 18 }
+        ]
+      }
+      render(<ProfileBreakdown profile={profile} />)
+      
+      expect(screen.getByText(/Info variable "Dose" should start with an emoji/)).toBeInTheDocument()
+    })
+
+    it('should show warning when adjustable variable has emoji', () => {
+      const profile: ProfileData = {
+        temperature: 93,
+        variables: [
+          { name: '☕ Peak Pressure', key: 'peak_pressure', type: 'pressure', value: 9 }
+        ],
+        stages: [
+          { name: 'Extract', type: 'pressure' }
+        ]
+      }
+      render(<ProfileBreakdown profile={profile} />)
+      
+      expect(screen.getByText(/Adjustable variable "☕ Peak Pressure" should not start with an emoji/)).toBeInTheDocument()
+    })
+
+    it('should show warning when adjustable variable is unused', () => {
+      const profile: ProfileData = {
+        temperature: 93,
+        variables: [
+          { name: 'Peak Pressure', key: 'peak_pressure', type: 'pressure', value: 9 }
+        ],
+        stages: [
+          { name: 'Extract', type: 'pressure' }
+        ]
+      }
+      render(<ProfileBreakdown profile={profile} />)
+      
+      expect(screen.getByText(/Variable "Peak Pressure" is defined but not used/)).toBeInTheDocument()
+    })
+
+    it('should not show warnings when variables are valid', () => {
+      const profile: ProfileData = {
+        temperature: 93,
+        variables: [
+          { name: '☕ Dose', key: 'info_dose', type: 'weight', value: 18 },
+          { name: 'Peak Pressure', key: 'peak_pressure', type: 'pressure', value: 9 }
+        ],
+        stages: [
+          { 
+            name: 'Extract', 
+            type: 'pressure',
+            dynamics_points: [[0, '$peak_pressure']]
+          }
+        ]
+      }
+      render(<ProfileBreakdown profile={profile} />)
+      
+      expect(screen.queryByText(/Variable Issues/)).not.toBeInTheDocument()
+    })
+  })
 })
