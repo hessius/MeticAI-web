@@ -893,7 +893,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                 damping: 25
               }}
             >
-              <div ref={resultsCardRef}>
+              <div ref={resultsCardRef} className={isCapturing ? 'w-[400px]' : ''}>
                 {isCapturing && (
                   <div className="text-center mb-6">
                     <div className="flex items-center justify-center gap-3 mb-2">

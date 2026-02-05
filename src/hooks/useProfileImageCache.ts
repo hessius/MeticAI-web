@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useCallback } from 'react'
 import { getServerUrl } from '@/lib/config'
 
 interface CacheEntry {
@@ -14,40 +14,43 @@ const CACHE_KEY = 'meticai-profile-images-cache'
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 /**
+ * Load and clean cache from localStorage synchronously
+ * Returns valid (non-expired) entries only
+ */
+function loadCacheFromStorage(): ImageCache {
+  try {
+    const stored = localStorage.getItem(CACHE_KEY)
+    if (!stored) return {}
+    
+    const parsed: ImageCache = JSON.parse(stored)
+    const now = Date.now()
+    const validEntries: ImageCache = {}
+    
+    for (const [key, entry] of Object.entries(parsed)) {
+      if (now - entry.timestamp < CACHE_TTL_MS) {
+        validEntries[key] = entry
+      }
+    }
+    
+    // Save cleaned cache back if we removed expired entries
+    if (Object.keys(validEntries).length !== Object.keys(parsed).length) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(validEntries))
+    }
+    
+    return validEntries
+  } catch (err) {
+    console.error('Failed to load image cache:', err)
+    return {}
+  }
+}
+
+/**
  * Hook to manage profile image caching with localStorage persistence
  */
 export function useProfileImageCache() {
-  const [cache, setCache] = useState<ImageCache>({})
+  // Initialize state synchronously from localStorage to avoid race conditions
+  const [cache, setCache] = useState<ImageCache>(() => loadCacheFromStorage())
   const [isLoading, setIsLoading] = useState(false)
-  const loadedRef = useRef(false)
-
-  // Load cache from localStorage on mount
-  useEffect(() => {
-    if (loadedRef.current) return
-    loadedRef.current = true
-    
-    try {
-      const stored = localStorage.getItem(CACHE_KEY)
-      if (stored) {
-        const parsed: ImageCache = JSON.parse(stored)
-        // Filter out expired entries
-        const now = Date.now()
-        const validEntries: ImageCache = {}
-        for (const [key, entry] of Object.entries(parsed)) {
-          if (now - entry.timestamp < CACHE_TTL_MS) {
-            validEntries[key] = entry
-          }
-        }
-        setCache(validEntries)
-        // Save cleaned cache back
-        if (Object.keys(validEntries).length !== Object.keys(parsed).length) {
-          localStorage.setItem(CACHE_KEY, JSON.stringify(validEntries))
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load image cache:', err)
-    }
-  }, [])
 
   // Save cache to localStorage when it changes
   const saveCache = useCallback((newCache: ImageCache) => {
