@@ -132,8 +132,9 @@ export function useProfileImageCache() {
     }
 
     // Only set loading state if we actually need to fetch
-    setIsLoading(true)
     try {
+      setIsLoading(true)
+      
       // Fetch uncached images in batches
       const batchSize = 10
       for (let i = 0; i < toFetch.length; i += batchSize) {
