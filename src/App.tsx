@@ -456,7 +456,7 @@ function App() {
       await new Promise(resolve => setTimeout(resolve, 100))
       
       // TODO: Known issue - image export has alignment offset
-      // See: https://github.com/hessius/meticai-web/issues/TBD
+      // See: https://github.com/hessius/meticai-web/issues/75
       const dataUrl = await domToPng(resultsCardRef.current, {
         scale: 2,
         backgroundColor: '#09090b',
