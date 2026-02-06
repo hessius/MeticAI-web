@@ -140,7 +140,7 @@ export function SettingsView({ onBack }: SettingsViewProps) {
             meticaiWebCommit: data.meticai_web_commit || undefined,
             mcpServer: data.mcp_server || data.mcpServer || 'unknown',
             mcpCommit: data.mcp_commit || undefined,
-            mcpRepoUrl: data.mcp_repo_url || 'https://github.com/manonstreet/meticulous-mcp'
+            mcpRepoUrl: data.mcp_repo_url || 'https://github.com/hessius/meticulous-mcp'
           })
         }
       } catch (err) {
@@ -575,7 +575,7 @@ export function SettingsView({ onBack }: SettingsViewProps) {
                 rel="noopener noreferrer"
                 className="text-xs text-primary hover:underline"
               >
-                {versionInfo?.mcpRepoUrl?.replace('https://github.com/', '') || 'manonstreet/meticulous-mcp'}
+                {versionInfo?.mcpRepoUrl?.replace('https://github.com/', '') || 'hessius/meticulous-mcp'}
               </a>
             </div>
             <div className="text-right">

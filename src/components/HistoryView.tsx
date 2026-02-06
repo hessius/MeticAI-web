@@ -23,16 +23,19 @@ import {
   Info,
   Check,
   XCircle,
-  Plus
+  Plus,
+  Play
 } from '@phosphor-icons/react'
 import { useHistory, HistoryEntry } from '@/hooks/useHistory'
-import { MarkdownText } from '@/components/MarkdownText'
+import { useProfileImageCache } from '@/hooks/useProfileImageCache'
+import { MarkdownText, cleanProfileName } from '@/components/MarkdownText'
 import { formatDistanceToNow } from 'date-fns'
 import { domToPng } from 'modern-screenshot'
 import { MeticAILogo } from '@/components/MeticAILogo'
 import { ShotHistoryView } from '@/components/ShotHistoryView'
 import { ImageCropDialog } from '@/components/ImageCropDialog'
 import { ProfileImportDialog } from '@/components/ProfileImportDialog'
+import { ProfileBreakdown, ProfileData } from '@/components/ProfileBreakdown'
 import { getServerUrl } from '@/lib/config'
 import { 
   extractTagsFromPreferences, 
@@ -44,9 +47,12 @@ import {
 function extractDescription(reply: string): string | null {
   if (!reply) return null
   
-  const descMatch = reply.match(/Description:\s*([\s\S]*?)(?:Preparation:|Why This Works:|Special Notes:|PROFILE JSON|```|$)/i)
+  // Handle both "Description:" and "**Description:**" formats
+  const descMatch = reply.match(/\*?\*?Description:\*?\*?\s*([\s\S]*?)(?:\*?\*?Preparation:|\*?\*?Why This Works:|\*?\*?Special Notes:|PROFILE JSON|```|$)/i)
   if (descMatch && descMatch[1]) {
-    const desc = descMatch[1].trim()
+    let desc = descMatch[1].trim()
+    // Clean up any leading/trailing ** artifacts
+    desc = desc.replace(/^\*+\s*/, '').replace(/\s*\*+$/, '')
     // Clean up any trailing headers or code blocks
     return desc.replace(/```[\s\S]*$/g, '').trim() || null
   }
@@ -76,47 +82,26 @@ export function HistoryView({ onBack, onViewProfile, onGenerateNew }: HistoryVie
   const [showFilters, setShowFilters] = useState(false)
   const [profileImages, setProfileImages] = useState<Record<string, string>>({})
   const [showImportDialog, setShowImportDialog] = useState(false)
+  
+  // Use cached profile images
+  const { fetchImagesForProfiles } = useProfileImageCache()
 
   useEffect(() => {
     fetchHistory()
   }, [fetchHistory])
 
-  // Fetch profile images for all entries
+  // Fetch profile images for all entries (using cache)
   useEffect(() => {
-    const fetchImages = async () => {
+    const loadImages = async () => {
       if (entries.length === 0) return
       
-      const serverUrl = await getServerUrl()
-      const newImages: Record<string, string> = {}
-      
-      // Fetch images in batches to avoid overwhelming the server
-      const batchSize = 10
-      for (let i = 0; i < entries.length; i += batchSize) {
-        const batch = entries.slice(i, i + batchSize)
-        const fetchPromises = batch.map(async (entry) => {
-          try {
-            const response = await fetch(
-              `${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}`
-            )
-            if (response.ok) {
-              const data = await response.json()
-              if (data.profile?.image) {
-                // Use the proxy endpoint to get the actual image
-                newImages[entry.profile_name] = `${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}/image-proxy`
-              }
-            }
-          } catch {
-            // Silently ignore errors for individual profile fetches
-          }
-        })
-        
-        await Promise.allSettled(fetchPromises)
-      }
-      setProfileImages(prev => ({ ...prev, ...newImages }))
+      const profileNames = entries.map(e => e.profile_name)
+      const images = await fetchImagesForProfiles(profileNames)
+      setProfileImages(images)
     }
     
-    fetchImages()
-  }, [entries])
+    loadImages()
+  }, [entries, fetchImagesForProfiles])
 
   // Get all available tags from entries for filtering
   const availableTags = useMemo(() => {
@@ -393,7 +378,7 @@ export function HistoryView({ onBack, onViewProfile, onGenerateNew }: HistoryVie
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                            {entry.profile_name}
+                            {cleanProfileName(entry.profile_name)}
                           </h3>
                           <p className="text-xs text-muted-foreground/70 mt-1">
                             {formatDate(entry.created_at)}
@@ -510,10 +495,12 @@ const IMAGE_STYLES = [
 interface ProfileDetailViewProps {
   entry: HistoryEntry
   onBack: () => void
+  onRunProfile?: (profileId: string, profileName: string) => void
 }
 
-export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
+export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetailViewProps) {
   const { downloadJson } = useHistory()
+  const { invalidate: invalidateImageCache } = useProfileImageCache()
   const [isDownloading, setIsDownloading] = useState(false)
   const [isCapturing, setIsCapturing] = useState(false)
   const [showShotHistory, setShowShotHistory] = useState(false)
@@ -537,6 +524,33 @@ export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
   const [showLightbox, setShowLightbox] = useState(false)
   const resultsCardRef = useRef<HTMLDivElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  
+  // Machine profile ID for run/schedule functionality
+  const [machineProfileId, setMachineProfileId] = useState<string | null>(null)
+
+  // Fetch machine profile ID by name
+  useEffect(() => {
+    const fetchMachineProfileId = async () => {
+      if (!onRunProfile) return // Skip if callback not provided
+      try {
+        const serverUrl = await getServerUrl()
+        const response = await fetch(`${serverUrl}/api/machine/profiles`)
+        if (response.ok) {
+          const data = await response.json()
+          const profiles = data.profiles || []
+          const matchingProfile = profiles.find((p: { id: string; name: string }) => 
+            p.name === entry.profile_name
+          )
+          if (matchingProfile) {
+            setMachineProfileId(matchingProfile.id)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch machine profile ID:', err)
+      }
+    }
+    fetchMachineProfileId()
+  }, [entry.profile_name, onRunProfile])
 
   // Fetch profile image on mount
   useEffect(() => {
@@ -582,6 +596,9 @@ export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
         const error = await response.json().catch(() => ({ message: 'Upload failed' }))
         throw new Error(error.detail?.message || error.message || 'Failed to upload image')
       }
+      
+      // Invalidate the image cache so the catalogue will re-fetch
+      invalidateImageCache(entry.profile_name)
       
       setImageUploadSuccess(true)
       setShowCropDialog(false)
@@ -693,6 +710,8 @@ export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
       setShowPreviewDialog(false)
       setPreviewImage(null)
       setImageCacheBuster(newCacheBuster)
+      // Invalidate the image cache so the catalogue will re-fetch
+      invalidateImageCache(entry.profile_name)
       // Immediately set the new profile image URL with cache buster
       setProfileImage(`${serverUrl}/api/profile/${encodeURIComponent(entry.profile_name)}/image-proxy?t=${newCacheBuster}`)
       setImageUploadSuccess(true)
@@ -774,7 +793,8 @@ export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
     const remainingText = text
     
     sectionHeaders.forEach((header, index) => {
-      const headerPattern = new RegExp(`${header}:\\s*`, 'i')
+      // Handle both "Header:" and "**Header:**" formats
+      const headerPattern = new RegExp(`\\*?\\*?${header}:\\*?\\*?\\s*`, 'i')
       const match = remainingText.match(headerPattern)
       
       if (match && match.index !== undefined) {
@@ -782,7 +802,8 @@ export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
         
         let endIndex = remainingText.length
         for (let i = index + 1; i < sectionHeaders.length; i++) {
-          const nextHeaderPattern = new RegExp(`${sectionHeaders[i]}:`, 'i')
+          // Handle both "Header:" and "**Header:**" formats
+          const nextHeaderPattern = new RegExp(`\\*?\\*?${sectionHeaders[i]}:`, 'i')
           const nextMatch = remainingText.match(nextHeaderPattern)
           if (nextMatch && nextMatch.index !== undefined) {
             endIndex = nextMatch.index
@@ -790,7 +811,10 @@ export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
           }
         }
         
-        const content = remainingText.substring(startIndex, endIndex).trim()
+        let content = remainingText.substring(startIndex, endIndex).trim()
+        // Clean any remaining ** artifacts at start/end of content
+        content = content.replace(/^\*+\s*/, '').replace(/\s*\*+$/, '')
+        
         // Stop at "PROFILE JSON" section
         const jsonSectionIndex = content.indexOf('PROFILE JSON')
         let finalContent = jsonSectionIndex > 0 
@@ -855,7 +879,7 @@ export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
               </Button>
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-bold text-foreground truncate">
-                  {entry.profile_name}
+                  {cleanProfileName(entry.profile_name)}
                 </h2>
                 <p className="text-xs text-muted-foreground/70">
                   {(() => {
@@ -894,7 +918,7 @@ export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
           )}
           {isCapturing && (
             <div className="text-success w-full">
-              <h2 className="text-2xl font-bold break-words">{entry.profile_name}</h2>
+              <h2 className="text-2xl font-bold break-words">{cleanProfileName(entry.profile_name)}</h2>
             </div>
           )}
 
@@ -952,6 +976,11 @@ export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
           )}
         </div>
 
+          {/* Profile Technical Breakdown */}
+          {entry.profile_json && (
+            <ProfileBreakdown profile={entry.profile_json as ProfileData} />
+          )}
+
         {!isCapturing && (
           <div className="space-y-2.5">
             {/* Shot History Button */}
@@ -962,6 +991,17 @@ export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
               <ChartLine size={18} className="mr-2" weight="bold" />
               Shot History & Analysis
             </Button>
+            
+            {/* Run / Schedule Button */}
+            {onRunProfile && machineProfileId && (
+              <Button
+                onClick={() => onRunProfile(machineProfileId, entry.profile_name)}
+                className="w-full h-12 text-sm font-semibold bg-success hover:bg-success/90"
+              >
+                <Play size={18} className="mr-2" weight="fill" />
+                Run / Schedule Shot
+              </Button>
+            )}
             
             {/* Profile Image Upload */}
             <div className="space-y-1.5 mt-4 pt-4 border-t border-border/20">
@@ -1162,7 +1202,7 @@ export function ProfileDetailView({ entry, onBack }: ProfileDetailViewProps) {
                   className="w-full h-auto object-contain"
                 />
               </div>
-              <p className="text-center text-white/80 mt-4 text-sm font-medium">{entry.profile_name}</p>
+              <p className="text-center text-white/80 mt-4 text-sm font-medium">{cleanProfileName(entry.profile_name)}</p>
             </motion.div>
           </motion.div>
         )}

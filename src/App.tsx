@@ -6,12 +6,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-// Coffee icon is used by HistoryView (child component) and must be imported here
-// to avoid bundling issues when downloading images with domToPng
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Camera, Sparkle, CheckCircle, Warning, ArrowClockwise, Upload, X, Info, QrCode, FileJs, Coffee, Image, CaretLeft, Plus, Gear, Play } from '@phosphor-icons/react'
 import { getServerUrl } from '@/lib/config'
-import { MarkdownText } from '@/components/MarkdownText'
+import { MarkdownText, cleanProfileName } from '@/components/MarkdownText'
 import { domToPng } from 'modern-screenshot'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
@@ -21,6 +18,7 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { useSwipeNavigation } from '@/hooks/use-swipe-navigation'
 import { MeticAILogo } from '@/components/MeticAILogo'
 import { HistoryView, ProfileDetailView } from '@/components/HistoryView'
+import { ProfileBreakdown, ProfileData } from '@/components/ProfileBreakdown'
 import { HistoryEntry } from '@/hooks/useHistory'
 import { SettingsView } from '@/components/SettingsView'
 import { RunShotView } from '@/components/RunShotView'
@@ -95,6 +93,7 @@ function App() {
   const [qrDialogOpen, setQrDialogOpen] = useState(false)
   const [selectedHistoryEntry, setSelectedHistoryEntry] = useState<HistoryEntry | null>(null)
   const [currentProfileJson, setCurrentProfileJson] = useState<Record<string, unknown> | null>(null)
+  const [createdProfileId, setCreatedProfileId] = useState<string | null>(null)
   const [runShotProfileId, setRunShotProfileId] = useState<string | undefined>(undefined)
   const [runShotProfileName, setRunShotProfileName] = useState<string | undefined>(undefined)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -285,7 +284,47 @@ function App() {
         return null
       }
       
-      setCurrentProfileJson(extractProfileJson(data.reply))
+      const profileJson = extractProfileJson(data.reply)
+      setCurrentProfileJson(profileJson)
+      
+      // Fetch the machine profile ID for the created profile, with a small retry to
+      // handle delays between creation and appearance in /api/machine/profiles
+      const profileName = profileJson?.name as string | undefined
+      if (profileName) {
+        const maxAttempts = 5
+        const delayMs = 500
+        const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+        let foundProfileId: string | null = null
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          try {
+            const profilesResponse = await fetch(`${serverUrl}/api/machine/profiles`)
+            if (profilesResponse.ok) {
+              const profilesData = await profilesResponse.json()
+              const matchingProfile = (profilesData.profiles || []).find(
+                (p: { id: string; name: string }) => p.name === profileName
+              )
+              if (matchingProfile) {
+                foundProfileId = matchingProfile.id
+                setCreatedProfileId(matchingProfile.id)
+                break
+              }
+            } else {
+              console.warn(
+                `Attempt ${attempt} to fetch profiles failed with status ${profilesResponse.status}`
+              )
+            }
+          } catch (profileErr) {
+            console.error(`Failed to fetch profile ID on attempt ${attempt}:`, profileErr)
+          }
+
+          if (!foundProfileId && attempt < maxAttempts) {
+            await delay(delayMs)
+          }
+        }
+      }
+      
       setViewState('results')
     } catch (error) {
       clearInterval(messageInterval)
@@ -300,6 +339,11 @@ function App() {
   }
 
   const handleReset = useCallback(() => {
+    // Clear any pending click timer to prevent stale callbacks
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current)
+      clickTimerRef.current = null
+    }
     // Refresh profile count before switching view
     refreshProfileCount()
     setViewState('form')
@@ -312,8 +356,18 @@ function App() {
     setErrorMessage('')
     setCurrentMessage(0)
     setCurrentProfileJson(null)
+    setCreatedProfileId(null)
     setSelectedHistoryEntry(null)
   }, [refreshProfileCount])
+
+  // Cleanup clickTimer on unmount
+  useEffect(() => {
+    return () => {
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current)
+      }
+    }
+  }, [])
 
   const handleBackToStart = useCallback(() => {
     refreshProfileCount()
@@ -363,9 +417,9 @@ function App() {
       return
     }
 
-    const profileName = selectedHistoryEntry?.profile_name || 
+    const profileName = cleanProfileName(selectedHistoryEntry?.profile_name || 
       apiResponse?.reply.match(/Profile Created:\s*(.+?)(?:\n|$)/i)?.[1]?.trim() || 
-      'profile'
+      'profile')
     
     const safeName = profileName
       .toLowerCase()
@@ -392,7 +446,7 @@ function App() {
     try {
       // Extract profile name from the reply
       const profileNameMatch = apiResponse.reply.match(/Profile Created:\s*(.+?)(?:\n|$)/i)
-      const profileName = profileNameMatch ? profileNameMatch[1].trim() : 'espresso-profile'
+      const profileName = cleanProfileName(profileNameMatch ? profileNameMatch[1].trim() : 'espresso-profile')
       const safeFilename = profileName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
       
       // Enable capturing mode to show header and hide buttons
@@ -401,6 +455,8 @@ function App() {
       // Wait for DOM to update
       await new Promise(resolve => setTimeout(resolve, 100))
       
+      // TODO: Known issue - image export has alignment offset
+      // See: https://github.com/hessius/meticai-web/issues/75
       const dataUrl = await domToPng(resultsCardRef.current, {
         scale: 2,
         backgroundColor: '#09090b',
@@ -468,12 +524,18 @@ Special Notes: For maximum clarity and to really make those delicate floral note
     setClickCount(newCount)
     
     if (newCount === 5) {
+      // Secret dev feature: 5 rapid clicks loads test results
       loadMockResults()
       setClickCount(0)
     } else {
+      // Set a timer - if no more clicks, go home after 300ms
       clickTimerRef.current = setTimeout(() => {
+        // Single tap: go to start screen (only if not on start already)
+        if (viewState !== 'start') {
+          handleBackToStart()
+        }
         setClickCount(0)
-      }, 1000)
+      }, 300)
     }
   }
 
@@ -494,14 +556,16 @@ Special Notes: For maximum clarity and to really make those delicate floral note
           className="text-center mb-10"
         >
           <div className="flex items-center justify-center gap-3 mb-3 relative">
-            <MeticAILogo size={44} variant="white" />
-            <h1 
-              className="text-4xl font-bold tracking-tight"
+            <div 
+              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
               onClick={handleTitleClick}
-              title="Click 5 times to load test results"
+              title="Tap to go home"
             >
-              Metic<span className="text-primary">AI</span>
-            </h1>
+              <MeticAILogo size={44} variant="white" />
+              <h1 className="text-4xl font-bold tracking-tight">
+                Metic<span className="text-primary">AI</span>
+              </h1>
+            </div>
             {isDesktop && (
               <Button
                 variant="ghost"
@@ -776,6 +840,11 @@ Special Notes: For maximum clarity and to really make those delicate floral note
             <ProfileDetailView
               entry={selectedHistoryEntry}
               onBack={() => setViewState('history')}
+              onRunProfile={(profileId, profileName) => {
+                setRunShotProfileId(profileId)
+                setRunShotProfileName(profileName)
+                setViewState('run-shot')
+              }}
             />
           )}
 
@@ -858,7 +927,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                 damping: 25
               }}
             >
-              <div ref={resultsCardRef}>
+              <div ref={resultsCardRef} className={isCapturing ? 'w-[400px] mx-auto' : ''}>
                 {isCapturing && (
                   <div className="text-center mb-6">
                     <div className="flex items-center justify-center gap-3 mb-2">
@@ -873,7 +942,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
               <Card className={`p-6 ${isCapturing ? 'space-y-4' : 'space-y-5'}`}>
                 {(() => {
                   const profileNameMatch = apiResponse.reply.match(/Profile Created:\s*(.+?)(?:\n|$)/i)
-                  const profileName = profileNameMatch?.[1]?.trim()
+                  const profileName = cleanProfileName(profileNameMatch?.[1]?.trim() || '')
                   
                   if (isCapturing && profileName) {
                     return (
@@ -940,11 +1009,12 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                         'Special Notes'
                       ]
                       
-                      // Split by section headers
+                      // Split by section headers (handles both "Header:" and "**Header:**" formats)
                       const remainingText = text
                       
                       sectionHeaders.forEach((header, index) => {
-                        const headerPattern = new RegExp(`${header}:\\s*`, 'i')
+                        // Match both "Header:" and "**Header:**" patterns
+                        const headerPattern = new RegExp(`\\*?\\*?${header}:\\*?\\*?\\s*`, 'i')
                         const match = remainingText.match(headerPattern)
                         
                         if (match && match.index !== undefined) {
@@ -953,7 +1023,8 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                           // Find the next section header or end of text
                           let endIndex = remainingText.length
                           for (let i = index + 1; i < sectionHeaders.length; i++) {
-                            const nextHeaderPattern = new RegExp(`${sectionHeaders[i]}:`, 'i')
+                            // Match both "Header:" and "**Header:**" patterns
+                            const nextHeaderPattern = new RegExp(`\\*?\\*?${sectionHeaders[i]}:`, 'i')
                             const nextMatch = remainingText.match(nextHeaderPattern)
                             if (nextMatch && nextMatch.index !== undefined) {
                               endIndex = nextMatch.index
@@ -962,6 +1033,12 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                           }
                           
                           let content = remainingText.substring(startIndex, endIndex).trim()
+                          
+                          // Clean any remaining ** artifacts at start/end of content
+                          content = content.replace(/^\*+\s*/, '').replace(/\s*\*+$/, '')
+                          
+                          // Remove trailing --- (format delimiter) from Special Notes
+                          content = content.replace(/\n*---\s*$/g, '').trim()
                           
                           // Stop at PROFILE JSON section to hide JSON output
                           const jsonSectionIndex = content.indexOf('PROFILE JSON')
@@ -1016,9 +1093,14 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                           </p>
                         </div>
                       </div>
-                    )
+                    )  
                   })()}
                 </div>
+
+                {/* Profile Technical Breakdown */}
+                {currentProfileJson && (
+                  <ProfileBreakdown profile={currentProfileJson as ProfileData} />
+                )}
 
                 {!isCapturing && (
                   <>
@@ -1028,6 +1110,21 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                         Profile has been saved to your Meticulous device and history
                       </AlertDescription>
                     </Alert>
+
+                    {/* Run / Schedule Button */}
+                    {createdProfileId && currentProfileJson?.name && (
+                      <Button
+                        onClick={() => {
+                          setRunShotProfileId(createdProfileId)
+                          setRunShotProfileName(currentProfileJson.name as string)
+                          setViewState('run-shot')
+                        }}
+                        className="w-full h-12 text-sm font-semibold bg-success hover:bg-success/90"
+                      >
+                        <Play size={18} className="mr-1.5" weight="fill" />
+                        Run / Schedule Shot
+                      </Button>
+                    )}
 
                     {/* Export Buttons */}
                     <div className="space-y-1.5">
@@ -1058,6 +1155,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
                     {/* Action Button */}
                     <Button
                       onClick={() => setViewState('history')}
+                      variant={createdProfileId ? "outline" : "default"}
                       className="w-full h-12 text-sm font-semibold"
                     >
                       <Coffee size={18} className="mr-1.5" weight="fill" />

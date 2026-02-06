@@ -1409,7 +1409,8 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
                       
                       // Merge with profile target curves if analysis has been done
                       const mergedData = mergeWithTargetCurves(chartData, analysisResult?.profile_target_curves)
-                      const hasTargetCurves = analysisResult?.profile_target_curves && analysisResult.profile_target_curves.length > 0
+                      // Note: hasTargetCurves could be used for conditional rendering if needed:
+                      // const hasTargetCurves = analysisResult?.profile_target_curves && analysisResult.profile_target_curves.length > 0
                       
                       // Calculate fixed max values from full dataset for stable axes
                       // Include target curve values to ensure they're not clipped

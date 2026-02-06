@@ -6,8 +6,42 @@ interface MarkdownTextProps {
   className?: string
 }
 
+/**
+ * Clean malformed markdown patterns that the LLM sometimes outputs:
+ * - "** text" (space after opening **)
+ * - "**" alone on a line
+ * - "###" alone on a line  
+ * - Leading/trailing ** on profile names
+ */
+export function cleanMalformedMarkdown(text: string): string {
+  return text
+    // Remove lines that are just ** or ### (with optional whitespace)
+    .replace(/^\s*\*\*\s*$/gm, '')
+    .replace(/^\s*###\s*$/gm, '')
+    // Fix "** text" pattern at start of line -> just "text"
+    .replace(/^\*\*\s+(?!\*)/gm, '')
+    // Fix "text **" pattern at end of line -> just "text"
+    .replace(/(?<!\*)\s+\*\*$/gm, '')
+    // Clean up multiple blank lines that result from removals
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+/**
+ * Clean a profile name by removing any stray markdown formatting
+ */
+export function cleanProfileName(name: string): string {
+  return name
+    // Remove leading/trailing ** or *
+    .replace(/^\*+\s*/, '')
+    .replace(/\s*\*+$/, '')
+    // Remove any remaining ** pairs (malformed bold)
+    .replace(/\*\*/g, '')
+    .trim()
+}
+
 export function MarkdownText({ children, text, className = '' }: MarkdownTextProps) {
-  const content = text ?? children ?? ''
+  const content = cleanMalformedMarkdown(text ?? children ?? '')
   
   const renderMarkdown = (textContent: string): React.ReactNode[] => {
     const lines = textContent.split('\n')
@@ -102,6 +136,18 @@ export function MarkdownText({ children, text, className = '' }: MarkdownTextPro
             <span className="text-muted-foreground min-w-[1.5em]">{numberedMatch[1]}.</span>
             <span>{processInlineMarkdown(numberedMatch[2], lineIndex)}</span>
           </div>
+        )
+        return
+      }
+      
+      // Handle **Label:** Value pattern (common in LLM output)
+      const labelMatch = line.match(/^\*\*([^*]+):\*\*\s*(.*)$/)
+      if (labelMatch) {
+        result.push(
+          <p key={`label-${lineIndex}`} className="leading-relaxed">
+            <strong className="font-semibold">{labelMatch[1]}:</strong>
+            {labelMatch[2] && <span> {labelMatch[2]}</span>}
+          </p>
         )
         return
       }
