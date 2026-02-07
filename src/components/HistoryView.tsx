@@ -78,7 +78,7 @@ function ProfileImageWithFallback({ imageUrl, profileName }: { imageUrl?: string
       {imageUrl && !imageError ? (
         <img 
           src={imageUrl} 
-          alt={profileName}
+          alt={cleanProfileName(profileName)}
           className="w-full h-full object-cover animate-in fade-in duration-300"
           onError={() => setImageError(true)}
         />
