@@ -92,6 +92,7 @@ function App() {
   const [clickCount, setClickCount] = useState(0)
   const [qrDialogOpen, setQrDialogOpen] = useState(false)
   const [selectedHistoryEntry, setSelectedHistoryEntry] = useState<HistoryEntry | null>(null)
+  const [selectedHistoryImageUrl, setSelectedHistoryImageUrl] = useState<string | undefined>(undefined)
   const [currentProfileJson, setCurrentProfileJson] = useState<Record<string, unknown> | null>(null)
   const [createdProfileId, setCreatedProfileId] = useState<string | null>(null)
   const [runShotProfileId, setRunShotProfileId] = useState<string | undefined>(undefined)
@@ -405,8 +406,9 @@ function App() {
     enabled: isMobile,
   })
 
-  const handleViewHistoryEntry = (entry: HistoryEntry) => {
+  const handleViewHistoryEntry = (entry: HistoryEntry, cachedImageUrl?: string) => {
     setSelectedHistoryEntry(entry)
+    setSelectedHistoryImageUrl(cachedImageUrl)
     setViewState('history-detail')
   }
 
@@ -859,6 +861,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
             <ProfileDetailView
               entry={selectedHistoryEntry}
               onBack={() => setViewState('history')}
+              cachedImageUrl={selectedHistoryImageUrl}
               onRunProfile={(profileId, profileName) => {
                 setRunShotProfileId(profileId)
                 setRunShotProfileName(profileName)

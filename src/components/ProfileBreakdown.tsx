@@ -554,8 +554,8 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
             {warnings.length > 0 && (
               <div className="space-y-1.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
                 <div className="flex items-center gap-1.5">
-                  <Warning size={14} weight="bold" className="text-amber-400" />
-                  <p className="text-xs font-medium text-amber-400">Variable Issues</p>
+                  <Warning size={14} weight="bold" className="text-amber-400 shrink-0" />
+                  <p className="text-xs font-medium text-amber-400 whitespace-nowrap">Variable Issues</p>
                 </div>
                 <div className="space-y-1">
                   {warnings.map((warning, idx) => (
@@ -604,7 +604,7 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
                     return (
                       <div 
                         key={idx}
-                        className="px-2.5 py-1.5 rounded-lg border text-xs bg-blue-500/10 text-blue-300 border-blue-500/30"
+                        className="px-2.5 py-1.5 rounded-lg border text-xs bg-blue-500/10 text-blue-300 border-blue-500/30 whitespace-nowrap"
                       >
                         <span className="font-medium">{variable.name}</span>
                         {displayValue && (
@@ -624,8 +624,8 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
             {adjustableVars.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Sliders size={14} weight="bold" className="text-muted-foreground" />
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Adjustable Variables</p>
+                  <Sliders size={14} weight="bold" className="text-muted-foreground shrink-0" />
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">Adjustable Variables</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {adjustableVars.map((variable, idx) => {
@@ -635,7 +635,7 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
                     return (
                       <div 
                         key={idx}
-                        className={`px-2.5 py-1.5 rounded-lg border text-xs ${color.bg} ${color.text} ${color.border}`}
+                        className={`px-2.5 py-1.5 rounded-lg border text-xs whitespace-nowrap ${color.bg} ${color.text} ${color.border}`}
                         title={usedInStages.length > 0 ? `Used in: ${usedInStages.join(', ')}` : 'Not used in any stage'}
                       >
                         {/* Color dot indicator */}
@@ -665,8 +665,8 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
         {hasStages && (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <ListNumbers size={14} weight="bold" className="text-muted-foreground" />
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <ListNumbers size={14} weight="bold" className="text-muted-foreground shrink-0" />
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                 Stages ({profile.stages!.length})
               </p>
             </div>
@@ -728,9 +728,9 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
                           return (
                             <span 
                               key={v.key} 
-                              className={`text-[10px] px-1.5 py-0.5 rounded ${color?.bg} ${color?.text} border ${color?.border}`}
+                              className={`text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap ${color?.bg} ${color?.text} border ${color?.border}`}
                             >
-                              ${v.key} = {v.value}
+                              {v.name} = {v.value}{v.type === 'pressure' && ' bar'}{v.type === 'flow' && ' ml/s'}{v.type === 'time' && 's'}
                             </span>
                           )
                         })}
@@ -746,12 +746,12 @@ export function ProfileBreakdown({ profile, className = '' }: ProfileBreakdownPr
                         </span>
                       )}
                       {limitsInfo && (
-                        <span className="text-amber-400/80">
+                        <span className="text-amber-400/80 whitespace-nowrap">
                           Max: {limitsInfo}
                         </span>
                       )}
                       {exitInfo && (
-                        <span className="text-green-400/80">
+                        <span className="text-green-400/80 whitespace-nowrap">
                           Exit: {exitInfo}
                         </span>
                       )}
