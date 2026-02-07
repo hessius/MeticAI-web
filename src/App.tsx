@@ -455,6 +455,12 @@ function App() {
       // Wait for DOM to update
       await new Promise(resolve => setTimeout(resolve, 100))
       
+      // Verify ref is still valid after await
+      if (!resultsCardRef.current) {
+        setIsCapturing(false)
+        return
+      }
+      
       // Create a wrapper div with padding to avoid alignment offset issues
       // Applying padding via modern-screenshot's style option causes width miscalculation
       const element = resultsCardRef.current
