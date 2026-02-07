@@ -5,6 +5,9 @@ import { ThemeProvider } from 'next-themes'
 import App from './App.tsx'
 import { ErrorFallback } from './ErrorFallback.tsx'
 
+// Initialize i18n
+import './i18n/config'
+
 import "./main.css"
 import "./styles/theme.css"
 import "./index.css"
