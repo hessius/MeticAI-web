@@ -68,6 +68,11 @@ function extractDescription(reply: string): string | null {
 function ProfileImageWithFallback({ imageUrl, profileName }: { imageUrl?: string; profileName: string }) {
   const [imageError, setImageError] = useState(false)
 
+  // Reset error state when imageUrl changes to allow retry with new URL
+  useEffect(() => {
+    setImageError(false)
+  }, [imageUrl])
+
   return (
     <div className="w-10 h-10 rounded-full overflow-hidden border border-border/30 shrink-0 mt-0.5 bg-secondary/60">
       {imageUrl && !imageError ? (

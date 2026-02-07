@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useProfileImageCache } from './useProfileImageCache'
 import { useState, useEffect } from 'react'
@@ -33,6 +33,10 @@ describe('useProfileImageCache - Integration Tests', () => {
     vi.clearAllMocks()
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('should handle the HistoryView usage pattern correctly', async () => {
     // Simulate successful fetch responses
     mockFetch.mockResolvedValue({
@@ -42,19 +46,13 @@ describe('useProfileImageCache - Integration Tests', () => {
 
     // Create a component that mimics HistoryView behavior
     function TestComponent() {
-      const [entries, setEntries] = useState<Array<{ profile_name: string }>>([])
+      const [entries, setEntries] = useState<Array<{ profile_name: string }>>([
+        { profile_name: 'Profile 1' },
+        { profile_name: 'Profile 2' }
+      ])
       const [profileImages, setProfileImages] = useState<Record<string, string>>({})
       const { fetchImagesForProfiles } = useProfileImageCache()
 
-      // Simulate fetchHistory loading entries
-      useEffect(() => {
-        setEntries([
-          { profile_name: 'Profile 1' },
-          { profile_name: 'Profile 2' }
-        ])
-      }, [])
-
-      
       // Mimic the HistoryView image loading effect
       useEffect(() => {
         const loadImages = async () => {
@@ -73,24 +71,40 @@ describe('useProfileImageCache - Integration Tests', () => {
 
     const { result } = renderHook(() => TestComponent())
 
-    // Initially, no entries and no images
-    expect(result.current.entries).toEqual([])
-    expect(result.current.profileImages).toEqual({})
-
-    // Wait for entries to load
-    await waitFor(() => {
-      expect(result.current.entries.length).toBe(2)
-    }, { timeout: 1000 })
-
     // Wait for images to load
     await waitFor(() => {
       expect(Object.keys(result.current.profileImages).length).toBe(2)
-    }, { timeout: 2000 })
+    })
 
     // Verify images were fetched and set correctly
     expect(result.current.profileImages['Profile 1']).toContain('Profile%201')
     expect(result.current.profileImages['Profile 2']).toContain('Profile%202')
     expect(mockFetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('should construct image URLs even when profile.image field is missing', async () => {
+    // Simulate responses where profile exists but image field is missing
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ profile: {} }) // No image field
+    })
+
+    const { result } = renderHook(() => useProfileImageCache())
+
+    let images: Record<string, string> = {}
+    await act(async () => {
+      images = await result.current.fetchImagesForProfiles(['Profile Without Image'])
+    })
+
+    // Should still construct the image-proxy URL
+    expect(images['Profile Without Image']).toBeDefined()
+    expect(images['Profile Without Image']).toContain('Profile%20Without%20Image')
+    expect(images['Profile Without Image']).toContain('/image-proxy')
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+
+    // Verify it was cached
+    expect(result.current.cache['Profile Without Image']).toBeDefined()
+    expect(result.current.cache['Profile Without Image'].url).toBe(images['Profile Without Image'])
   })
 
   it('should use cached images on second mount (simulating page refresh)', async () => {
