@@ -455,16 +455,29 @@ function App() {
       // Wait for DOM to update
       await new Promise(resolve => setTimeout(resolve, 100))
       
-      // TODO: Known issue - image export has alignment offset
-      // See: https://github.com/hessius/meticai-web/issues/75
-      const dataUrl = await domToPng(resultsCardRef.current, {
-        scale: 2,
-        backgroundColor: '#09090b',
-        style: {
-          padding: '20px',
-          boxSizing: 'content-box'
-        }
-      })
+      // Create a wrapper div with padding to avoid alignment offset issues
+      // Applying padding via modern-screenshot's style option causes width miscalculation
+      const element = resultsCardRef.current
+      const wrapper = document.createElement('div')
+      wrapper.style.padding = '20px'
+      wrapper.style.backgroundColor = '#09090b'
+      wrapper.style.display = 'inline-block'
+      
+      // Clone the element to avoid modifying the DOM
+      const clone = element.cloneNode(true) as HTMLElement
+      wrapper.appendChild(clone)
+      document.body.appendChild(wrapper)
+      
+      let dataUrl: string
+      try {
+        dataUrl = await domToPng(wrapper, {
+          scale: 2,
+          backgroundColor: '#09090b'
+        })
+      } finally {
+        // Always clean up the wrapper
+        document.body.removeChild(wrapper)
+      }
       
       // Disable capturing mode
       setIsCapturing(false)
