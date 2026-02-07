@@ -48,14 +48,13 @@ describe('useProfileImageCache - Integration Tests', () => {
 
       // Simulate fetchHistory loading entries
       useEffect(() => {
-        setTimeout(() => {
-          setEntries([
-            { profile_name: 'Profile 1' },
-            { profile_name: 'Profile 2' }
-          ])
-        }, 10)
+        setEntries([
+          { profile_name: 'Profile 1' },
+          { profile_name: 'Profile 2' }
+        ])
       }, [])
 
+      
       // Mimic the HistoryView image loading effect
       useEffect(() => {
         const loadImages = async () => {
