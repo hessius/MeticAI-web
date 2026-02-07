@@ -6,7 +6,7 @@
  * Generate unique ID for ARIA attributes
  */
 export function generateAriaId(prefix: string): string {
-  return `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
+  return `${prefix}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
 /**

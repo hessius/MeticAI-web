@@ -99,6 +99,24 @@ export function useAutoFocus<T extends HTMLElement>(
 
 /**
  * Hook to manage roving tab index for arrow key navigation
+ * 
+ * @param items - Array of items with id and optional disabled state
+ * @param orientation - Navigation direction ('vertical' or 'horizontal')
+ * @returns Container ref and function to get props for each item
+ * 
+ * @example
+ * const { containerRef, getItemProps } = useRovingTabIndex(items, 'vertical');
+ * 
+ * <div ref={containerRef}>
+ *   {items.map((item, index) => (
+ *     <button key={item.id} {...getItemProps(item.id, index)}>
+ *       {item.label}
+ *     </button>
+ *   ))}
+ * </div>
+ * 
+ * Note: The returned props include a 'data-roving-item-id' attribute that must be
+ * spread onto each item element for the roving tabindex to work correctly.
  */
 export function useRovingTabIndex<T extends HTMLElement>(
   items: Array<{ id: string; disabled?: boolean }>,
@@ -106,6 +124,7 @@ export function useRovingTabIndex<T extends HTMLElement>(
 ): {
   containerRef: RefObject<T>;
   getItemProps: (id: string, index: number) => {
+    'data-roving-item-id': string;
     tabIndex: number;
     onKeyDown: (e: React.KeyboardEvent) => void;
     onFocus: () => void;

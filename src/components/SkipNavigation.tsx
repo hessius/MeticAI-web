@@ -11,6 +11,8 @@ interface SkipNavigationProps {
  * Skip Navigation component for keyboard accessibility
  * Allows users to skip repetitive navigation and jump to main content
  */
+const FOCUS_CLEANUP_DELAY = 100; // milliseconds
+
 export function SkipNavigation({ links }: SkipNavigationProps) {
   const defaultLinks = [
     { id: 'main-content', label: 'Skip to main content' },
@@ -35,7 +37,7 @@ export function SkipNavigation({ links }: SkipNavigationProps) {
         if (target.getAttribute('tabindex') === '-1') {
           target.removeAttribute('tabindex');
         }
-      }, 100);
+      }, FOCUS_CLEANUP_DELAY);
     }
   };
 
