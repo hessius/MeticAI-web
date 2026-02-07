@@ -92,6 +92,7 @@ function App() {
   const [clickCount, setClickCount] = useState(0)
   const [qrDialogOpen, setQrDialogOpen] = useState(false)
   const [selectedHistoryEntry, setSelectedHistoryEntry] = useState<HistoryEntry | null>(null)
+  const [selectedHistoryImageUrl, setSelectedHistoryImageUrl] = useState<string | undefined>(undefined)
   const [currentProfileJson, setCurrentProfileJson] = useState<Record<string, unknown> | null>(null)
   const [createdProfileId, setCreatedProfileId] = useState<string | null>(null)
   const [runShotProfileId, setRunShotProfileId] = useState<string | undefined>(undefined)
@@ -405,8 +406,9 @@ function App() {
     enabled: isMobile,
   })
 
-  const handleViewHistoryEntry = (entry: HistoryEntry) => {
+  const handleViewHistoryEntry = (entry: HistoryEntry, cachedImageUrl?: string) => {
     setSelectedHistoryEntry(entry)
+    setSelectedHistoryImageUrl(cachedImageUrl)
     setViewState('history-detail')
   }
 
@@ -455,16 +457,40 @@ function App() {
       // Wait for DOM to update
       await new Promise(resolve => setTimeout(resolve, 100))
       
-      // TODO: Known issue - image export has alignment offset
-      // See: https://github.com/hessius/meticai-web/issues/75
-      const dataUrl = await domToPng(resultsCardRef.current, {
-        scale: 2,
-        backgroundColor: '#09090b',
-        style: {
-          padding: '20px',
-          boxSizing: 'content-box'
-        }
-      })
+      // Verify ref is still valid after await
+      if (!resultsCardRef.current) {
+        setIsCapturing(false)
+        return
+      }
+      
+      // Create a wrapper div with padding to avoid alignment offset issues
+      // Applying padding via modern-screenshot's style option causes width miscalculation
+      const element = resultsCardRef.current
+      const wrapper = document.createElement('div')
+      wrapper.style.padding = '20px'
+      wrapper.style.backgroundColor = '#09090b'
+      wrapper.style.display = 'inline-block'
+      // Position off-screen to prevent visible duplicate and layout shifts
+      wrapper.style.position = 'fixed'
+      wrapper.style.top = '-9999px'
+      wrapper.style.left = '-9999px'
+      wrapper.style.pointerEvents = 'none'
+      
+      // Clone the element to avoid modifying the DOM
+      const clone = element.cloneNode(true) as HTMLElement
+      wrapper.appendChild(clone)
+      document.body.appendChild(wrapper)
+      
+      let dataUrl: string
+      try {
+        dataUrl = await domToPng(wrapper, {
+          scale: 2,
+          backgroundColor: '#09090b'
+        })
+      } finally {
+        // Always clean up the wrapper
+        document.body.removeChild(wrapper)
+      }
       
       // Disable capturing mode
       setIsCapturing(false)
@@ -840,6 +866,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
             <ProfileDetailView
               entry={selectedHistoryEntry}
               onBack={() => setViewState('history')}
+              cachedImageUrl={selectedHistoryImageUrl}
               onRunProfile={(profileId, profileName) => {
                 setRunShotProfileId(profileId)
                 setRunShotProfileName(profileName)

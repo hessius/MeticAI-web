@@ -59,9 +59,41 @@ function extractDescription(reply: string): string | null {
   return null
 }
 
+/**
+ * Component to display profile image with graceful fallback
+ * Shows a Coffee icon placeholder if the image URL is missing or fails to load
+ * @param imageUrl - Optional URL to the profile image
+ * @param profileName - Name of the profile (used for alt text)
+ */
+function ProfileImageWithFallback({ imageUrl, profileName }: { imageUrl?: string; profileName: string }) {
+  const [imageError, setImageError] = useState(false)
+
+  // Reset error state when imageUrl changes to allow retry with new URL
+  useEffect(() => {
+    setImageError(false)
+  }, [imageUrl])
+
+  return (
+    <div className="w-10 h-10 rounded-full overflow-hidden border border-border/30 shrink-0 mt-0.5 bg-secondary/60">
+      {imageUrl && !imageError ? (
+        <img 
+          src={imageUrl} 
+          alt={cleanProfileName(profileName)}
+          className="w-full h-full object-cover animate-in fade-in duration-300"
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center">
+          <Coffee size={18} className="text-muted-foreground/40" weight="fill" />
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface HistoryViewProps {
   onBack: () => void
-  onViewProfile: (entry: HistoryEntry) => void
+  onViewProfile: (entry: HistoryEntry, cachedImageUrl?: string) => void
   onGenerateNew: () => void
 }
 
@@ -357,25 +389,16 @@ export function HistoryView({ onBack, onViewProfile, onGenerateNew }: HistoryVie
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.2, delay: index * 0.02 }}
-                    onClick={() => onViewProfile(entry)}
+                    onClick={() => onViewProfile(entry, profileImage)}
                     className="group cursor-pointer"
                   >
                     <div className="p-4 bg-secondary/40 hover:bg-secondary/70 rounded-xl border border-border/20 hover:border-border/40 transition-all duration-200">
                       <div className="flex items-start justify-between gap-3">
                         {/* Profile Image - fixed size to prevent layout shift */}
-                        <div className="w-10 h-10 rounded-full overflow-hidden border border-border/30 shrink-0 mt-0.5 bg-secondary/60">
-                          {profileImage ? (
-                            <img 
-                              src={profileImage} 
-                              alt={entry.profile_name}
-                              className="w-full h-full object-cover animate-in fade-in duration-300"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Coffee size={18} className="text-muted-foreground/40" weight="fill" />
-                            </div>
-                          )}
-                        </div>
+                        <ProfileImageWithFallback
+                          imageUrl={profileImage}
+                          profileName={entry.profile_name}
+                        />
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                             {cleanProfileName(entry.profile_name)}
@@ -496,9 +519,10 @@ interface ProfileDetailViewProps {
   entry: HistoryEntry
   onBack: () => void
   onRunProfile?: (profileId: string, profileName: string) => void
+  cachedImageUrl?: string
 }
 
-export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetailViewProps) {
+export function ProfileDetailView({ entry, onBack, onRunProfile, cachedImageUrl }: ProfileDetailViewProps) {
   const { downloadJson } = useHistory()
   const { invalidate: invalidateImageCache } = useProfileImageCache()
   const [isDownloading, setIsDownloading] = useState(false)
@@ -507,7 +531,8 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [imageUploadSuccess, setImageUploadSuccess] = useState(false)
   const [imageUploadError, setImageUploadError] = useState<string | null>(null)
-  const [profileImage, setProfileImage] = useState<string | null>(null)
+  // Use cached image URL immediately if available, prevents delay on detail view
+  const [profileImage, setProfileImage] = useState<string | null>(cachedImageUrl || null)
   const [imageCacheBuster, setImageCacheBuster] = useState(Date.now())
   const [showCropDialog, setShowCropDialog] = useState(false)
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
@@ -552,8 +577,14 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
     fetchMachineProfileId()
   }, [entry.profile_name, onRunProfile])
 
-  // Fetch profile image on mount
+  // Fetch profile image on mount only if not already cached
+  // Also re-fetch when image is uploaded to show the new image
   useEffect(() => {
+    // Skip fetch if we already have a cached image and no upload just succeeded
+    if (cachedImageUrl && !imageUploadSuccess) {
+      return
+    }
+    
     const fetchProfileImage = async () => {
       try {
         const serverUrl = await getServerUrl()
@@ -572,7 +603,7 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
       }
     }
     fetchProfileImage()
-  }, [entry.profile_name, imageUploadSuccess, imageCacheBuster])
+  }, [entry.profile_name, imageUploadSuccess, imageCacheBuster, cachedImageUrl])
 
   const handleUploadProfileImage = async (blob: Blob) => {
     setIsUploadingImage(true)
@@ -756,16 +787,43 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
         .replace(/^-|-$/g, '')
       
       setIsCapturing(true)
+      
+      // Wait for DOM to update
       await new Promise(resolve => setTimeout(resolve, 100))
       
-      const dataUrl = await domToPng(resultsCardRef.current, {
-        scale: 2,
-        backgroundColor: '#09090b',
-        style: {
-          padding: '20px',
-          boxSizing: 'content-box'
-        }
-      })
+      // Verify ref is still valid after await
+      if (!resultsCardRef.current) {
+        setIsCapturing(false)
+        return
+      }
+      
+      // Create a wrapper div with padding to avoid alignment offset issues
+      // Applying padding via modern-screenshot's style option causes width miscalculation
+      const element = resultsCardRef.current
+      const elementWidth = element.offsetWidth
+      
+      const wrapper = document.createElement('div')
+      wrapper.style.padding = '20px'
+      wrapper.style.backgroundColor = '#09090b'
+      wrapper.style.display = 'inline-block'
+      
+      // Clone the element to avoid modifying the DOM
+      const clone = element.cloneNode(true) as HTMLElement
+      // Preserve the original width - without this the clone expands to full viewport
+      clone.style.width = `${elementWidth}px`
+      wrapper.appendChild(clone)
+      document.body.appendChild(wrapper)
+      
+      let dataUrl: string
+      try {
+        dataUrl = await domToPng(wrapper, {
+          scale: 2,
+          backgroundColor: '#09090b'
+        })
+      } finally {
+        // Always clean up the wrapper
+        document.body.removeChild(wrapper)
+      }
       
       setIsCapturing(false)
       
@@ -854,7 +912,7 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
     >
-      <div ref={resultsCardRef}>
+      <div ref={resultsCardRef} className={isCapturing ? 'w-[400px] mx-auto' : ''}>
         {isCapturing && (
           <div className="text-center mb-6">
             <div className="flex items-center justify-center gap-3 mb-2">
@@ -907,6 +965,7 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
                     src={profileImage} 
                     alt={entry.profile_name}
                     className="w-full h-full object-cover animate-in fade-in duration-300"
+                    onError={() => setProfileImage(null)}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
@@ -1200,6 +1259,10 @@ export function ProfileDetailView({ entry, onBack, onRunProfile }: ProfileDetail
                   src={profileImage} 
                   alt={entry.profile_name}
                   className="w-full h-auto object-contain"
+                  onError={() => {
+                    setProfileImage(null)
+                    setShowLightbox(false)
+                  }}
                 />
               </div>
               <p className="text-center text-white/80 mt-4 text-sm font-medium">{cleanProfileName(entry.profile_name)}</p>
