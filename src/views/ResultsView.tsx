@@ -15,6 +15,55 @@ interface APIResponse {
   history_id?: string
 }
 
+function parseProfileSections(text: string) {
+  const sections: { title: string; content: string }[] = []
+  const sectionHeaders = [
+    'Description',
+    'Preparation',
+    'Why This Works',
+    'Special Notes'
+  ]
+  
+  const remainingText = text
+  
+  sectionHeaders.forEach((header, index) => {
+    const headerPattern = new RegExp(`\\*?\\*?${header}:\\*?\\*?\\s*`, 'i')
+    const match = remainingText.match(headerPattern)
+    
+    if (match && match.index !== undefined) {
+      const startIndex = match.index + match[0].length
+      
+      let endIndex = remainingText.length
+      for (let i = index + 1; i < sectionHeaders.length; i++) {
+        const nextHeaderPattern = new RegExp(`\\*?\\*?${sectionHeaders[i]}:`, 'i')
+        const nextMatch = remainingText.match(nextHeaderPattern)
+        if (nextMatch && nextMatch.index !== undefined) {
+          endIndex = nextMatch.index
+          break
+        }
+      }
+      
+      let content = remainingText.substring(startIndex, endIndex).trim()
+      
+      content = content.replace(/^\*+\s*/, '').replace(/\s*\*+$/, '')
+      content = content.replace(/\n*---\s*$/g, '').trim()
+      
+      const jsonSectionIndex = content.indexOf('PROFILE JSON')
+      if (jsonSectionIndex > 0) {
+        content = content.substring(0, jsonSectionIndex).trim()
+      }
+      content = content.replace(/```json[\s\S]*?```/g, '').trim()
+      content = content.replace(/```[\s\S]*?```/g, '').trim()
+      
+      if (content) {
+        sections.push({ title: header, content })
+      }
+    }
+  })
+  
+  return sections
+}
+
 interface ResultsViewProps {
   apiResponse: APIResponse
   currentProfileJson: Record<string, unknown> | null
@@ -40,55 +89,6 @@ export function ResultsView({
   onViewHistory,
   onRunProfile
 }: ResultsViewProps) {
-  const parseProfileSections = (text: string) => {
-    const sections: { title: string; content: string }[] = []
-    const sectionHeaders = [
-      'Description',
-      'Preparation',
-      'Why This Works',
-      'Special Notes'
-    ]
-    
-    const remainingText = text
-    
-    sectionHeaders.forEach((header, index) => {
-      const headerPattern = new RegExp(`\\*?\\*?${header}:\\*?\\*?\\s*`, 'i')
-      const match = remainingText.match(headerPattern)
-      
-      if (match && match.index !== undefined) {
-        const startIndex = match.index + match[0].length
-        
-        let endIndex = remainingText.length
-        for (let i = index + 1; i < sectionHeaders.length; i++) {
-          const nextHeaderPattern = new RegExp(`\\*?\\*?${sectionHeaders[i]}:`, 'i')
-          const nextMatch = remainingText.match(nextHeaderPattern)
-          if (nextMatch && nextMatch.index !== undefined) {
-            endIndex = nextMatch.index
-            break
-          }
-        }
-        
-        let content = remainingText.substring(startIndex, endIndex).trim()
-        
-        content = content.replace(/^\*+\s*/, '').replace(/\s*\*+$/, '')
-        content = content.replace(/\n*---\s*$/g, '').trim()
-        
-        const jsonSectionIndex = content.indexOf('PROFILE JSON')
-        if (jsonSectionIndex > 0) {
-          content = content.substring(0, jsonSectionIndex).trim()
-        }
-        content = content.replace(/```json[\s\S]*?```/g, '').trim()
-        content = content.replace(/```[\s\S]*?```/g, '').trim()
-        
-        if (content) {
-          sections.push({ title: header, content })
-        }
-      }
-    })
-    
-    return sections
-  }
-
   const sections = parseProfileSections(apiResponse.reply)
   const profileNameMatch = apiResponse.reply.match(/Profile Created:\s*(.+?)(?:\n|$)/i)
   const profileName = cleanProfileName(profileNameMatch?.[1]?.trim() || '')

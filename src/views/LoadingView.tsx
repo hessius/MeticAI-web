@@ -21,6 +21,8 @@ const LOADING_MESSAGES = [
   "Almost there..."
 ]
 
+export const LOADING_MESSAGE_COUNT = LOADING_MESSAGES.length
+
 interface LoadingViewProps {
   currentMessage: number
 }

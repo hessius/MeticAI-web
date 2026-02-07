@@ -19,7 +19,7 @@ import { SettingsView } from '@/components/SettingsView'
 import { RunShotView } from '@/components/RunShotView'
 import { StartView } from '@/views/StartView'
 import { FormView } from '@/views/FormView'
-import { LoadingView } from '@/views/LoadingView'
+import { LoadingView, LOADING_MESSAGE_COUNT } from '@/views/LoadingView'
 import { ResultsView } from '@/views/ResultsView'
 import { ErrorView } from '@/views/ErrorView'
 
@@ -141,7 +141,7 @@ function App() {
     setErrorMessage('')
 
     const messageInterval = setInterval(() => {
-      setCurrentMessage(prev => (prev + 1) % 16)
+      setCurrentMessage(prev => (prev + 1) % LOADING_MESSAGE_COUNT)
     }, 3500)
 
     try {
