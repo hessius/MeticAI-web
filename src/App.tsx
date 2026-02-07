@@ -470,6 +470,11 @@ function App() {
       wrapper.style.padding = '20px'
       wrapper.style.backgroundColor = '#09090b'
       wrapper.style.display = 'inline-block'
+      // Position off-screen to prevent visible duplicate and layout shifts
+      wrapper.style.position = 'fixed'
+      wrapper.style.top = '-9999px'
+      wrapper.style.left = '-9999px'
+      wrapper.style.pointerEvents = 'none'
       
       // Clone the element to avoid modifying the DOM
       const clone = element.cloneNode(true) as HTMLElement
