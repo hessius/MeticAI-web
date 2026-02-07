@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -89,9 +90,11 @@ export function ResultsView({
   onViewHistory,
   onRunProfile
 }: ResultsViewProps) {
-  const sections = parseProfileSections(apiResponse.reply)
-  const profileNameMatch = apiResponse.reply.match(/Profile Created:\s*(.+?)(?:\n|$)/i)
-  const profileName = cleanProfileName(profileNameMatch?.[1]?.trim() || '')
+  const sections = useMemo(() => parseProfileSections(apiResponse.reply), [apiResponse.reply])
+  const profileName = useMemo(() => {
+    const profileNameMatch = apiResponse.reply.match(/Profile Created:\s*(.+?)(?:\n|$)/i)
+    return cleanProfileName(profileNameMatch?.[1]?.trim() || '')
+  }, [apiResponse.reply])
 
   return (
     <motion.div
