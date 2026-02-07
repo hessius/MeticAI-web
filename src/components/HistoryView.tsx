@@ -806,11 +806,6 @@ export function ProfileDetailView({ entry, onBack, onRunProfile, cachedImageUrl 
       wrapper.style.padding = '20px'
       wrapper.style.backgroundColor = '#09090b'
       wrapper.style.display = 'inline-block'
-      // Position off-screen to avoid visible duplicate card, layout shift, or page scroll
-      wrapper.style.position = 'fixed'
-      wrapper.style.top = '-10000px'
-      wrapper.style.left = '-10000px'
-      wrapper.style.pointerEvents = 'none'
       
       // Clone the element to avoid modifying the DOM
       const clone = element.cloneNode(true) as HTMLElement
