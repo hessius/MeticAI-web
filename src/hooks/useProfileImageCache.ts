@@ -146,14 +146,19 @@ export function useProfileImageCache() {
             )
             if (response.ok) {
               const data = await response.json()
-              if (data.profile?.image) {
+              // Always construct image URL if profile exists - let the image proxy handle missing images
+              // This prevents the case where profiles exist but image field hasn't been populated yet
+              if (data.profile) {
                 const imageUrl = `${serverUrl}/api/profile/${encodeURIComponent(profileName)}/image-proxy`
                 results[profileName] = imageUrl
                 setImageUrlRef.current(profileName, imageUrl)
               }
+            } else {
+              console.warn(`Profile "${profileName}" fetch failed with status ${response.status}`)
             }
-          } catch {
-            // Silently ignore errors for individual profile fetches
+          } catch (error) {
+            // Silently ignore errors for individual profile fetches, but log for debugging
+            console.warn(`Failed to fetch image for profile "${profileName}":`, error)
           }
         })
 

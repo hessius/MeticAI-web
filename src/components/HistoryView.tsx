@@ -59,6 +59,28 @@ function extractDescription(reply: string): string | null {
   return null
 }
 
+// Component to display profile image with fallback to placeholder
+function ProfileImageWithFallback({ imageUrl, profileName }: { imageUrl?: string; profileName: string }) {
+  const [imageError, setImageError] = useState(false)
+
+  return (
+    <div className="w-10 h-10 rounded-full overflow-hidden border border-border/30 shrink-0 mt-0.5 bg-secondary/60">
+      {imageUrl && !imageError ? (
+        <img 
+          src={imageUrl} 
+          alt={profileName}
+          className="w-full h-full object-cover animate-in fade-in duration-300"
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center">
+          <Coffee size={18} className="text-muted-foreground/40" weight="fill" />
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface HistoryViewProps {
   onBack: () => void
   onViewProfile: (entry: HistoryEntry) => void
@@ -363,19 +385,10 @@ export function HistoryView({ onBack, onViewProfile, onGenerateNew }: HistoryVie
                     <div className="p-4 bg-secondary/40 hover:bg-secondary/70 rounded-xl border border-border/20 hover:border-border/40 transition-all duration-200">
                       <div className="flex items-start justify-between gap-3">
                         {/* Profile Image - fixed size to prevent layout shift */}
-                        <div className="w-10 h-10 rounded-full overflow-hidden border border-border/30 shrink-0 mt-0.5 bg-secondary/60">
-                          {profileImage ? (
-                            <img 
-                              src={profileImage} 
-                              alt={entry.profile_name}
-                              className="w-full h-full object-cover animate-in fade-in duration-300"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Coffee size={18} className="text-muted-foreground/40" weight="fill" />
-                            </div>
-                          )}
-                        </div>
+                        <ProfileImageWithFallback
+                          imageUrl={profileImage}
+                          profileName={entry.profile_name}
+                        />
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                             {cleanProfileName(entry.profile_name)}
