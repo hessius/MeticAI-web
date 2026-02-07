@@ -455,14 +455,24 @@ function App() {
       // Wait for DOM to update
       await new Promise(resolve => setTimeout(resolve, 100))
       
-      // TODO: Known issue - image export has alignment offset
-      // See: https://github.com/hessius/meticai-web/issues/75
+      // Use onCloneNode to fix alignment offset issues
+      // Reset margins/padding and ensure proper box-sizing on the cloned element
       const dataUrl = await domToPng(resultsCardRef.current, {
         scale: 2,
         backgroundColor: '#09090b',
         style: {
-          padding: '20px',
-          boxSizing: 'content-box'
+          padding: '20px'
+        },
+        onCloneNode: (clonedNode) => {
+          if (clonedNode instanceof HTMLElement) {
+            // Ensure proper box model and remove any offset-causing styles
+            clonedNode.style.margin = '0'
+            clonedNode.style.boxSizing = 'border-box'
+            // Reset any positioning that might cause offset
+            clonedNode.style.position = 'relative'
+            clonedNode.style.left = '0'
+            clonedNode.style.top = '0'
+          }
         }
       })
       
