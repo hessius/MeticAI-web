@@ -46,7 +46,7 @@ describe('useProfileImageCache - Integration Tests', () => {
 
     // Create a component that mimics HistoryView behavior
     function TestComponent() {
-      const [entries, setEntries] = useState<Array<{ profile_name: string }>>([
+      const [entries] = useState<Array<{ profile_name: string }>>([
         { profile_name: 'Profile 1' },
         { profile_name: 'Profile 2' }
       ])
