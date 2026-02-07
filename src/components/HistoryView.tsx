@@ -970,6 +970,7 @@ export function ProfileDetailView({ entry, onBack, onRunProfile, cachedImageUrl 
                     src={profileImage} 
                     alt={entry.profile_name}
                     className="w-full h-full object-cover animate-in fade-in duration-300"
+                    onError={() => setProfileImage(null)}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
@@ -1263,6 +1264,10 @@ export function ProfileDetailView({ entry, onBack, onRunProfile, cachedImageUrl 
                   src={profileImage} 
                   alt={entry.profile_name}
                   className="w-full h-auto object-contain"
+                  onError={() => {
+                    setProfileImage(null)
+                    setShowLightbox(false)
+                  }}
                 />
               </div>
               <p className="text-center text-white/80 mt-4 text-sm font-medium">{cleanProfileName(entry.profile_name)}</p>
