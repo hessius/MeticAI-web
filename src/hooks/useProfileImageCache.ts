@@ -155,8 +155,8 @@ export function useProfileImageCache() {
               }
             }
           } catch (error: unknown) {
-            // Silently ignore errors for individual profile fetches
-            // Use structured logging to avoid log injection
+            // Ignore errors for individual profile fetches so they don't interrupt the batch,
+            // but log them at debug level using structured logging to avoid log injection
             console.debug('Failed to fetch profile image', { profileName, error })
           }
         })
