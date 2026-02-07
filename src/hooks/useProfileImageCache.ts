@@ -153,12 +153,11 @@ export function useProfileImageCache() {
                 results[profileName] = imageUrl
                 setImageUrlRef.current(profileName, imageUrl)
               }
-            } else {
-              console.warn(`Profile "${profileName}" fetch failed with status ${response.status}`)
             }
-          } catch (error) {
-            // Silently ignore errors for individual profile fetches, but log for debugging
-            console.warn(`Failed to fetch image for profile "${profileName}":`, error)
+          } catch (error: unknown) {
+            // Silently ignore errors for individual profile fetches
+            // Use structured logging to avoid log injection
+            console.debug('Failed to fetch profile image', { profileName, error })
           }
         })
 

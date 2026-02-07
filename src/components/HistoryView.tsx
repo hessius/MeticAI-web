@@ -59,7 +59,12 @@ function extractDescription(reply: string): string | null {
   return null
 }
 
-// Component to display profile image with fallback to placeholder
+/**
+ * Component to display profile image with graceful fallback
+ * Shows a Coffee icon placeholder if the image URL is missing or fails to load
+ * @param imageUrl - Optional URL to the profile image
+ * @param profileName - Name of the profile (used for alt text)
+ */
 function ProfileImageWithFallback({ imageUrl, profileName }: { imageUrl?: string; profileName: string }) {
   const [imageError, setImageError] = useState(false)
 
