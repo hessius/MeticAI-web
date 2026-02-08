@@ -12,8 +12,9 @@ const languages = [
 test.describe('Screenshot Generation', () => {
   for (const lang of languages) {
     test(`Home view - ${lang.name}`, async ({ page }) => {
-      await page.goto('http://localhost:5173');
-      await page.waitForLoadState('networkidle');
+      await page.goto('/');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForSelector('text=MeticAI');
       
       // Select language
       if (lang.code !== 'en') {
