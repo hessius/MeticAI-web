@@ -21,9 +21,40 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': [
         'warn',
-        { allowConstantExport: true },
+        { 
+          allowConstantExport: true,
+          // Allow common variant/utility exports from shadcn/ui components
+          allowExportNames: [
+            'badgeVariants',
+            'buttonVariants',
+            'toggleVariants',
+            'navigationMenuTriggerStyle',
+            'useFormField',
+            'Form',
+            'FormItem',
+            'FormLabel',
+            'FormControl',
+            'FormDescription',
+            'FormMessage',
+            'FormField',
+            'useSidebar',
+            'SidebarProvider',
+            // MarkdownText utilities
+            'markdownToHtml',
+            'extractSections',
+            'cleanMalformedMarkdown',
+            'cleanProfileName',
+          ],
+        },
       ],
       '@typescript-eslint/no-explicit-any': 'warn',
+    },
+  },
+  // Disable react-refresh for shadcn/ui components (library code with intentional patterns)
+  {
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
     },
   },
 )
