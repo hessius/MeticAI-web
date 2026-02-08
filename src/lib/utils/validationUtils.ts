@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { ValidationError } from '@/types';
 
 /**
  * Validate file type
@@ -85,7 +84,7 @@ export async function validateJsonFile(
     const text = await file.text();
     const data = JSON.parse(text);
     return { valid: true, data };
-  } catch (error) {
+  } catch {
     return {
       valid: false,
       error: 'Invalid JSON format',

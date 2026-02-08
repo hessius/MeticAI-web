@@ -1,6 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { FormView } from './FormView';
-import { useRef } from 'react';
+import { useRef, type ComponentProps } from 'react';
+
+// Wrapper component to properly use hooks in Storybook
+function FormViewWithRef(props: Omit<ComponentProps<typeof FormView>, 'fileInputRef'>) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  return <FormView {...props} fileInputRef={fileInputRef} />;
+}
 
 /**
  * FormView component for creating new espresso profiles.
@@ -88,10 +94,7 @@ export const Empty: Story = {
     onBack: () => console.log('Back clicked'),
     onViewHistory: () => console.log('View history clicked'),
   },
-  render: (args) => {
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    return <FormView {...args} fileInputRef={fileInputRef} />;
-  },
+  render: (args) => <FormViewWithRef {...args} />,
 };
 
 /**
@@ -115,10 +118,7 @@ export const WithPreferences: Story = {
     onBack: () => console.log('Back clicked'),
     onViewHistory: () => console.log('View history clicked'),
   },
-  render: (args) => {
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    return <FormView {...args} fileInputRef={fileInputRef} />;
-  },
+  render: (args) => <FormViewWithRef {...args} />,
 };
 
 /**
@@ -142,10 +142,7 @@ export const WithTags: Story = {
     onBack: () => console.log('Back clicked'),
     onViewHistory: () => console.log('View history clicked'),
   },
-  render: (args) => {
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    return <FormView {...args} fileInputRef={fileInputRef} />;
-  },
+  render: (args) => <FormViewWithRef {...args} />,
 };
 
 /**
@@ -169,10 +166,7 @@ export const WithImage: Story = {
     onBack: () => console.log('Back clicked'),
     onViewHistory: () => console.log('View history clicked'),
   },
-  render: (args) => {
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    return <FormView {...args} fileInputRef={fileInputRef} />;
-  },
+  render: (args) => <FormViewWithRef {...args} />,
 };
 
 /**
@@ -196,10 +190,7 @@ export const WithError: Story = {
     onBack: () => console.log('Back clicked'),
     onViewHistory: () => console.log('View history clicked'),
   },
-  render: (args) => {
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    return <FormView {...args} fileInputRef={fileInputRef} />;
-  },
+  render: (args) => <FormViewWithRef {...args} />,
 };
 
 /**
@@ -223,8 +214,5 @@ export const FirstTime: Story = {
     onBack: () => console.log('Back clicked'),
     onViewHistory: () => console.log('View history clicked'),
   },
-  render: (args) => {
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    return <FormView {...args} fileInputRef={fileInputRef} />;
-  },
+  render: (args) => <FormViewWithRef {...args} />,
 };

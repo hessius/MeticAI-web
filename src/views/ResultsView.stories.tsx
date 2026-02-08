@@ -1,6 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ResultsView } from './ResultsView';
-import { useRef } from 'react';
+import { useRef, type ComponentProps } from 'react';
+
+// Wrapper component to properly use hooks in Storybook
+function ResultsViewWithRef(props: Omit<ComponentProps<typeof ResultsView>, 'resultsCardRef'>) {
+  const resultsCardRef = useRef<HTMLDivElement>(null);
+  return <ResultsView {...props} resultsCardRef={resultsCardRef} />;
+}
 
 /**
  * ResultsView displays the generated espresso profile with analysis and details.
@@ -110,10 +116,7 @@ export const Success: Story = {
     onViewHistory: () => console.log('View history clicked'),
     onRunProfile: () => console.log('Run profile clicked'),
   },
-  render: (args) => {
-    const resultsCardRef = useRef<HTMLDivElement>(null);
-    return <ResultsView {...args} resultsCardRef={resultsCardRef} />;
-  },
+  render: (args) => <ResultsViewWithRef {...args} />,
 };
 
 /**
@@ -131,10 +134,7 @@ export const TextOnly: Story = {
     onViewHistory: () => console.log('View history clicked'),
     onRunProfile: () => console.log('Run profile clicked'),
   },
-  render: (args) => {
-    const resultsCardRef = useRef<HTMLDivElement>(null);
-    return <ResultsView {...args} resultsCardRef={resultsCardRef} />;
-  },
+  render: (args) => <ResultsViewWithRef {...args} />,
 };
 
 /**
@@ -152,10 +152,7 @@ export const Capturing: Story = {
     onViewHistory: () => console.log('View history clicked'),
     onRunProfile: () => console.log('Run profile clicked'),
   },
-  render: (args) => {
-    const resultsCardRef = useRef<HTMLDivElement>(null);
-    return <ResultsView {...args} resultsCardRef={resultsCardRef} />;
-  },
+  render: (args) => <ResultsViewWithRef {...args} />,
 };
 
 /**
@@ -177,8 +174,5 @@ export const SimpleProfile: Story = {
     onViewHistory: () => console.log('View history clicked'),
     onRunProfile: () => console.log('Run profile clicked'),
   },
-  render: (args) => {
-    const resultsCardRef = useRef<HTMLDivElement>(null);
-    return <ResultsView {...args} resultsCardRef={resultsCardRef} />;
-  },
+  render: (args) => <ResultsViewWithRef {...args} />,
 };

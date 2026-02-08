@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+// React hooks available for future enhancements
 
 interface SkipNavigationProps {
   links?: Array<{

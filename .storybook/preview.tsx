@@ -1,6 +1,6 @@
 import type { Preview } from '@storybook/react-vite'
 import { Suspense } from 'react'
-import i18n from '../src/i18n/config'
+import '../src/i18n/config'
 import '../src/main.css'
 
 const preview: Preview = {

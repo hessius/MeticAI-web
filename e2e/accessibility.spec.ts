@@ -411,7 +411,8 @@ test.describe('Accessibility - Focus Management', () => {
       const dialog = page.locator('[role="dialog"]')
       if (await dialog.isVisible()) {
         // Tab through dialog - focus should stay within
-        const initialFocus = page.locator(':focus')
+        // Store initial focus for reference (used implicitly by tab navigation test)
+        page.locator(':focus')
         
         for (let i = 0; i < 10; i++) {
           await page.keyboard.press('Tab')
@@ -452,7 +453,8 @@ test.describe('Accessibility - Focus Management', () => {
 })
 
 test.describe('Accessibility - Multi-language Support', () => {
-  const languages = ['en', 'es', 'fr', 'de', 'it', 'sv']
+  // Available languages for testing
+  // const languages = ['en', 'es', 'fr', 'de', 'it', 'sv']
   
   test('should maintain accessibility in English', async ({ page }) => {
     await page.goto('/')
@@ -527,8 +529,9 @@ test.describe('Accessibility - Multi-language Support', () => {
     
     // Get initial button
     const button = page.getByRole('button', { name: /Generate/i }).first()
-    const initialAriaLabel = await button.getAttribute('aria-label')
-    const initialText = await button.textContent()
+    // Store initial state for reference (button accessibility is verified after language switch)
+    await button.getAttribute('aria-label')
+    await button.textContent()
     
     // Switch language
     const langButton = page.getByRole('button').filter({ 
