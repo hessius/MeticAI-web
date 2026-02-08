@@ -4,11 +4,12 @@ This document provides comprehensive information about the testing infrastructur
 
 ## Overview
 
-The MeticAI-web application has three layers of testing:
+The MeticAI-web application has four layers of testing:
 
 1. **Unit Tests** - Test individual functions and components in isolation
 2. **Integration Tests** - Test how components work together
 3. **End-to-End (E2E) Tests** - Test complete user flows in a real browser
+4. **Accessibility Tests** - Test WCAG 2.1 AA compliance and keyboard navigation
 
 ## Testing Stack
 
@@ -16,6 +17,7 @@ The MeticAI-web application has three layers of testing:
 - **React Testing Library** - Testing utilities for React components
 - **@testing-library/user-event** - Simulates user interactions
 - **Playwright** - End-to-end testing framework
+- **@axe-core/playwright** - Automated accessibility testing for WCAG compliance
 - **jsdom** - DOM implementation for Node.js (used by Vitest)
 
 ## Quick Start
@@ -50,7 +52,33 @@ npm run e2e:ui
 
 # Run E2E tests in headed mode (see the browser)
 npm run e2e:headed
+
+# Run accessibility tests
+npm run e2e -- e2e/accessibility.spec.ts
+
+# Run specific accessibility test suite
+npm run e2e -- e2e/accessibility.spec.ts -g "Keyboard Navigation"
 ```
+
+### Running Accessibility Tests
+
+```bash
+# Run all accessibility tests
+npm run e2e -- e2e/accessibility.spec.ts
+
+# Run specific test category
+npm run e2e -- e2e/accessibility.spec.ts -g "Color Contrast"
+npm run e2e -- e2e/accessibility.spec.ts -g "ARIA Attributes"
+npm run e2e -- e2e/accessibility.spec.ts -g "Multi-language"
+
+# Run with UI mode (interactive)
+npm run e2e:ui -- e2e/accessibility.spec.ts
+
+# Run on specific browser
+npm run e2e -- e2e/accessibility.spec.ts --project=chromium
+```
+
+For detailed accessibility testing information, see [ACCESSIBILITY_TESTING.md](./ACCESSIBILITY_TESTING.md).
 
 ## Test Structure
 
@@ -78,7 +106,9 @@ End-to-end tests are in the `e2e/` directory:
 
 ```
 e2e/
-└── app.spec.ts                # E2E tests for main user flows
+├── app.spec.ts                # E2E tests for main user flows
+├── accessibility.spec.ts      # Accessibility and WCAG compliance tests
+└── qr-code.spec.ts            # QR code functionality tests
 ```
 
 ## Test Coverage
@@ -140,6 +170,20 @@ e2e/
 - Responsive design (desktop and mobile)
 - Complete user flows
 
+#### Accessibility Tests (`e2e/accessibility.spec.ts`)
+- **Automated WCAG Scans** - axe-core automated accessibility testing
+- **Keyboard Navigation** - Tab navigation, focus management, keyboard activation
+- **ARIA Attributes** - Proper roles, labels, and semantic HTML
+- **Skip Navigation** - Skip links for keyboard users
+- **Focus Management** - Focus indicators, modal focus traps
+- **Multi-language** - Accessibility maintained across all 6 languages
+- **Color Contrast** - WCAG AA contrast ratios (4.5:1)
+- **Form Accessibility** - Label associations, validation feedback
+- **Screen Reader Compatibility** - Landmarks, alt text, live regions
+- **Mobile Accessibility** - Touch targets, viewport scaling
+
+See [ACCESSIBILITY_TESTING.md](./ACCESSIBILITY_TESTING.md) for comprehensive details.
+
 ## Writing Tests
 
 ### Unit Test Example
@@ -194,6 +238,35 @@ test('should complete user flow', async ({ page }) => {
   await page.getByRole('button', { name: 'Submit' }).click()
   
   await expect(page.getByText('Success')).toBeVisible()
+})
+```
+
+### Accessibility Test Example
+
+```typescript
+import { test, expect } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
+
+test('should pass WCAG AA accessibility scan', async ({ page }) => {
+  await page.goto('/')
+  
+  // Run automated accessibility scan
+  const accessibilityScanResults = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  
+  expect(accessibilityScanResults.violations).toEqual([])
+})
+
+test('should navigate with keyboard only', async ({ page }) => {
+  await page.goto('/')
+  
+  // Tab to button and activate with Enter
+  await page.keyboard.press('Tab')
+  await page.keyboard.press('Enter')
+  
+  // Verify navigation occurred
+  await expect(page.getByText('Expected Content')).toBeVisible()
 })
 ```
 
@@ -377,6 +450,9 @@ await expect(page.getByText('Success')).toBeVisible({ timeout: 10000 })
 - [React Testing Library](https://testing-library.com/react)
 - [Playwright Documentation](https://playwright.dev/)
 - [Testing Library Best Practices](https://kentcdodds.com/blog/common-mistakes-with-react-testing-library)
+- [axe-core Accessibility Rules](https://github.com/dequelabs/axe-core/blob/develop/doc/rule-descriptions.md)
+- [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
+- [Playwright Accessibility Testing](https://playwright.dev/docs/accessibility-testing)
 
 ## Contributing
 

@@ -40,3 +40,6 @@ coverage
 playwright-report
 test-results
 *.lcov
+
+*storybook.log
+storybook-static

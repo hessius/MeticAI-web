@@ -240,6 +240,12 @@ bun run e2e:ui
 
 # Run E2E tests in headed mode (see the browser)
 bun run e2e:headed
+
+# Run accessibility tests
+bun run e2e -- e2e/accessibility.spec.ts
+
+# Run specific accessibility test category
+bun run e2e -- e2e/accessibility.spec.ts -g "Keyboard Navigation"
 ```
 
 ### Test Coverage
@@ -248,8 +254,11 @@ The project includes:
 - **Unit Tests** - Testing utility functions and individual components
 - **Integration Tests** - Testing component interactions and user flows
 - **E2E Tests** - Testing complete user journeys with Playwright
+- **Accessibility Tests** - WCAG 2.1 AA compliance testing with axe-core
 
 For detailed testing documentation, best practices, and examples, see [TESTING.md](./TESTING.md).
+
+For comprehensive accessibility testing information, see [ACCESSIBILITY_TESTING.md](./ACCESSIBILITY_TESTING.md).
 
 ## Development Guidelines
 

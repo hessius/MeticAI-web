@@ -272,3 +272,107 @@
 [data-sonner-toaster][data-y-position="top"] {
   top: max(1rem, env(safe-area-inset-top)) !important;
 }
+
+/* Accessibility Utilities */
+/* Screen reader only - visually hidden but accessible to screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus visible - show focus indicator only when using keyboard */
+.focus-visible-only:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.focus-visible-only:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Skip navigation links */
+.skip-navigation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+}
+
+.skip-link {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  padding: 0.5rem 1rem;
+  background: var(--background);
+  color: var(--foreground);
+  text-decoration: none;
+  border: 2px solid var(--ring);
+  border-radius: var(--radius);
+}
+
+.skip-link:focus {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  z-index: 10000;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  * {
+    border-color: currentColor;
+  }
+  
+  button,
+  a {
+    text-decoration: underline;
+  }
+}
+
+/* Focus styles for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Ensure sufficient color contrast in forced colors mode */
+@media (forced-colors: active) {
+  * {
+    border-color: CanvasText;
+  }
+  
+  button,
+  [role="button"] {
+    border: 1px solid ButtonText;
+  }
+}
