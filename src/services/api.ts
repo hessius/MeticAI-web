@@ -2,6 +2,7 @@ import { APIError } from '@/types';
 
 export interface FetchOptions extends RequestInit {
   timeout?: number;
+  responseType?: 'json' | 'text' | 'blob';
 }
 
 /**
@@ -11,7 +12,7 @@ export async function apiFetch<T>(
   url: string,
   options: FetchOptions = {}
 ): Promise<T> {
-  const { timeout = 30000, ...fetchOptions } = options;
+  const { timeout = 30000, responseType, ...fetchOptions } = options;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -33,9 +34,22 @@ export async function apiFetch<T>(
       );
     }
 
+    // Handle explicit responseType option
+    if (responseType === 'blob') {
+      return await response.blob() as unknown as T;
+    }
+    if (responseType === 'text') {
+      return await response.text() as unknown as T;
+    }
+
     const contentType = response.headers.get('content-type');
     if (contentType?.includes('application/json')) {
       return await response.json();
+    }
+
+    // Auto-detect blob for binary content types
+    if (contentType?.includes('application/octet-stream') || contentType?.includes('application/zip')) {
+      return await response.blob() as unknown as T;
     }
 
     // For non-JSON responses, return the text

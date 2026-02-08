@@ -1,4 +1,4 @@
-// React hooks available for future enhancements
+import type React from 'react';
 
 interface SkipNavigationProps {
   links?: Array<{

@@ -3,7 +3,12 @@ import { Button } from "./components/ui/button";
 
 import { AlertTriangleIcon, RefreshCwIcon } from "lucide-react";
 
-export const ErrorFallback = ({ error, resetErrorBoundary }) => {
+interface ErrorFallbackProps {
+  error: Error;
+  resetErrorBoundary: () => void;
+}
+
+export const ErrorFallback = ({ error, resetErrorBoundary }: ErrorFallbackProps) => {
   // Log error details to console for debugging
   console.error('ErrorFallback caught error:', error);
   console.error('Error stack:', error?.stack);

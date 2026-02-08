@@ -1,5 +1,6 @@
 import type { Preview } from '@storybook/react-vite'
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
+import i18n from 'i18next'
 import '../src/i18n/config'
 import '../src/main.css'
 
@@ -26,13 +27,19 @@ const preview: Preview = {
     },
   },
   decorators: [
-    (Story) => (
-      <Suspense fallback={<div>Loading...</div>}>
-        <div className="dark">
-          <Story />
-        </div>
-      </Suspense>
-    ),
+    (Story, context) => {
+      const locale = context.globals.locale || 'en';
+      useEffect(() => {
+        i18n.changeLanguage(locale);
+      }, [locale]);
+      return (
+        <Suspense fallback={<div>Loading...</div>}>
+          <div className="dark">
+            <Story />
+          </div>
+        </Suspense>
+      );
+    },
   ],
   globalTypes: {
     locale: {
@@ -42,7 +49,9 @@ const preview: Preview = {
         icon: 'globe',
         items: [
           { value: 'en', title: 'English' },
+          { value: 'sv', title: 'Svenska' },
           { value: 'es', title: 'Español' },
+          { value: 'it', title: 'Italiano' },
           { value: 'fr', title: 'Français' },
           { value: 'de', title: 'Deutsch' },
         ],

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { LoadingView } from './LoadingView';
+import { LoadingView, LOADING_MESSAGE_COUNT } from './LoadingView';
 
 /**
  * LoadingView displays animated loading state while generating espresso profiles.
@@ -37,8 +37,8 @@ const meta = {
   ],
   argTypes: {
     currentMessage: {
-      control: { type: 'range', min: 0, max: 15, step: 1 },
-      description: 'Index of the loading message to display (0-15)',
+      control: { type: 'range', min: 0, max: LOADING_MESSAGE_COUNT - 1, step: 1 },
+      description: `Index of the loading message to display (0-${LOADING_MESSAGE_COUNT - 1})`,
     },
   },
 } satisfies Meta<typeof LoadingView>;
@@ -78,6 +78,6 @@ export const NearEnd: Story = {
  */
 export const AlmostThere: Story = {
   args: {
-    currentMessage: 15,
+    currentMessage: LOADING_MESSAGE_COUNT - 1,
   },
 };

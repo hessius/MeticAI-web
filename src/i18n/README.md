@@ -16,7 +16,7 @@ Comprehensive translation files for the MeticAI-web application, covering all UI
 ## 📁 File Structure
 
 ```
-src/i18n/locales/
+public/locales/
 ├── en/translation.json    (16 KB, 354 lines)
 ├── sv/translation.json    (16 KB, 354 lines)
 ├── es/translation.json    (16 KB, 354 lines)

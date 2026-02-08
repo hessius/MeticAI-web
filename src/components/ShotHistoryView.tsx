@@ -712,6 +712,7 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
       }, 100)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [selectedShot, shotData]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Export analysis as image
@@ -1242,7 +1243,10 @@ export function ShotHistoryView({ profileName, onBack }: ShotHistoryViewProps) {
         time: d.time,
         pressureA: d.pressure,
         flowA: d.flow,
-        weightA: d.weight
+        weightA: d.weight,
+        pressureB: undefined as number | undefined,
+        flowB: undefined as number | undefined,
+        weightB: undefined as number | undefined,
       }))
     }
     

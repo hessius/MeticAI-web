@@ -193,12 +193,19 @@ export class APIError extends Error {
 }
 
 export class ValidationError extends Error {
+  public zodErrors?: z.ZodError;
+  public cause?: unknown;
   constructor(
     message: string,
-    public errors?: z.ZodError
+    causeOrZodError?: z.ZodError | unknown
   ) {
     super(message);
     this.name = 'ValidationError';
+    if (causeOrZodError instanceof z.ZodError) {
+      this.zodErrors = causeOrZodError;
+    } else {
+      this.cause = causeOrZodError;
+    }
   }
 }
 

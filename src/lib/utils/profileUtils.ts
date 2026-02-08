@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { ProfileData, ProfileDataSchema, ValidationError } from '@/types';
 
 /**
@@ -31,7 +32,10 @@ export function parseProfile(jsonString: string): ProfileData {
   try {
     return ProfileDataSchema.parse(jsonData);
   } catch (error) {
-    throw new ValidationError('Invalid profile structure', error instanceof Error ? error : undefined);
+    if (error instanceof z.ZodError) {
+      throw new ValidationError('Invalid profile structure', error);
+    }
+    throw new ValidationError('Invalid profile structure', error);
   }
 }
 

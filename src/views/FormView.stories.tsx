@@ -25,7 +25,7 @@ function FormViewWithRef(props: Omit<ComponentProps<typeof FormView>, 'fileInput
  */
 const meta = {
   title: 'Views/FormView',
-  component: FormView,
+  component: FormViewWithRef,
   parameters: {
     layout: 'centered',
     docs: {
@@ -68,7 +68,7 @@ const meta = {
       description: 'Number of saved profiles',
     },
   },
-} satisfies Meta<typeof FormView>;
+} satisfies Meta<typeof FormViewWithRef>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

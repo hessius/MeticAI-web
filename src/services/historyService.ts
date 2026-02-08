@@ -20,17 +20,32 @@ export interface FetchHistoryParams extends PaginationParams, HistoryFilters {}
  * History Service - handles all history-related API calls
  */
 export class HistoryService {
-  private baseUrl: string;
+  private baseUrl: string | undefined;
+  private baseUrlPromise: Promise<string> | undefined;
 
   constructor(baseUrl?: string) {
-    this.baseUrl = baseUrl || getServerUrl();
+    if (baseUrl) {
+      this.baseUrl = baseUrl;
+    } else {
+      this.baseUrlPromise = getServerUrl();
+    }
+  }
+
+  private async getBaseUrl(): Promise<string> {
+    if (this.baseUrl) return this.baseUrl;
+    if (!this.baseUrlPromise) {
+      this.baseUrlPromise = getServerUrl();
+    }
+    this.baseUrl = await this.baseUrlPromise;
+    return this.baseUrl;
   }
 
   /**
    * Fetch paginated history with filters
    */
   async fetchHistory(params: FetchHistoryParams): Promise<HistoryResponse> {
-    const url = buildUrl(`${this.baseUrl}/profiles`, {
+    const baseUrl = await this.getBaseUrl();
+    const url = buildUrl(`${baseUrl}/profiles`, {
       page: params.page,
       limit: params.limit,
       search: params.search,
@@ -49,8 +64,9 @@ export class HistoryService {
    * Fetch a single profile by ID
    */
   async fetchProfile(profileId: string): Promise<HistoryEntry> {
+    const baseUrl = await this.getBaseUrl();
     const response = await apiFetch<unknown>(
-      `${this.baseUrl}/profiles/${profileId}`
+      `${baseUrl}/profiles/${profileId}`
     );
 
     // Validate single entry
@@ -74,8 +90,9 @@ export class HistoryService {
       return imageUrl;
     }
 
-    // Otherwise, construct the full URL
-    return `${this.baseUrl}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+    // Use resolved baseUrl if available, otherwise use default
+    const base = this.baseUrl || 'http://localhost:8000';
+    return `${base}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
   }
 
   /**

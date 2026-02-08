@@ -1,26 +1,26 @@
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Plus, Coffee, Play, Gear } from '@phosphor-icons/react'
 
-const GREETINGS = {
-  morning: ["Good morning!", "Rise and shine!", "Morning, coffee time!", "Top of the morning!"],
-  afternoon: ["Good afternoon!", "Hey there!", "Howdy!", "What's brewing?"],
-  evening: ["Good evening!", "Evening!", "Ready for an espresso?", "Time for coffee!"]
-}
-
-function getTimeBasedGreeting(): string {
+function getTimeBasedGreeting(t: ReturnType<typeof import('react-i18next').useTranslation>['t']): string {
   const hour = new Date().getHours()
-  let greetings: string[]
+  let period: string
   
   if (hour >= 5 && hour < 12) {
-    greetings = GREETINGS.morning
+    period = 'morning'
   } else if (hour >= 12 && hour < 17) {
-    greetings = GREETINGS.afternoon
+    period = 'afternoon'
   } else {
-    greetings = GREETINGS.evening
+    period = 'evening'
   }
   
+  const result = t(`greetings.${period}`, { returnObjects: true })
+  const greetings = Array.isArray(result) ? result as string[] : null
+  if (!greetings || greetings.length === 0) {
+    return 'Hello!'
+  }
   return greetings[Math.floor(Math.random() * greetings.length)]
 }
 
@@ -39,6 +39,8 @@ export function StartView({
   onRunShot,
   onSettings
 }: StartViewProps) {
+  const { t } = useTranslation()
+
   return (
     <motion.div
       key="start"
@@ -49,11 +51,11 @@ export function StartView({
     >
       <Card className="p-6 space-y-6">
         <div className="text-center space-y-2">
-          <h2 className="text-xl font-bold tracking-tight text-foreground">{getTimeBasedGreeting()}</h2>
+          <h2 className="text-xl font-bold tracking-tight text-foreground">{getTimeBasedGreeting(t)}</h2>
           <p className="text-sm text-muted-foreground">
             {profileCount && profileCount > 0
-              ? `You have ${profileCount} profile${profileCount !== 1 ? 's' : ''} saved`
-              : 'Get started by generating your first profile'}
+              ? t('profileGeneration.youHaveProfiles', { count: profileCount })
+              : t('profileGeneration.getStarted')}
           </p>
         </div>
 
@@ -63,7 +65,7 @@ export function StartView({
             className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90"
           >
             <Plus size={20} className="mr-2" weight="bold" />
-            Generate New Profile
+            {t('navigation.generateNewProfile')}
           </Button>
           
           <Button
@@ -71,7 +73,7 @@ export function StartView({
             className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90"
           >
             <Coffee size={20} className="mr-2" weight="fill" />
-            Profile Catalogue
+            {t('navigation.profileCatalogue')}
           </Button>
           
           <Button
@@ -79,7 +81,7 @@ export function StartView({
             className="w-full h-14 text-base font-semibold bg-primary hover:bg-primary/90"
           >
             <Play size={20} className="mr-2" weight="fill" />
-            Run / Schedule
+            {t('navigation.runSchedule')}
           </Button>
           
           <Button
@@ -87,7 +89,7 @@ export function StartView({
             className="w-full h-14 text-base font-semibold bg-muted hover:bg-muted/80 text-foreground"
           >
             <Gear size={20} className="mr-2" weight="duotone" />
-            Settings
+            {t('navigation.settings')}
           </Button>
         </div>
       </Card>

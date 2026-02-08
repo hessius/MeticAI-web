@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useMemo } from 'react'
+import { useMemo, type RefObject } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -8,13 +8,7 @@ import { CheckCircle, Info, Play, CaretLeft, Image, FileJs, Coffee } from '@phos
 import { MarkdownText, cleanProfileName } from '@/components/MarkdownText'
 import { MeticAILogo } from '@/components/MeticAILogo'
 import { ProfileBreakdown, ProfileData } from '@/components/ProfileBreakdown'
-
-interface APIResponse {
-  status: string
-  analysis: string
-  reply: string
-  history_id?: string
-}
+import type { APIResponse } from '@/types'
 
 function parseProfileSections(text: string) {
   const sections: { title: string; content: string }[] = []
@@ -36,12 +30,16 @@ function parseProfileSections(text: string) {
       
       let endIndex = remainingText.length
       for (let i = index + 1; i < sectionHeaders.length; i++) {
-        const nextHeaderPattern = new RegExp(`\\*?\\*?${sectionHeaders[i]}:`, 'i')
-        const nextMatch = remainingText.match(nextHeaderPattern)
-        if (nextMatch && nextMatch.index !== undefined) {
-          endIndex = nextMatch.index
-          break
+        const nextHeaderPattern = new RegExp(`\\*?\\*?${sectionHeaders[i]}:`, 'ig')
+        let nextMatch: RegExpExecArray | null
+        // Search forward from startIndex to ensure monotonic section boundaries
+        while ((nextMatch = nextHeaderPattern.exec(remainingText)) !== null) {
+          if (nextMatch.index >= startIndex) {
+            endIndex = nextMatch.index
+            break
+          }
         }
+        if (endIndex < remainingText.length) break
       }
       
       let content = remainingText.substring(startIndex, endIndex).trim()
@@ -70,7 +68,7 @@ interface ResultsViewProps {
   currentProfileJson: Record<string, unknown> | null
   createdProfileId: string | null
   isCapturing: boolean
-  resultsCardRef: React.RefObject<HTMLDivElement>
+  resultsCardRef: RefObject<HTMLDivElement | null>
   onBack: () => void
   onSaveResults: () => void
   onDownloadJson: () => void
@@ -138,6 +136,7 @@ export function ResultsView({
                   onClick={onBack}
                   className="shrink-0"
                   title="Back to form"
+                  aria-label="Back to form"
                 >
                   <CaretLeft size={22} weight="bold" />
                 </Button>

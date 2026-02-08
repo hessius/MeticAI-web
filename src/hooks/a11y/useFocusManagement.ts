@@ -1,11 +1,12 @@
-import { useEffect, useRef, RefObject } from 'react';
+import type React from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 
 /**
  * Hook to trap focus within a container (useful for modals/dialogs)
  */
 export function useFocusTrap<T extends HTMLElement>(
   isActive: boolean
-): RefObject<T> {
+): RefObject<T | null> {
   const containerRef = useRef<T>(null);
 
   useEffect(() => {
@@ -85,7 +86,7 @@ export function useFocusTrap<T extends HTMLElement>(
  */
 export function useAutoFocus<T extends HTMLElement>(
   shouldFocus = true
-): RefObject<T> {
+): RefObject<T | null> {
   const elementRef = useRef<T>(null);
 
   useEffect(() => {
@@ -122,7 +123,7 @@ export function useRovingTabIndex<T extends HTMLElement>(
   items: Array<{ id: string; disabled?: boolean }>,
   orientation: 'horizontal' | 'vertical' = 'vertical'
 ): {
-  containerRef: RefObject<T>;
+  containerRef: RefObject<T | null>;
   getItemProps: (id: string, index: number) => {
     'data-roving-item-id': string;
     tabIndex: number;

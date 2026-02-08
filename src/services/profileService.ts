@@ -17,10 +17,24 @@ export interface ProfileCountResponse {
  * Profile Service - handles all profile-related API calls
  */
 export class ProfileService {
-  private baseUrl: string;
+  private baseUrl: string | undefined;
+  private baseUrlPromise: Promise<string> | undefined;
 
   constructor(baseUrl?: string) {
-    this.baseUrl = baseUrl || getServerUrl();
+    if (baseUrl) {
+      this.baseUrl = baseUrl;
+    } else {
+      this.baseUrlPromise = getServerUrl();
+    }
+  }
+
+  private async getBaseUrl(): Promise<string> {
+    if (this.baseUrl) return this.baseUrl;
+    if (!this.baseUrlPromise) {
+      this.baseUrlPromise = getServerUrl();
+    }
+    this.baseUrl = await this.baseUrlPromise;
+    return this.baseUrl;
   }
 
   /**
@@ -28,12 +42,13 @@ export class ProfileService {
    */
   async getProfileCount(): Promise<number> {
     try {
+      const baseUrl = await this.getBaseUrl();
       const response = await apiFetch<ProfileCountResponse>(
-        `${this.baseUrl}/profile-count`
+        `${baseUrl}/profile-count`
       );
       return response.count;
     } catch (error) {
-      console.error('Failed to fetch profile count:', error);
+      console.debug('Failed to fetch profile count', { error });
       return 0;
     }
   }
@@ -42,6 +57,7 @@ export class ProfileService {
    * Analyze an image and generate a profile
    */
   async analyzeImage(request: AnalyzeImageRequest): Promise<APIResponse> {
+    const baseUrl = await this.getBaseUrl();
     const formData = createFormData({
       image: request.image,
       preferences: request.preferences || '',
@@ -50,7 +66,7 @@ export class ProfileService {
     });
 
     const response = await apiFetch<unknown>(
-      `${this.baseUrl}/analyze`,
+      `${baseUrl}/analyze`,
       {
         method: 'POST',
         body: formData,
@@ -65,8 +81,9 @@ export class ProfileService {
    * Delete a profile by ID
    */
   async deleteProfile(profileId: string): Promise<void> {
+    const baseUrl = await this.getBaseUrl();
     await apiFetch(
-      `${this.baseUrl}/profiles/${profileId}`,
+      `${baseUrl}/profiles/${profileId}`,
       {
         method: 'DELETE',
       }
@@ -80,8 +97,9 @@ export class ProfileService {
     profileId: string,
     data: { name?: string; profile_json?: string; preferences?: string }
   ): Promise<void> {
+    const baseUrl = await this.getBaseUrl();
     await apiFetch(
-      `${this.baseUrl}/profiles/${profileId}`,
+      `${baseUrl}/profiles/${profileId}`,
       {
         method: 'PATCH',
         headers: {
@@ -96,8 +114,10 @@ export class ProfileService {
    * Export profile as JSON file
    */
   async exportProfile(profileId: string): Promise<Blob> {
+    const baseUrl = await this.getBaseUrl();
     return await apiFetch<Blob>(
-      `${this.baseUrl}/profiles/${profileId}/export`
+      `${baseUrl}/profiles/${profileId}/export`,
+      { responseType: 'blob' }
     );
   }
 }

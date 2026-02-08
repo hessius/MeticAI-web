@@ -1,3 +1,4 @@
+import type React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -17,11 +18,11 @@ vi.mock('framer-motion', () => ({
 }))
 
 describe('AdvancedCustomization', () => {
-  let mockOnChange: ReturnType<typeof vi.fn>
+  let mockOnChange: (value: AdvancedCustomizationOptions) => void
   let defaultValue: AdvancedCustomizationOptions
 
   beforeEach(() => {
-    mockOnChange = vi.fn()
+    mockOnChange = vi.fn<(value: AdvancedCustomizationOptions) => void>()
     defaultValue = {}
   })
 

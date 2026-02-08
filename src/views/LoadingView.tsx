@@ -1,8 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { Card } from '@/components/ui/card'
 import { Sparkle } from '@phosphor-icons/react'
 
-const LOADING_MESSAGES = [
+// Fallback messages in case i18n is not loaded
+const FALLBACK_LOADING_MESSAGES = [
   "Analyzing coffee beans...",
   "Detecting roast profile...",
   "Watching a Lance video...",
@@ -21,13 +23,19 @@ const LOADING_MESSAGES = [
   "Almost there..."
 ]
 
-export const LOADING_MESSAGE_COUNT = LOADING_MESSAGES.length
+export const LOADING_MESSAGE_COUNT = FALLBACK_LOADING_MESSAGES.length
 
 interface LoadingViewProps {
   currentMessage: number
 }
 
 export function LoadingView({ currentMessage }: LoadingViewProps) {
+  const { t } = useTranslation()
+  
+  const messages = t('loading.messages', { returnObjects: true }) as string[]
+  const loadingMessages = Array.isArray(messages) ? messages : FALLBACK_LOADING_MESSAGES
+  const safeIndex = Math.min(currentMessage, loadingMessages.length - 1)
+
   return (
     <motion.div
       key="loading"
@@ -60,11 +68,11 @@ export function LoadingView({ currentMessage }: LoadingViewProps) {
                 transition={{ duration: 0.3 }}
                 className="text-lg font-semibold text-primary min-h-[3.5rem]"
               >
-                {LOADING_MESSAGES[currentMessage]}
+                {loadingMessages[safeIndex]}
               </motion.p>
             </AnimatePresence>
             <p className="text-sm text-muted-foreground">
-              This may take 60-90 seconds
+              {t('loading.pleaseWait')}
             </p>
           </div>
 

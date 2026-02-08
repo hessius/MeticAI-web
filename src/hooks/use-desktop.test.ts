@@ -111,7 +111,7 @@ describe('useIsDesktop', () => {
     // Simulate media query change
     mockMediaQuery.matches = true
     if (mediaQueryListener) {
-      mediaQueryListener({ matches: true } as MediaQueryListEvent)
+      (mediaQueryListener as (e: MediaQueryListEvent) => void)({ matches: true } as MediaQueryListEvent)
     }
 
     await waitFor(() => {

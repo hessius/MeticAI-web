@@ -28,7 +28,7 @@ function ResultsViewWithRef(props: Omit<ComponentProps<typeof ResultsView>, 'res
  */
 const meta = {
   title: 'Views/ResultsView',
-  component: ResultsView,
+  component: ResultsViewWithRef,
   parameters: {
     layout: 'centered',
     docs: {
@@ -63,13 +63,13 @@ const meta = {
       description: 'Whether currently capturing screenshot',
     },
   },
-} satisfies Meta<typeof ResultsView>;
+} satisfies Meta<typeof ResultsViewWithRef>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 const sampleResponse = {
-  status: 'success',
+  status: 'success' as const,
   analysis: 'This medium roast Ethiopian coffee shows bright citrus notes with floral aromatics. The bean density suggests a higher altitude origin, ideal for balanced extraction.',
   reply: `Profile Created: **Bright Ethiopian Blend**
 
@@ -161,7 +161,7 @@ export const Capturing: Story = {
 export const SimpleProfile: Story = {
   args: {
     apiResponse: {
-      status: 'success',
+      status: 'success' as const,
       analysis: 'Well-balanced medium roast with chocolate and nut notes.',
       reply: 'A versatile espresso profile suitable for both straight shots and milk-based drinks. Dose 18g, extract 36g in 28 seconds at 93°C.',
     },

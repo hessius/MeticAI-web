@@ -112,7 +112,7 @@ test.describe('Accessibility - Keyboard Navigation', () => {
     await page.waitForSelector('text=Generate New Profile')
     
     // Tab to the Generate New Profile button
-    let focused = page.locator(':focus')
+    let focused
     let attempts = 0
     const maxAttempts = 10
     

@@ -24,15 +24,7 @@ import { ResultsView } from '@/views/ResultsView'
 import { ErrorView } from '@/views/ErrorView'
 
 import { AdvancedCustomizationOptions } from '@/components/AdvancedCustomization'
-
-interface APIResponse {
-  status: string
-  analysis: string
-  reply: string
-  history_id?: string
-}
-
-type ViewState = 'start' | 'form' | 'loading' | 'results' | 'error' | 'history' | 'history-detail' | 'settings' | 'run-shot'
+import type { APIResponse, ViewState } from '@/types'
 
 function App() {
   const [isInitializing, setIsInitializing] = useState(true)
@@ -523,7 +515,7 @@ Special Notes: For maximum clarity and to really make those delicate floral note
     }
   }
 
-  const canSubmit = imageFile || userPrefs.trim().length > 0 || selectedTags.length > 0
+  const canSubmit = !!(imageFile || userPrefs.trim().length > 0 || selectedTags.length > 0)
 
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-5 overflow-x-hidden">

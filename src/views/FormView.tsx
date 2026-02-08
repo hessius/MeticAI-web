@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Camera, Sparkle, Warning, Upload, X, Coffee, CaretLeft } from '@phosphor-icons/react'
 import { PRESET_TAGS, CATEGORY_COLORS } from '@/lib/tags'
 import { AdvancedCustomization, AdvancedCustomizationOptions } from '@/components/AdvancedCustomization'
+import type { RefObject, ChangeEvent } from 'react'
 
 interface FormViewProps {
   imagePreview: string | null
@@ -17,8 +18,8 @@ interface FormViewProps {
   errorMessage: string
   canSubmit: boolean
   profileCount: number | null
-  fileInputRef: React.RefObject<HTMLInputElement>
-  onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void
+  fileInputRef: RefObject<HTMLInputElement | null>
+  onFileSelect: (e: ChangeEvent<HTMLInputElement>) => void
   onRemoveImage: () => void
   onUserPrefsChange: (value: string) => void
   onToggleTag: (tag: string) => void
