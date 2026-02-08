@@ -31,7 +31,7 @@ export function parseProfile(jsonString: string): ProfileData {
   try {
     return ProfileDataSchema.parse(jsonData);
   } catch (error) {
-    throw new ValidationError('Invalid profile structure', error as any);
+    throw new ValidationError('Invalid profile structure', error instanceof Error ? error : undefined);
   }
 }
 
