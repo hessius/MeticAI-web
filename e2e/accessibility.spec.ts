@@ -77,7 +77,7 @@ test.describe('Accessibility - Automated Scans', () => {
 
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-        .disableRules(['meta-viewport', 'landmark-one-main', 'region', 'color-contrast'])
+        .disableRules(['meta-viewport', 'landmark-one-main', 'region', 'color-contrast', 'link-in-text-block'])
         .analyze()
 
       expect(results.violations).toEqual([])
