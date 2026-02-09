@@ -344,9 +344,10 @@ describe('useHistory', () => {
       const mockCreateElement = vi.fn((tagName: string) => {
         const el = originalCreateElement(tagName)
         if (tagName === 'a') {
+          const anchor = el as HTMLAnchorElement
           Object.defineProperty(el, 'click', {
             value: vi.fn(() => {
-              capturedDownload = el.download
+              capturedDownload = anchor.download
               clickCalled = true
             })
           })
@@ -395,9 +396,10 @@ describe('useHistory', () => {
       const mockCreateElement = vi.fn((tagName: string) => {
         const el = originalCreateElement(tagName)
         if (tagName === 'a') {
+          const anchor = el as HTMLAnchorElement
           Object.defineProperty(el, 'click', {
             value: vi.fn(() => {
-              capturedDownload = el.download
+              capturedDownload = anchor.download
             })
           })
         }

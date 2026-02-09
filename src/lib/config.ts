@@ -27,9 +27,9 @@ export async function loadConfig(): Promise<AppConfig> {
       return cachedConfig;
     }
     
-    const config = await response.json();
+    const config: AppConfig = await response.json();
     cachedConfig = { ...getDefaultConfig(), ...config };
-    return cachedConfig;
+    return cachedConfig!;
   } catch (error) {
     console.warn('Failed to load config.json, using default configuration:', error);
     cachedConfig = getDefaultConfig();

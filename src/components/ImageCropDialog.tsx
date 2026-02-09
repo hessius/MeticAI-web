@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import Cropper, { Area } from 'react-easy-crop'
 import { Button } from '@/components/ui/button'
 import {

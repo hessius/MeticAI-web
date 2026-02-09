@@ -40,6 +40,16 @@ global.FileReader = class FileReader {
   onload: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null
   onerror: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null
   onloadend: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null
+  onabort: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null
+  onprogress: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null
+  onloadstart: ((this: FileReader, ev: ProgressEvent<FileReader>) => unknown) | null = null
+
+  static readonly EMPTY = 0 as const
+  static readonly LOADING = 1 as const
+  static readonly DONE = 2 as const
+  readonly EMPTY = 0 as const
+  readonly LOADING = 1 as const
+  readonly DONE = 2 as const
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   readAsDataURL(_blob: Blob): void {
@@ -70,8 +80,4 @@ global.FileReader = class FileReader {
   addEventListener() {}
   removeEventListener() {}
   dispatchEvent() { return true }
-  
-  static EMPTY = 0
-  static LOADING = 1
-  static DONE = 2
-}
+} as unknown as typeof FileReader

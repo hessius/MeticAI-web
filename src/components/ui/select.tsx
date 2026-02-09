@@ -10,7 +10,7 @@ function Select({
   ...props
 }: ComponentProps<typeof SelectPrimitive.Root>) {
   // modal={false} prevents iOS scroll lock behavior that causes scroll jumping
-  return <SelectPrimitive.Root data-slot="select" modal={false} {...props} />
+  return <SelectPrimitive.Root data-slot="select" {...{ modal: false, ...props } as ComponentProps<typeof SelectPrimitive.Root>} />
 }
 
 function SelectGroup({
@@ -68,9 +68,6 @@ function SelectContent({
           className
         )}
         position={position}
-        // Prevent scroll jump on iOS when opening/closing
-        onOpenAutoFocus={(e) => e.preventDefault()}
-        onCloseAutoFocus={(e) => e.preventDefault()}
         {...props}
       >
         <SelectScrollUpButton />

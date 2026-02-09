@@ -3,8 +3,8 @@ import { renderHook } from '@testing-library/react'
 import { useSwipeNavigation } from './use-swipe-navigation'
 
 describe('useSwipeNavigation', () => {
-  let onSwipeRight: ReturnType<typeof vi.fn>
-  let onSwipeLeft: ReturnType<typeof vi.fn>
+  let onSwipeRight: () => void
+  let onSwipeLeft: () => void
 
   beforeEach(() => {
     onSwipeRight = vi.fn()
