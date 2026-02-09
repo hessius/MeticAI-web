@@ -67,6 +67,7 @@ export function FormView({
             size="icon"
             onClick={onBack}
             className="shrink-0"
+            aria-label="Back"
           >
             <CaretLeft size={22} weight="bold" />
           </Button>
